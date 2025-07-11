@@ -1,10 +1,9 @@
 import React from "react";
-import ThesisList from "./pages/thesis-fe";
-
+import PhenikaaLogin from "./pages/user-fe/login";
 function App() {
   return (
     <div className="App">
-      <ThesisList />  
+      <PhenikaaLogin />  
     </div>
   );
 }
