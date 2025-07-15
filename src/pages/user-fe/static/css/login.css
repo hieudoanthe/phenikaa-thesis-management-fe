@@ -38,14 +38,13 @@ html,
   letter-spacing: 0.02em;
   max-width: none;
   margin-bottom: 3rem;
-  -webkit-user-select: none;
+  outline: none;
 }
 .students-image {
   width: 100%;
   max-width: 520px;
   height: auto;
-  user-select: none;
-  -webkit-user-select: none;
+  outline: none;
   pointer-events: none;
 }
 .right-side {
@@ -69,23 +68,19 @@ html,
   align-items: center;
 }
 .logo {
-  user-select: none;
-  -webkit-user-select: none;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 .logo img {
   width: 200px;
   height: auto;
   pointer-events: none;
-  user-select: none;
-  -webkit-user-select: none;
+  outline: none;
 }
 .title {
   font-weight: 700;
   font-size: 1.15rem;
   margin-bottom: 0.3rem;
-  user-select: none;
-  -webkit-user-select: none;
+  outline: none;
   color: #111827;
 }
 .info-text {
@@ -94,8 +89,7 @@ html,
   font-style: italic;
   text-align: center;
   margin-bottom: 1.5rem;
-  user-select: none;
-  -webkit-user-select: none;
+  outline: none;
 }
 form {
   width: 100%;
@@ -106,8 +100,7 @@ label {
   color: #374151;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  user-select: none;
-  -webkit-user-select: none;
+  outline: none;
 }
 select,
 input[type="text"],
@@ -219,8 +212,6 @@ input[type="email"] {
   cursor: pointer;
   font-size: 1rem;
   color: #6b7280;
-  user-select: none;
-  -webkit-user-select: none;
   outline: none;
 }
 button[type="submit"] {
@@ -309,6 +300,26 @@ button[type="submit"]:hover {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+.spinner {
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #fff;
+  border-right: 2px solid #fff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 
