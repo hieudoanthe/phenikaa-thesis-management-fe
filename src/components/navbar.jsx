@@ -1,5 +1,5 @@
 import React from "react";
-import "../pages/admin-ui/static/css/style.css";
+import "../styles/pages/admin/style.css";
 
 const Navbar = ({ onHamburgerClick, welcomeText }) => {
   return (

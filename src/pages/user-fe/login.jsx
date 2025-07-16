@@ -84,7 +84,7 @@ const PhenikaaLogin = () => {
           serverMessage.toLowerCase().includes("role")
         ) {
           const roleDisplayName = getRoleDisplayName(role);
-          errorMessage = `Vui lòng chọn đúng vai trò của bạn (${roleDisplayName})!`;
+          errorMessage = `Vui lòng chọn đúng vai trò của bạn!`;
         } else if (
           serverMessage.toLowerCase().includes("password") ||
           serverMessage.toLowerCase().includes("mật khẩu") ||

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../../pages/admin-ui/static/css/style.css";
+import "../../styles/pages/admin/style.css";
 
 const AddTopicModal = ({ open, onClose, onSubmit, supervisorList = [] }) => {
   const [form, setForm] = useState({

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Sidebar from "./sidebar";
 import Navbar from "./navbar";
-import "../pages/admin-ui/static/css/style.css";
+import "../styles/pages/admin/style.css";
 
 const AdminLayout = ({ children, welcomeText }) => {
   const [collapsed, setCollapsed] = useState(false);

@@ -1,5 +1,6 @@
 import React from "react";
-import "../pages/admin-ui/static/css/style.css";
+import "../styles/pages/admin/style.css";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const sidebarItems = [
   {
@@ -20,7 +21,7 @@ const sidebarItems = [
       </svg>
     ),
     label: "Dashboard",
-    active: true,
+    route: "/admin/dashboard",
   },
   {
     icon: (
@@ -32,6 +33,7 @@ const sidebarItems = [
       </svg>
     ),
     label: "Users",
+    route: "/admin/user-management",
   },
   {
     icon: (
@@ -41,6 +43,7 @@ const sidebarItems = [
       </svg>
     ),
     label: "Topics",
+    route: "/admin/topic-management",
   },
   {
     icon: (
@@ -114,6 +117,8 @@ const sidebarItems = [
 ];
 
 const Sidebar = ({ collapsed }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   return (
     <aside
       className={`sidebar sidebar-modern${
@@ -151,14 +156,24 @@ const Sidebar = ({ collapsed }) => {
       </div>
       <nav className="sidebar-nav-modern">
         <ul>
-          {sidebarItems.map((item, idx) => (
-            <li key={item.label} className={item.active ? "active" : ""}>
-              <span className="sidebar-icon-svg">{item.icon}</span>
-              {!collapsed && (
-                <span className="sidebar-label">{item.label}</span>
-              )}
-            </li>
-          ))}
+          {sidebarItems.map((item, idx) => {
+            const isActive = item.route === location.pathname;
+            return (
+              <li
+                key={item.label}
+                className={isActive ? "active" : ""}
+                onClick={() => {
+                  if (item.route) navigate(item.route);
+                }}
+                style={{ cursor: item.route ? "pointer" : "default" }}
+              >
+                <span className="sidebar-icon-svg">{item.icon}</span>
+                {!collapsed && (
+                  <span className="sidebar-label">{item.label}</span>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </aside>
