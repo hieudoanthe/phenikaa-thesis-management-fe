@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import useAuthHook from "../../hooks/useAuth";
 import "./static/css/login.css";
 import Select from "react-select";
 
 const PhenikaaLogin = () => {
-  const [role, setRole] = useState("Sinh viên");
-  const [username, setUsername] = useState("21012067@st.phenikaa-uni.edu.vn"); //21012067@st.phenikaa-uni.edu.vn
-  const [password, setPassword] = useState("123456"); //
+  const navigate = useNavigate();
+  const { login } = useAuthHook();
+  const [role, setRole] = useState("USER");
+  const [username, setUsername] = useState("21012067@st.phenikaa-uni.edu.vn");
+  const [password, setPassword] = useState("123456");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,21 +18,122 @@ const PhenikaaLogin = () => {
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
+  // Helper function để chuyển đổi role thành tên hiển thị
+  const getRoleDisplayName = (role) => {
+    switch (role) {
+      case "USER":
+        return "Sinh viên";
+      case "TEACHER":
+        return "Giảng viên";
+      case "ADMIN":
+        return "Phòng ban";
+      default:
+        return "Người dùng";
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+
     try {
       const response = await axios.post(
         "http://localhost:8081/api/auth/login",
-        { username, password }
+        { username, password, role }
       );
-      const { accessToken } = response.data;
-      localStorage.setItem("accessToken", accessToken);
-      setError("");
-      alert("Đăng nhập thành công!");
+
+      const { accessToken, user } = response.data;
+      await login(accessToken, user);
+
+      addToast("Đăng nhập thành công!");
+
+      setTimeout(() => {
+        if (role === "USER") {
+          navigate("/home");
+        } else if (role === "TEACHER") {
+          navigate("/lecturer/dashboard");
+        } else if (role === "ADMIN") {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/home");
+        }
+      }, 1500);
     } catch (err) {
-      console.error("Lỗi đăng nhập:", err);
-      addToast("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
+      let errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
+
+      // Debug: Log thông tin lỗi để kiểm tra
+      console.log("Error response:", err.response);
+      console.log("Error data:", err.response?.data);
+      console.log("Error message:", err.response?.data?.message);
+      console.log("Error status:", err.response?.status);
+
+      // Lấy message từ server (có thể là string hoặc object)
+      const serverMessage =
+        typeof err.response?.data === "string"
+          ? err.response.data
+          : err.response?.data?.message || err.response?.data?.error;
+
+      console.log("Server message:", serverMessage);
+
+      if (serverMessage) {
+        // Xử lý các trường hợp lỗi cụ thể dựa trên message từ server
+        if (
+          serverMessage.toLowerCase().includes("quyền") ||
+          serverMessage.toLowerCase().includes("vai trò") ||
+          serverMessage.toLowerCase().includes("role")
+        ) {
+          const roleDisplayName = getRoleDisplayName(role);
+          errorMessage = `Vui lòng chọn đúng vai trò của bạn (${roleDisplayName})!`;
+        } else if (
+          serverMessage.toLowerCase().includes("password") ||
+          serverMessage.toLowerCase().includes("mật khẩu") ||
+          serverMessage.toLowerCase().includes("credentials") ||
+          serverMessage.toLowerCase().includes("invalid") ||
+          serverMessage.toLowerCase().includes("sai")
+        ) {
+          errorMessage = "Sai mật khẩu! Vui lòng kiểm tra lại mật khẩu.";
+        } else if (
+          serverMessage.toLowerCase().includes("username") ||
+          serverMessage.toLowerCase().includes("tên đăng nhập") ||
+          serverMessage.toLowerCase().includes("user") ||
+          serverMessage.toLowerCase().includes("not found") ||
+          serverMessage.toLowerCase().includes("không tồn tại")
+        ) {
+          errorMessage = "Tên đăng nhập không tồn tại! Vui lòng kiểm tra lại.";
+        } else if (
+          serverMessage.toLowerCase().includes("account") ||
+          serverMessage.toLowerCase().includes("tài khoản") ||
+          serverMessage.toLowerCase().includes("locked") ||
+          serverMessage.toLowerCase().includes("disabled") ||
+          serverMessage.toLowerCase().includes("khóa")
+        ) {
+          errorMessage = "Tài khoản không tồn tại hoặc đã bị khóa!";
+        } else {
+          // Nếu không khớp với các pattern trên, hiển thị message gốc từ server
+          errorMessage = serverMessage;
+        }
+      } else if (err.response?.status) {
+        // Chỉ xử lý theo HTTP status code khi không có message cụ thể từ server
+        switch (err.response.status) {
+          case 401:
+            errorMessage = "Thông tin đăng nhập không chính xác!";
+            break;
+          case 403:
+            errorMessage = "Vui lòng kiểm tra lại thông tin đăng nhập!";
+            break;
+          case 404:
+            errorMessage = "Tài khoản không tồn tại!";
+            break;
+          case 500:
+            errorMessage = "Lỗi server! Vui lòng thử lại sau.";
+            break;
+          default:
+            errorMessage = `Lỗi ${err.response.status}: ${err.response.statusText}`;
+        }
+      }
+
+      addToast(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -44,9 +149,9 @@ const PhenikaaLogin = () => {
   }, [toasts]);
 
   const roleOptions = [
-    { value: "Sinh viên", label: "Sinh viên" },
-    { value: "Giảng viên", label: "Giảng viên" },
-    { value: "Phòng ban", label: "Phòng ban" },
+    { value: "USER", label: "Sinh viên" },
+    { value: "TEACHER", label: "Giảng viên" },
+    { value: "ADMIN", label: "Phòng ban" },
   ];
 
   const getOptionBgColor = (state) => {
@@ -386,7 +491,7 @@ const PhenikaaLogin = () => {
           bottom: 32,
           zIndex: 9999,
           display: "flex",
-          flexDirection: "column-reverse", 
+          flexDirection: "column-reverse",
           gap: 16,
           maxWidth: 550,
         }}
@@ -398,7 +503,9 @@ const PhenikaaLogin = () => {
             <div
               key={toast.id}
               style={{
-                background: "#e53935",
+                background: toast.message.includes("thành công")
+                  ? "#4caf50"
+                  : "#e53935",
                 color: "#fff",
                 borderRadius: 8,
                 padding: "14px 24px",
@@ -412,33 +519,48 @@ const PhenikaaLogin = () => {
                 animation: "fadeInUp 0.3s",
               }}
             >
-              <svg
-                style={{ marginRight: 12 }}
-                width="22"
-                height="22"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="#fff"
-                strokeWidth="2"
-              >
-                <circle cx="12" cy="12" r="10" fill="#e53935" />
-                <line
-                  x1="8"
-                  y1="8"
-                  x2="16"
-                  y2="16"
+              {toast.message.includes("thành công") ? (
+                <svg
+                  style={{ marginRight: 12 }}
+                  width="22"
+                  height="22"
+                  fill="none"
+                  viewBox="0 0 24 24"
                   stroke="#fff"
                   strokeWidth="2"
-                />
-                <line
-                  x1="16"
-                  y1="8"
-                  x2="8"
-                  y2="16"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22,4 12,14.01 9,11.01" />
+                </svg>
+              ) : (
+                <svg
+                  style={{ marginRight: 12 }}
+                  width="22"
+                  height="22"
+                  fill="none"
+                  viewBox="0 0 24 24"
                   stroke="#fff"
                   strokeWidth="2"
-                />
-              </svg>
+                >
+                  <circle cx="12" cy="12" r="10" fill="#e53935" />
+                  <line
+                    x1="8"
+                    y1="8"
+                    x2="16"
+                    y2="16"
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1="16"
+                    y1="8"
+                    x2="8"
+                    y2="16"
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                </svg>
+              )}
               {toast.message}
             </div>
           ))}

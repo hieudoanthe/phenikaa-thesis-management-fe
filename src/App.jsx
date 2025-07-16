@@ -3,7 +3,7 @@ import PhenikaaLogin from "./pages/user-fe/login";
 function App() {
   return (
     <div className="App">
-      <PhenikaaLogin />  
+      <PhenikaaLogin />
     </div>
   );
 }
