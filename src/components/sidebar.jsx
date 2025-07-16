@@ -1,6 +1,7 @@
 import React from "react";
 import "../styles/pages/admin/style.css";
 import { useNavigate, useLocation } from "react-router-dom";
+import PropTypes from "prop-types";
 
 const sidebarItems = [
   {
@@ -159,17 +160,35 @@ const Sidebar = ({ collapsed }) => {
           {sidebarItems.map((item, idx) => {
             const isActive = item.route === location.pathname;
             return (
-              <li
-                key={item.label}
-                className={isActive ? "active" : ""}
-                onClick={() => {
-                  if (item.route) navigate(item.route);
-                }}
-                style={{ cursor: item.route ? "pointer" : "default" }}
-              >
-                <span className="sidebar-icon-svg">{item.icon}</span>
-                {!collapsed && (
-                  <span className="sidebar-label">{item.label}</span>
+              <li key={item.label} className={isActive ? "active" : ""}>
+                {item.route ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(item.route)}
+                    className="sidebar-btn"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                    }}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <span className="sidebar-icon-svg">{item.icon}</span>
+                    {!collapsed && (
+                      <span className="sidebar-label">{item.label}</span>
+                    )}
+                  </button>
+                ) : (
+                  <>
+                    <span className="sidebar-icon-svg">{item.icon}</span>
+                    {!collapsed && (
+                      <span className="sidebar-label">{item.label}</span>
+                    )}
+                  </>
                 )}
               </li>
             );
@@ -178,6 +197,10 @@ const Sidebar = ({ collapsed }) => {
       </nav>
     </aside>
   );
+};
+
+Sidebar.propTypes = {
+  collapsed: PropTypes.bool.isRequired,
 };
 
 export default Sidebar;

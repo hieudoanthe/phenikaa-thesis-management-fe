@@ -1,6 +1,7 @@
 import React from "react";
 import AdminLayout from "../../../components/admin_layout";
 import "../../../styles/pages/admin/style.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const users = [
   {
@@ -93,13 +94,13 @@ const UserManagement = () => (
               </td>
               <td>
                 <span className="user-mgmt-action" title="Edit">
-                  ✏️
+                  <i className="bi bi-pen"></i>
                 </span>
                 <span className="user-mgmt-action" title="Delete">
-                  🗑️
+                  <i className="bi bi-trash"></i>
                 </span>
                 <span className="user-mgmt-action" title="Lock">
-                  🔒
+                  <i className="bi bi-lock"></i>
                 </span>
               </td>
             </tr>

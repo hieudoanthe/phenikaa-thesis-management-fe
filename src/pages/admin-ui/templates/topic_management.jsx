@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import AdminLayout from "../../../components/admin_layout";
 import AddTopicModal from "../../../components/modals/add_topic_modal";
 import "../../../styles/pages/admin/style.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const topics = [
   {
@@ -103,13 +104,13 @@ const TopicManagement = () => {
                 </td>
                 <td>
                   <span className="topic-mgmt-action" title="View">
-                    👁️
+                    <i className="bi bi-eye"></i>
                   </span>
                   <span className="topic-mgmt-action" title="Edit">
-                    ✏️
+                    <i className="bi bi-pen"></i>
                   </span>
                   <span className="topic-mgmt-action" title="Delete">
-                    🗑️
+                    <i className="bi bi-trash"></i>
                   </span>
                   {t.status === "Pending" && (
                     <span className="topic-mgmt-action approve" title="Approve">

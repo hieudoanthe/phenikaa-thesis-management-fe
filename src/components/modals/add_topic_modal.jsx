@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "../../styles/pages/admin/style.css";
+import PropTypes from "prop-types";
 
 const AddTopicModal = ({ open, onClose, onSubmit, supervisorList = [] }) => {
   const [form, setForm] = useState({
@@ -20,7 +21,7 @@ const AddTopicModal = ({ open, onClose, onSubmit, supervisorList = [] }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit && onSubmit(form);
+    onSubmit?.(form);
   };
 
   return (
@@ -121,6 +122,13 @@ const AddTopicModal = ({ open, onClose, onSubmit, supervisorList = [] }) => {
       </div>
     </div>
   );
+};
+
+AddTopicModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func,
+  supervisorList: PropTypes.array,
 };
 
 export default AddTopicModal;
