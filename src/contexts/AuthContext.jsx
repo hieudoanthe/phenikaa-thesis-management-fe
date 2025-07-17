@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
 import { getToken, logout, getCachedUserInfo } from "../auth/authUtils";
+import PropTypes from "prop-types";
 
 const AuthContext = createContext();
 
@@ -27,8 +34,11 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  const login = async (token, userData) => {
+  const login = async (token, userData, refreshToken) => {
     localStorage.setItem("accessToken", token);
+    if (refreshToken) {
+      localStorage.setItem("refreshToken", refreshToken);
+    }
     if (userData) {
       localStorage.setItem("userInfo", JSON.stringify(userData));
       setUser(userData);
@@ -44,19 +54,24 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated,
-        isLoading,
-        login,
-        logout: handleLogout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
+      isLoading,
+      login,
+      logout: handleLogout,
+    }),
+    [user, isAuthenticated, isLoading]
   );
+
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
+};
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default AuthContext;

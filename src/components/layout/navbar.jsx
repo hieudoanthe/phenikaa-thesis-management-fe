@@ -1,5 +1,5 @@
 import React from "react";
-import "../styles/pages/admin/style.css";
+import "../../styles/pages/admin/style.css";
 import PropTypes from "prop-types";
 import "bootstrap-icons/font/bootstrap-icons.css";
 

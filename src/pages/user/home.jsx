@@ -17,9 +17,6 @@ const Home = () => {
       const userData = await getUserInfo();
       if (userData) {
         setUserInfo(userData);
-      } else {
-        // Token không hợp lệ, đăng xuất
-        logout();
       }
     } catch (error) {
       console.error("Lỗi khi lấy thông tin user:", error);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button, Badge } from '../common';
+import { Badge } from '../common';
 
 const Header = () => {
   const { user, logout } = useAuth();

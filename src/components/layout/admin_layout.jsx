@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Sidebar from "./sidebar";
 import Navbar from "./navbar";
-import "../styles/pages/admin/style.css";
+import "../../styles/pages/admin/style.css";
 import PropTypes from "prop-types";
 
 const AdminLayout = ({ children, welcomeText }) => {

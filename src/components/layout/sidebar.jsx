@@ -1,58 +1,27 @@
 import React from "react";
-import "../styles/pages/admin/style.css";
+import "../../styles/pages/admin/style.css";
 import { useNavigate, useLocation } from "react-router-dom";
 import PropTypes from "prop-types";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const sidebarItems = [
   {
-    icon: (
-      <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-        <rect
-          x="2.5"
-          y="2.5"
-          width="15"
-          height="15"
-          rx="3"
-          fill="currentColor"
-        />
-        <rect x="6" y="6" width="3" height="3" rx="1" fill="#fff" />
-        <rect x="11" y="6" width="3" height="3" rx="1" fill="#fff" />
-        <rect x="6" y="11" width="3" height="3" rx="1" fill="#fff" />
-        <rect x="11" y="11" width="3" height="3" rx="1" fill="#fff" />
-      </svg>
-    ),
+    icon: <i className="bi bi-house-fill"></i>,
     label: "Dashboard",
     route: "/admin/dashboard",
   },
   {
-    icon: (
-      <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-        <path
-          d="M10 10a3 3 0 100-6 3 3 0 000 6zM3 16a7 7 0 0114 0v1H3v-1z"
-          fill="currentColor"
-        />
-      </svg>
-    ),
+    icon: <i className="bi bi-people-fill"></i>,
     label: "Users",
     route: "/admin/user-management",
   },
   {
-    icon: (
-      <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-        <rect x="3" y="5" width="14" height="10" rx="2" fill="currentColor" />
-        <rect x="6" y="8" width="8" height="4" rx="1" fill="#fff" />
-      </svg>
-    ),
+    icon: <i className="bi bi-projector-fill"></i>,
     label: "Topics",
     route: "/admin/topic-management",
   },
   {
-    icon: (
-      <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-        <path d="M5 8a5 5 0 1110 0v2a5 5 0 01-10 0V8z" fill="currentColor" />
-        <rect x="4" y="14" width="12" height="2" rx="1" fill="currentColor" />
-      </svg>
-    ),
+    icon: <i className="bi bi-collection-fill"></i>,
     label: "Groups",
   },
   {

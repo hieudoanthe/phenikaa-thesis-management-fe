@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import AdminLayout from "../../../components/admin_layout";
-import AddTopicModal from "../../../components/modals/add_topic_modal";
-import "../../../styles/pages/admin/style.css";
+import AdminLayout from "../../components/layout/admin_layout";
+import AddTopicModal from "../../components/modals/add_topic_modal";
+import "../../styles/pages/admin/style.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 const topics = [
@@ -69,15 +69,27 @@ const TopicManagement = () => {
   return (
     <AdminLayout welcomeText="Topic Management">
       <div className="topic-mgmt-card">
+        <div className="topic-mgmt-search-row">
+          <div className="topic-mgmt-search-wrap">
+            <i className="bi bi-search search-icon"></i>
+            <input
+              className="topic-mgmt-search"
+              placeholder="Search by topic code, title, or supervisor"
+            />
+          </div>
+        </div>
         <div className="topic-mgmt-filter-row">
-          <input
-            className="topic-mgmt-search"
-            placeholder="Search by topic code, title, or supervisor"
-          />
           <div className="topic-mgmt-filter-group">
-            <button className="topic-mgmt-filter-btn">Status</button>
-            <button className="topic-mgmt-filter-btn">Supervisor</button>
-            <button className="topic-mgmt-filter-btn">Date Range</button>
+            <button className="topic-mgmt-filter-btn">
+              <i className="bi bi-funnel"></i> Status{" "}
+              <i className="bi bi-chevron-down"></i>
+            </button>
+            <button className="topic-mgmt-filter-btn">
+              Supervisor <i className="bi bi-chevron-down"></i>
+            </button>
+            <button className="topic-mgmt-filter-btn">
+              Date Range <i className="bi bi-chevron-down"></i>
+            </button>
             <button className="topic-mgmt-reset-btn">Reset Filters</button>
           </div>
         </div>
@@ -125,9 +137,15 @@ const TopicManagement = () => {
         <div className="topic-mgmt-footer-row">
           <span>Showing 1 to 5 of 12 entries</span>
           <div className="topic-mgmt-pagination">
+            <button className="topic-mgmt-page-btn">
+              <i className="bi bi-chevron-left"></i>
+            </button>
             <button className="topic-mgmt-page-btn active">1</button>
             <button className="topic-mgmt-page-btn">2</button>
             <button className="topic-mgmt-page-btn">3</button>
+            <button className="topic-mgmt-page-btn">
+              <i className="bi bi-chevron-right"></i>
+            </button>
           </div>
         </div>
         <button className="topic-mgmt-create-btn" onClick={handleCreate}>

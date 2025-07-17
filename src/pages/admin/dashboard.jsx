@@ -1,6 +1,6 @@
 import React from "react";
-import AdminLayout from "../../../components/admin_layout";
-import "../../../styles/pages/admin/style.css";
+import AdminLayout from "../../components/layout/admin_layout";
+import "../../styles/pages/admin/style.css";
 
 const stats = [
   { label: "Total Projects", value: 186, icon: "📋" },

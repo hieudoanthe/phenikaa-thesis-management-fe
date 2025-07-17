@@ -1,5 +1,5 @@
 import React from "react";
-import PhenikaaLogin from "./pages/user-fe/login";
+import PhenikaaLogin from "./pages/auth/login";
 function App() {
   return (
     <div className="App">

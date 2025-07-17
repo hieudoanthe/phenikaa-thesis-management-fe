@@ -34,6 +34,7 @@ export const setToken = (token) => {
  */
 export const logout = () => {
   localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
   localStorage.removeItem("userInfo");
   // Không redirect ngay, để component tự xử lý
 };

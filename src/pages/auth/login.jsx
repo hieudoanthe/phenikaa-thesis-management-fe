@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useAuthHook from "../../hooks/useAuth";
-import "./static/css/login.css";
+import "../../styles/pages/auth/login.css";
 import Select from "react-select";
 
 const PhenikaaLogin = () => {
@@ -43,7 +43,10 @@ const PhenikaaLogin = () => {
         { username, password, role }
       );
 
-      const { accessToken, user } = response.data;
+      const { accessToken, refreshToken, user } = response.data;
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
+      }
       await login(accessToken, user);
 
       addToast("Đăng nhập thành công!");
