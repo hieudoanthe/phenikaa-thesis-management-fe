@@ -1,18 +1,23 @@
 import axios from "axios";
-import { API_CONFIG, createApiUrl } from "../config/api";
 import { getToken, logout, refreshToken } from "../auth/authUtils";
 
-// Tạo axios instance
-const httpClient = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
-  timeout: API_CONFIG.TIMEOUT,
+// Cấu hình cho API chính (có thể là port khác)
+const MAIN_API_CONFIG = {
+  BASE_URL: import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8081/api/auth/login",
+  TIMEOUT: 10000,
+};
+
+// Tạo axios instance cho API chính
+const mainHttpClient = axios.create({
+  baseURL: MAIN_API_CONFIG.BASE_URL,
+  timeout: MAIN_API_CONFIG.TIMEOUT,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
 // Request interceptor - thêm token vào header
-httpClient.interceptors.request.use(
+mainHttpClient.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token) {
@@ -26,7 +31,7 @@ httpClient.interceptors.request.use(
 );
 
 // Response interceptor - xử lý token expiration
-httpClient.interceptors.response.use(
+mainHttpClient.interceptors.response.use(
   (response) => {
     return response;
   },
@@ -43,7 +48,7 @@ httpClient.interceptors.response.use(
         if (newToken) {
           // Cập nhật token mới và thử lại request
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return httpClient(originalRequest);
+          return mainHttpClient(originalRequest);
         } else {
           // Refresh token thất bại, logout
           logout();
@@ -62,18 +67,17 @@ httpClient.interceptors.response.use(
   }
 );
 
-// Helper functions
-export const apiRequest = async (
+// Helper functions cho main API
+export const mainApiRequest = async (
   method,
   endpoint,
   data = null,
   config = {}
 ) => {
   try {
-    const url = createApiUrl(endpoint);
-    const response = await httpClient.request({
+    const response = await mainHttpClient.request({
       method,
-      url,
+      url: endpoint,
       data,
       ...config,
     });
@@ -112,20 +116,20 @@ export const handleApiError = (error) => {
   }
 };
 
-// HTTP methods
+// HTTP methods cho main API
 export const apiGet = (endpoint, config = {}) =>
-  apiRequest("GET", endpoint, null, config);
+  mainApiRequest("GET", endpoint, null, config);
 
 export const apiPost = (endpoint, data = null, config = {}) =>
-  apiRequest("POST", endpoint, data, config);
+  mainApiRequest("POST", endpoint, data, config);
 
 export const apiPut = (endpoint, data = null, config = {}) =>
-  apiRequest("PUT", endpoint, data, config);
+  mainApiRequest("PUT", endpoint, data, config);
 
 export const apiPatch = (endpoint, data = null, config = {}) =>
-  apiRequest("PATCH", endpoint, data, config);
+  mainApiRequest("PATCH", endpoint, data, config);
 
 export const apiDelete = (endpoint, config = {}) =>
-  apiRequest("DELETE", endpoint, null, config);
+  mainApiRequest("DELETE", endpoint, null, config);
 
-export default httpClient;
+export default mainHttpClient;

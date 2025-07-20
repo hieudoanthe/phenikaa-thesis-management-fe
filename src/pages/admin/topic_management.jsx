@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminLayout from "../../components/layout/admin_layout";
 import AddTopicModal from "../../components/modals/add_topic_modal";
+import topicService from "../../services/topicService";
 import "../../styles/pages/admin/style.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -8,62 +9,172 @@ const topics = [
   {
     code: "TOP001",
     title: "Machine Learning Applications in Healthcare",
-    supervisor: "Dr. Sarah Johnson",
+    academicYear: "2023-2024",
     studentCount: 12,
-    status: "Pending",
+    approvalStatus: "Pending",
+    topicStatus: "Active",
   },
   {
     code: "TOP002",
     title: "Blockchain Technology in Supply Chain",
-    supervisor: "Dr. Michael Chen",
+    academicYear: "2023-2024",
     studentCount: 8,
-    status: "Approved",
+    approvalStatus: "Approved",
+    topicStatus: "Active",
   },
   {
     code: "TOP003",
     title: "Sustainable Energy Systems",
-    supervisor: "Dr. Emily Brown",
+    academicYear: "2022-2023",
     studentCount: 15,
-    status: "Rejected",
+    approvalStatus: "Rejected",
+    topicStatus: "Inactive",
   },
   {
     code: "TOP004",
     title: "Artificial Intelligence in Education",
-    supervisor: "Dr. James Wilson",
+    academicYear: "2024-2025",
     studentCount: 10,
-    status: "Pending",
+    approvalStatus: "Available",
+    topicStatus: "Active",
   },
   {
     code: "TOP005",
     title: "Cybersecurity in IoT Networks",
-    supervisor: "Dr. Lisa Anderson",
+    academicYear: "2023-2024",
     studentCount: 6,
-    status: "Approved",
+    approvalStatus: "Approved",
+    topicStatus: "Active",
+  },
+  {
+    code: "TOP006",
+    title: "Data Science in Finance",
+    academicYear: "2024-2025",
+    studentCount: 9,
+    approvalStatus: "Pending",
+    topicStatus: "Active",
+  },
+  {
+    code: "TOP007",
+    title: "Internet of Things Applications",
+    academicYear: "2023-2024",
+    studentCount: 7,
+    approvalStatus: "Available",
+    topicStatus: "Active",
   },
 ];
 
-const statusClass = {
+const approvalStatusClass = {
   Pending: "status-label pending",
+  Available: "status-label available",
   Approved: "status-label approved",
   Rejected: "status-label rejected",
 };
 
-const supervisorList = [
-  "Dr. Sarah Johnson",
-  "Dr. Michael Chen",
-  "Dr. Emily Brown",
-  "Dr. James Wilson",
-  "Dr. Lisa Anderson",
-];
+const topicStatusClass = {
+  Active: "user-status active",
+  Inactive: "user-status inactive",
+};
 
 const TopicManagement = () => {
   const [openModal, setOpenModal] = useState(false);
+  const [topics, setTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Load dữ liệu từ API khi component mount
+  useEffect(() => {
+    loadTopicList();
+  }, []);
+
+  const loadTopicList = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await topicService.getTopicList();
+
+      if (result.success && result.data && result.data.length > 0) {
+        console.log("Danh sách topic từ API:", result.data);
+        console.log("Raw data structure:", result.data[0]); // Log cấu trúc dữ liệu đầu tiên
+        console.log(
+          "Raw approval status:",
+          result.data.map((item) => item.approvalStatus)
+        );
+        console.log(
+          "Raw topic status:",
+          result.data.map((item) => item.topicStatus)
+        );
+        console.log(
+          "Raw academic year fields:",
+          result.data.map((item) => ({
+            academicYear: item.academicYear,
+            academicYearName: item.academicYearName,
+            yearName: item.yearName,
+            year: item.year,
+          }))
+        );
+        // Chuyển đổi dữ liệu từ API sang format hiện tại
+        const formattedTopics = result.data.map((item) => ({
+          code: item.code || item.topicCode,
+          title: item.title,
+          academicYear:
+            item.academicYear ||
+            item.academicYearName ||
+            item.yearName ||
+            item.year ||
+            "N/A",
+          studentCount: item.studentCount || item.maxStudents,
+          approvalStatus:
+            item.approvalStatus === "AVAILABLE"
+              ? "Available"
+              : item.approvalStatus === "PENDING"
+              ? "Pending"
+              : item.approvalStatus === "APPROVED"
+              ? "Approved"
+              : item.approvalStatus === "REJECTED"
+              ? "Rejected"
+              : item.approvalStatus,
+          topicStatus:
+            item.topicStatus === "ACTIVE"
+              ? "Active"
+              : item.topicStatus === "INACTIVE"
+              ? "Inactive"
+              : item.topicStatus || "Active",
+        }));
+        console.log("Formatted topics:", formattedTopics);
+        console.log(
+          "Academic years after mapping:",
+          formattedTopics.map((item) => item.academicYear)
+        );
+        setTopics(formattedTopics);
+      } else {
+        console.log("API không trả về dữ liệu");
+        setTopics([]);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách topic:", error);
+      setError("Không thể tải danh sách đề tài");
+      setTopics([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreate = () => setOpenModal(true);
   const handleClose = () => setOpenModal(false);
-  const handleSubmit = (data) => {
-    // Xử lý thêm topic ở đây
-    setOpenModal(false);
+  const handleSubmit = (result) => {
+    console.log("Kết quả tạo topic:", result);
+
+    if (result.success) {
+      console.log("Tạo topic thành công:", result.data);
+      // Refresh danh sách topic sau khi tạo thành công
+      loadTopicList();
+      alert("Tạo đề tài thành công!");
+    } else {
+      console.error("Lỗi tạo topic:", result.message);
+      // Không cần alert vì đã có trong modal
+    }
   };
 
   return (
@@ -81,11 +192,11 @@ const TopicManagement = () => {
         <div className="topic-mgmt-filter-row">
           <div className="topic-mgmt-filter-group">
             <button className="topic-mgmt-filter-btn">
-              <i className="bi bi-funnel"></i> Status{" "}
+              <i className="bi bi-funnel"></i> Approval Status{" "}
               <i className="bi bi-chevron-down"></i>
             </button>
             <button className="topic-mgmt-filter-btn">
-              Supervisor <i className="bi bi-chevron-down"></i>
+              Topic Status <i className="bi bi-chevron-down"></i>
             </button>
             <button className="topic-mgmt-filter-btn">
               Date Range <i className="bi bi-chevron-down"></i>
@@ -93,49 +204,94 @@ const TopicManagement = () => {
             <button className="topic-mgmt-reset-btn">Reset Filters</button>
           </div>
         </div>
-        <table className="topic-mgmt-table">
-          <thead>
-            <tr>
-              <th>Topic Code</th>
-              <th>Title</th>
-              <th>Supervisor</th>
-              <th>Student Count</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topics.map((t) => (
-              <tr key={t.code}>
-                <td>{t.code}</td>
-                <td>{t.title}</td>
-                <td>{t.supervisor}</td>
-                <td>{t.studentCount}</td>
-                <td>
-                  <span className={statusClass[t.status]}>{t.status}</span>
-                </td>
-                <td>
-                  <span className="topic-mgmt-action" title="View">
-                    <i className="bi bi-eye"></i>
-                  </span>
-                  <span className="topic-mgmt-action" title="Edit">
-                    <i className="bi bi-pen"></i>
-                  </span>
-                  <span className="topic-mgmt-action" title="Delete">
-                    <i className="bi bi-trash"></i>
-                  </span>
-                  {t.status === "Pending" && (
-                    <span className="topic-mgmt-action approve" title="Approve">
-                      Approve
-                    </span>
-                  )}
-                </td>
+
+        {/* Loading state */}
+        {loading && (
+          <div className="topic-mgmt-loading">
+            <div className="topic-mgmt-loading-text">
+              Đang tải danh sách đề tài...
+            </div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && !loading && (
+          <div className="topic-mgmt-error">
+            <div className="topic-mgmt-error-text">Lỗi: {error}</div>
+            <button className="topic-mgmt-retry-btn" onClick={loadTopicList}>
+              Thử lại
+            </button>
+          </div>
+        )}
+
+        {/* Table content */}
+        {!loading && !error && (
+          <table className="topic-mgmt-table">
+            <thead>
+              <tr>
+                <th>Topic Code</th>
+                <th>Title</th>
+                <th>Academic Year</th>
+                <th>Student Count</th>
+                <th>Approval Status</th>
+                <th>Topic Status</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {topics.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="topic-mgmt-empty">
+                    Không có đề tài nào
+                  </td>
+                </tr>
+              ) : (
+                topics.map((t) => (
+                  <tr key={t.code}>
+                    <td>{t.code}</td>
+                    <td>{t.title}</td>
+                    <td>{t.academicYear}</td>
+                    <td>{t.studentCount}</td>
+                    <td>
+                      <span className={approvalStatusClass[t.approvalStatus]}>
+                        {t.approvalStatus}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={topicStatusClass[t.topicStatus]}>
+                        <span className="user-status-dot"></span>
+                        {t.topicStatus}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="topic-mgmt-action" title="View">
+                        <i className="bi bi-eye"></i>
+                      </span>
+                      <span className="topic-mgmt-action" title="Edit">
+                        <i className="bi bi-pen"></i>
+                      </span>
+                      <span className="topic-mgmt-action" title="Delete">
+                        <i className="bi bi-trash"></i>
+                      </span>
+                      {t.approvalStatus === "Pending" && (
+                        <span
+                          className="topic-mgmt-action approve"
+                          title="Approve"
+                        >
+                          Approve
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
         <div className="topic-mgmt-footer-row">
-          <span>Showing 1 to 5 of 12 entries</span>
+          <span>
+            Showing 1 to {topics.length} of {topics.length} entries
+          </span>
           <div className="topic-mgmt-pagination">
             <button className="topic-mgmt-page-btn">
               <i className="bi bi-chevron-left"></i>
@@ -156,7 +312,6 @@ const TopicManagement = () => {
         open={openModal}
         onClose={handleClose}
         onSubmit={handleSubmit}
-        supervisorList={supervisorList}
       />
     </AdminLayout>
   );

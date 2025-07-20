@@ -43,25 +43,65 @@ const PhenikaaLogin = () => {
         { username, password, role }
       );
 
-      const { accessToken, refreshToken, user } = response.data;
+      console.log("Response từ server:", response.data);
+
+      // Xử lý linh hoạt response data từ server
+      let accessToken, refreshToken, user;
+
+      if (response.data.accessToken) {
+        accessToken = response.data.accessToken;
+      } else if (response.data.token) {
+        accessToken = response.data.token;
+      } else {
+        throw new Error("Không tìm thấy access token trong response");
+      }
+
+      if (response.data.refreshToken) {
+        refreshToken = response.data.refreshToken;
+      }
+
+      if (response.data.user) {
+        user = response.data.user;
+      } else if (response.data.data) {
+        user = response.data.data;
+      } else {
+        // Tạo user object từ thông tin có sẵn
+        user = {
+          username: username,
+          role: role,
+          email: username,
+        };
+      }
+
+      console.log("Dữ liệu được extract:", { accessToken, refreshToken, user });
+
       if (refreshToken) {
         localStorage.setItem("refreshToken", refreshToken);
       }
-      await login(accessToken, user);
+
+      console.log("Đăng nhập thành công:", { accessToken, user, role });
+
+      const loginResult = await login(accessToken, user);
+      console.log("Kết quả login:", loginResult);
 
       addToast("Đăng nhập thành công!");
 
-      setTimeout(() => {
-        if (role === "USER") {
-          navigate("/home");
-        } else if (role === "TEACHER") {
-          navigate("/lecturer/dashboard");
-        } else if (role === "ADMIN") {
-          navigate("/admin/dashboard");
-        } else {
-          navigate("/home");
-        }
-      }, 1500);
+      // Chuyển hướng dựa trên role từ server response
+      console.log("Bắt đầu chuyển hướng với role:", role);
+
+      if (role === "ADMIN") {
+        console.log("Chuyển hướng đến /admin/dashboard");
+        window.location.href = "/admin/dashboard";
+      } else if (role === "TEACHER") {
+        console.log("Chuyển hướng đến /lecturer/home");
+        window.location.href = "/lecturer/home";
+      } else if (role === "USER") {
+        console.log("Chuyển hướng đến /home");
+        window.location.href = "/home";
+      } else {
+        console.log("Chuyển hướng đến /home (default)");
+        window.location.href = "/home";
+      }
     } catch (err) {
       let errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
 

@@ -1,7 +1,12 @@
 // Export tất cả services
 export { default as authService } from "./authService";
 export { default as thesisService } from "./thesisService";
-export { default as httpClient } from "./httpClient";
+export { default as academicYearService } from "./academicYearService";
+
+// Export HTTP clients
+export { default as mainHttpClient } from "./mainHttpClient";
+
+// Export main API methods
 export {
   apiGet,
   apiPost,
@@ -9,4 +14,4 @@ export {
   apiPatch,
   apiDelete,
   handleApiError,
-} from "./httpClient";
+} from "./mainHttpClient";

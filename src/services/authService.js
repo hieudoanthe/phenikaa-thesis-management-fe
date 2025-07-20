@@ -1,4 +1,4 @@
-import { apiPost, apiGet } from "./httpClient";
+import { apiPost, apiGet } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
 
 /**
