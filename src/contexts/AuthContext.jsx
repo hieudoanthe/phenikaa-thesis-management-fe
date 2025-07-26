@@ -24,9 +24,16 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     setIsLoading(true);
     const token = getToken();
+    console.log(
+      "AuthContext - Initializing with token:",
+      token ? "exists" : "not found"
+    );
+
     if (token) {
       setIsAuthenticated(true);
-      setUser(getCachedUserInfo());
+      const cachedUser = getCachedUserInfo();
+      console.log("AuthContext - Cached user info:", cachedUser);
+      setUser(cachedUser);
     } else {
       setIsAuthenticated(false);
       setUser(null);
@@ -35,17 +42,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (token, userData, refreshToken) => {
+    console.log("AuthContext - Login called with:", {
+      token,
+      userData,
+      refreshToken,
+    });
+
     localStorage.setItem("accessToken", token);
     if (refreshToken) {
       localStorage.setItem("refreshToken", refreshToken);
     }
     if (userData) {
+      console.log("AuthContext - Saving user data to localStorage:", userData);
       localStorage.setItem("userInfo", JSON.stringify(userData));
       setUser(userData);
     } else {
+      console.log("AuthContext - No user data provided, setting user to null");
       setUser(null);
     }
     setIsAuthenticated(true);
+    console.log("AuthContext - Login completed, user:", userData);
   };
 
   const handleLogout = () => {

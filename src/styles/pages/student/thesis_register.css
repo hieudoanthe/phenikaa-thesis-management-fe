@@ -1,0 +1,344 @@
+body,
+html {
+  background: #f7f8fa;
+}
+
+.thesis-register-layout {
+  display: flex;
+  gap: 32px;
+  max-width: 1100px;
+  margin: 32px auto;
+  padding: 0 16px;
+}
+
+.thesis-form-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(44, 65, 115, 0.06);
+  padding: 32px 28px 24px 28px;
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 340px;
+}
+
+.form-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #31447a;
+  margin-bottom: 2px;
+}
+.form-desc {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+.notice-box {
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  color: #b8860b;
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.98rem;
+  margin-bottom: 8px;
+}
+.notice-icon {
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 18px 14px 8px 14px;
+  font-size: 1rem;
+  background: #f9fafb;
+  outline: none;
+  transition: border 0.2s;
+  resize: none;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #31447a;
+  background: #fff;
+}
+.form-group label {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  color: #31447a;
+  font-size: 1rem;
+  font-weight: 500;
+  pointer-events: none;
+  background: transparent;
+  transition: all 0.18s;
+  padding: 0 4px;
+}
+.form-group input.has-value + label,
+.form-group textarea.has-value + label,
+.form-group select.has-value + label,
+.form-group input:focus + label,
+.form-group textarea:focus + label,
+.form-group select:focus + label,
+.form-group label.float {
+  top: 2px;
+  left: 12px;
+  font-size: 0.85rem;
+  color: #31447a;
+  background: #fff;
+}
+
+.lecturer-autocomplete {
+  position: relative;
+}
+.lecturer-autocomplete input {
+  width: 100%;
+}
+.lecturer-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 48px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(44, 65, 115, 0.08);
+  z-index: 10;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.lecturer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lecturer-item.selected {
+  background: #f0f6ff;
+}
+.lecturer-item:hover {
+  background: #f5f6fa;
+}
+.lecturer-item.empty {
+  color: #b0b0b0;
+  font-style: italic;
+  justify-content: center;
+}
+.lecturer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+}
+.lecturer-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.lecturer-name {
+  font-weight: 600;
+  color: #31447a;
+  font-size: 1rem;
+}
+.lecturer-email {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+.lecturer-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 2px 10px;
+  margin-left: 8px;
+  background: #e5fbe6;
+  color: #1a7f37;
+}
+.lecturer-status.full {
+  background: #ffeaea;
+  color: #d32f2f;
+}
+.lecturer-status.available {
+  background: #e5fbe6;
+  color: #1a7f37;
+}
+
+.submit-btn {
+  background: #f26522;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.18s;
+  box-shadow: 0 2px 8px rgba(44, 65, 115, 0.07);
+}
+.submit-btn:disabled {
+  background: #fbbf8b;
+  cursor: not-allowed;
+}
+.loading-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #f26522;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.success-message {
+  color: #1a7f37;
+  background: #e5fbe6;
+  border-radius: 8px;
+  padding: 10px 0;
+  text-align: center;
+  font-weight: 600;
+  margin-top: 10px;
+  font-size: 1rem;
+}
+
+.lecturer-preview-card {
+  background: #fafbfc;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(44, 65, 115, 0.04);
+  flex: 0.9;
+  min-width: 280px;
+  max-width: 340px;
+  padding: 24px 18px 18px 18px;
+  margin-top: 0;
+  height: fit-content;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.preview-title {
+  font-weight: 700;
+  color: #31447a;
+  font-size: 1.08rem;
+  margin-bottom: 10px;
+}
+.lecturer-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(44, 65, 115, 0.04);
+  padding: 18px 10px 14px 10px;
+}
+.lecturer-profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e7eb;
+  margin-bottom: 4px;
+}
+.lecturer-profile-name {
+  font-weight: 700;
+  color: #31447a;
+  font-size: 1.08rem;
+}
+.lecturer-profile-email {
+  color: #6b7280;
+  font-size: 0.97rem;
+}
+.lecturer-profile-specialization {
+  color: #f26522;
+  font-size: 0.97rem;
+  font-weight: 500;
+}
+.lecturer-profile-assign {
+  color: #31447a;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+.lecturer-profile-status {
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 2px 14px;
+  margin-top: 4px;
+  background: #e5fbe6;
+  color: #1a7f37;
+  display: inline-block;
+}
+.lecturer-profile-status.full {
+  background: #ffeaea;
+  color: #d32f2f;
+}
+.lecturer-profile-status.available {
+  background: #e5fbe6;
+  color: #1a7f37;
+}
+.lecturer-profile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  border: 2px dashed #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #b0b0b0;
+  gap: 10px;
+}
+.lecturer-profile-avatar-empty {
+  margin-bottom: 6px;
+}
+.lecturer-profile-empty-text {
+  font-size: 1rem;
+  color: #b0b0b0;
+}
+
+@media (max-width: 900px) {
+  .thesis-register-layout {
+    flex-direction: column;
+    gap: 18px;
+    max-width: 98vw;
+  }
+  .lecturer-preview-card {
+    max-width: 100%;
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+@media (max-width: 600px) {
+  .thesis-form-card {
+    padding: 18px 6px 14px 6px;
+    min-width: 0;
+  }
+  .lecturer-preview-card {
+    padding: 12px 4px 8px 4px;
+  }
+}

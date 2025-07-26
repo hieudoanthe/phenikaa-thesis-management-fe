@@ -86,18 +86,24 @@ const PhenikaaLogin = () => {
 
       addToast("Đăng nhập thành công!");
 
-      // Chuyển hướng dựa trên role từ server response
-      console.log("Bắt đầu chuyển hướng với role:", role);
+      // Chuyển hướng dựa trên role từ user data (ưu tiên) hoặc role từ form
+      const userRole = user?.role || role;
+      console.log(
+        "Bắt đầu chuyển hướng với user role:",
+        userRole,
+        "form role:",
+        role
+      );
 
-      if (role === "ADMIN") {
+      if (userRole === "ADMIN") {
         console.log("Chuyển hướng đến /admin/dashboard");
         window.location.href = "/admin/dashboard";
-      } else if (role === "TEACHER") {
+      } else if (userRole === "TEACHER") {
         console.log("Chuyển hướng đến /lecturer/home");
         window.location.href = "/lecturer/home";
-      } else if (role === "USER") {
-        console.log("Chuyển hướng đến /home");
-        window.location.href = "/home";
+      } else if (userRole === "USER") {
+        console.log("Chuyển hướng đến /student/home");
+        window.location.href = "/student/home";
       } else {
         console.log("Chuyển hướng đến /home (default)");
         window.location.href = "/home";

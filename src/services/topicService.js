@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, TOPIC_API_CONFIG } from "../config/api";
+import { API_ENDPOINTS } from "../config/api";
 import axios from "axios";
 import { getToken } from "../auth/authUtils";
 
@@ -87,8 +87,40 @@ class TopicService {
   }
 
   /**
+   * Sửa topic
+   * @param {Object} topicData - Dữ liệu sửa
+   * @returns {Promise<Object>} - Kết quả sửa
+   */
+  async editTopic(topicData) {
+    try {
+      const token = getToken();
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const response = await axios.post(API_ENDPOINTS.EDIT_TOPIC, topicData, {
+        headers,
+        timeout: 10000,
+      });
+      return {
+        success: true,
+        data: response.data,
+        message: "Sửa đề tài thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi sửa đề tài:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Sửa đề tài thất bại",
+      };
+    }
+  }
+
+  /**
    * Cập nhật topic
-   * @param {number} topicId - ID topic
    * @param {Object} topicData - Dữ liệu cập nhật
    * @returns {Promise<Object>} - Kết quả cập nhật
    */
@@ -104,8 +136,7 @@ class TopicService {
       }
 
       const response = await axios.put(
-        `${API_ENDPOINTS.UPDATE_TOPIC}/${topicId}`,
-        topicData,
+        `${API_ENDPOINTS.UPDATE_TOPIC}`, topicData,
         {
           headers,
           timeout: 10000,
@@ -143,7 +174,7 @@ class TopicService {
       }
 
       const response = await axios.delete(
-        `${API_ENDPOINTS.DELETE_TOPIC}/${topicId}`,
+        `${API_ENDPOINTS.DELETE_TOPIC}?topicId=${topicId}`,
         {
           headers,
           timeout: 10000,

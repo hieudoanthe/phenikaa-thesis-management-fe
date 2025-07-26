@@ -1,5 +1,4 @@
 import React from "react";
-import AdminLayout from "../../components/layout/admin_layout";
 import "../../styles/pages/admin/style.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -47,7 +46,7 @@ const statusClass = {
 };
 
 const UserManagement = () => (
-  <AdminLayout welcomeText="User Management">
+  <div>
     <div className="user-mgmt-card">
       <div className="user-mgmt-toolbar">
         <button className="user-mgmt-add-btn">+ Add User</button>
@@ -114,7 +113,7 @@ const UserManagement = () => (
         </div>
       </div>
     </div>
-  </AdminLayout>
+  </div>
 );
 
 export default UserManagement;

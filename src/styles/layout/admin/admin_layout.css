@@ -1,12 +1,12 @@
-/* Lecturer Layout Styles */
-.lecturer-layout {
+/* Admin Layout Styles */
+.admin-layout {
   display: flex;
   min-height: 100vh;
   background-color: #fff;
 }
 
 /* Sidebar */
-.lecturer-sidebar {
+.admin-sidebar {
   width: 280px;
   background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
   color: white;
@@ -17,27 +17,27 @@
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.lecturer-sidebar.collapsed {
+.admin-sidebar.collapsed {
   width: 70px;
 }
 
 /* Main Content Area */
-.lecturer-main-content {
+.admin-main-content {
   flex: 1;
   margin-left: 280px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #fff; /* Đổi từ #1a1a1a sang trắng */
+  background-color: #fff;
   transition: margin-left 0.3s ease;
 }
 
-.lecturer-sidebar.collapsed + .lecturer-main-content {
+.admin-sidebar.collapsed + .admin-main-content {
   margin-left: 70px;
 }
 
 /* Header */
-.lecturer-header {
+.admin-header {
   background: white;
   padding: 0 2rem;
   height: 70px;
@@ -93,8 +93,6 @@
     transform: translateY(0);
   }
 }
-
-/* Đã xóa .sidebar-toggle styles vì không còn sử dụng */
 
 .header-right {
   display: flex;
@@ -446,7 +444,7 @@
 }
 
 /* Main Content */
-.lecturer-content {
+.admin-content {
   flex: 1;
   background-color: #fff;
   color: #2d3a5a;
@@ -459,19 +457,19 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .lecturer-sidebar {
+  .admin-sidebar {
     transform: translateX(-100%);
   }
 
-  .lecturer-sidebar.open {
+  .admin-sidebar.open {
     transform: translateX(0);
   }
 
-  .lecturer-main-content {
+  .admin-main-content {
     margin-left: 0;
   }
 
-  .lecturer-header {
+  .admin-header {
     padding: 0 1rem;
   }
 
@@ -515,19 +513,19 @@
 }
 
 /* Custom scrollbar for sidebar */
-.lecturer-sidebar::-webkit-scrollbar {
+.admin-sidebar::-webkit-scrollbar {
   width: 6px;
 }
 
-.lecturer-sidebar::-webkit-scrollbar-track {
+.admin-sidebar::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.lecturer-sidebar::-webkit-scrollbar-thumb {
+.admin-sidebar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
 }
 
-.lecturer-sidebar::-webkit-scrollbar-thumb:hover {
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }

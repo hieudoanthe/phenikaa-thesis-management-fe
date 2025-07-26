@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import SidebarOfLecturer from "./sidebar_of_lecturer";
-import "../../../styles/layout/lecturer/lecturer_layout.css";
+import SidebarOfAdmin from "./sidebar_of_admin";
+import "../../../styles/layout/admin/admin_layout.css";
 
-const LecturerLayout = () => {
+const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -19,45 +19,55 @@ const LecturerLayout = () => {
     const path = location.pathname;
 
     switch (path) {
-      case "/lecturer":
-      case "/lecturer/home":
-        return {
-          title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
-        };
-      case "/lecturer/dashboard":
+      case "/admin":
+      case "/admin/dashboard":
         return {
           title: "Dashboard",
           subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
         };
-      case "/lecturer/thesis":
+      case "/admin/user-management":
         return {
-          title: "Quản lý Luận văn",
-          subtitle: "Quản lý và tạo mới các đề tài luận văn",
+          title: "Quản lý người dùng",
+          subtitle: "Quản lý tài khoản sinh viên, giảng viên và admin",
         };
-      case "/lecturer/students":
+      case "/admin/topic-management":
         return {
-          title: "Quản lý Sinh viên",
-          subtitle: "Theo dõi và quản lý sinh viên thực hiện luận văn",
+          title: "Quản lý đề tài",
+          subtitle: "Quản lý và phê duyệt các đề tài luận văn",
         };
-      case "/lecturer/reports":
+      case "/admin/groups":
         return {
-          title: "Báo cáo & Thống kê",
-          subtitle: "Xem báo cáo tiến độ và thống kê luận văn",
+          title: "Quản lý nhóm",
+          subtitle: "Theo dõi và quản lý các nhóm thực hiện luận văn",
         };
-      case "/lecturer/schedule":
+      case "/admin/assignments":
         return {
-          title: "Lịch trình",
-          subtitle: "Quản lý lịch bảo vệ và họp hội đồng",
+          title: "Quản lý nhiệm vụ",
+          subtitle: "Phân công và theo dõi nhiệm vụ cho sinh viên",
         };
-      case "/lecturer/settings":
+      case "/admin/defense-schedule":
+        return {
+          title: "Lịch bảo vệ",
+          subtitle: "Quản lý lịch trình bảo vệ luận văn",
+        };
+      case "/admin/statistics":
+        return {
+          title: "Thống kê",
+          subtitle: "Xem báo cáo và thống kê tổng quan",
+        };
+      case "/admin/notifications":
+        return {
+          title: "Thông báo",
+          subtitle: "Quản lý thông báo hệ thống",
+        };
+      case "/admin/settings":
         return {
           title: "Cài đặt",
-          subtitle: "Cấu hình tài khoản và hệ thống",
+          subtitle: "Cấu hình hệ thống và tài khoản",
         };
       default:
         return {
-          title: "Trang chủ",
+          title: "Dashboard",
           subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
         };
     }
@@ -150,36 +160,36 @@ const LecturerLayout = () => {
   const notifications = [
     {
       id: 1,
-      title: "Báo cáo tiến độ mới",
-      message: "Sinh viên Nguyễn Văn A đã nộp báo cáo tiến độ",
+      title: "Giảng viên mới đăng ký",
+      message: "Giảng viên Nguyễn Văn A đã đăng ký tài khoản mới",
       time: "2 giờ trước",
       isRead: false,
     },
     {
       id: 2,
-      title: "Lịch bảo vệ cập nhật",
-      message: "Lịch bảo vệ luận văn đã được cập nhật",
+      title: "Đề tài cần phê duyệt",
+      message: "Có 5 đề tài mới cần phê duyệt từ giảng viên",
       time: "5 giờ trước",
       isRead: false,
     },
     {
       id: 3,
-      title: "Nhắc nhở chấm điểm",
-      message: "Bạn có 3 bài báo cáo cần chấm điểm",
+      title: "Báo cáo hệ thống",
+      message: "Báo cáo hoạt động hệ thống hàng ngày đã sẵn sàng",
       time: "1 ngày trước",
       isRead: false,
     },
   ];
 
   return (
-    <div className="lecturer-layout">
+    <div className="admin-layout">
       {/* Sidebar */}
       <div
-        className={`lecturer-sidebar ${isSidebarOpen ? "open" : "closed"} ${
+        className={`admin-sidebar ${isSidebarOpen ? "open" : "closed"} ${
           isCollapsed ? "collapsed" : ""
         }`}
       >
-        <SidebarOfLecturer
+        <SidebarOfAdmin
           isCollapsed={isCollapsed}
           onToggleCollapse={handleToggleCollapse}
           onMenuItemClick={handleMenuItemClick}
@@ -192,9 +202,9 @@ const LecturerLayout = () => {
       )}
 
       {/* Main content area */}
-      <div className="lecturer-main-content">
+      <div className="admin-main-content">
         {/* Header */}
-        <header className="lecturer-header">
+        <header className="admin-header">
           <div className="header-left">
             <div className="page-title-section">
               <h1 className="page-title">{currentPage.title}</h1>
@@ -264,11 +274,11 @@ const LecturerLayout = () => {
                 onClick={handleToggleUserDropdown}
               >
                 <div className="user-avatar">
-                  <span>DSW</span>
+                  <span>AD</span>
                 </div>
                 <div className="user-info">
-                  <div className="user-name">Dr. Hieu Doan The</div>
-                  <div className="user-role">Senior Lecturer</div>
+                  <div className="user-name">Admin System</div>
+                  <div className="user-role">Quản trị viên</div>
                 </div>
                 <div className="user-dropdown">
                   <svg
@@ -287,12 +297,12 @@ const LecturerLayout = () => {
                 <div className="user-dropdown-menu">
                   <div className="dropdown-user-info">
                     <div className="dropdown-avatar">
-                      <span>DSW</span>
+                      <span>AD</span>
                     </div>
                     <div className="dropdown-user-details">
-                      <h4>Dr. Hieu Doan The</h4>
-                      <p>Senior Lecturer</p>
-                      <span>hieu.doan@phenikaa.edu.vn</span>
+                      <h4>Admin System</h4>
+                      <p>Quản trị viên</p>
+                      <span>admin@phenikaa.edu.vn</span>
                     </div>
                   </div>
                   <div className="dropdown-menu-items">
@@ -349,7 +359,7 @@ const LecturerLayout = () => {
         </header>
 
         {/* Main content */}
-        <main className="lecturer-content">
+        <main className="admin-content">
           <div className="content-wrapper">
             <Outlet />
           </div>
@@ -359,4 +369,4 @@ const LecturerLayout = () => {
   );
 };
 
-export default LecturerLayout;
+export default AdminLayout;

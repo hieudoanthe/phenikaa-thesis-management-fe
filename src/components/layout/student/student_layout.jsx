@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import SidebarOfLecturer from "./sidebar_of_lecturer";
-import "../../../styles/layout/lecturer/lecturer_layout.css";
+import SidebarOfStudent from "./sidebar_of_student";
+import "../../../styles/layout/student/student_layout.css";
 
-const LecturerLayout = () => {
+const StudentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -19,41 +19,41 @@ const LecturerLayout = () => {
     const path = location.pathname;
 
     switch (path) {
-      case "/lecturer":
-      case "/lecturer/home":
+      case "/student":
+      case "/student/home":
         return {
           title: "Trang chủ",
           subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
         };
-      case "/lecturer/dashboard":
+      case "/student/topic":
         return {
-          title: "Dashboard",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
+          title: "Đề tài",
+          subtitle: "Quản lý và đăng ký đề tài luận văn",
         };
-      case "/lecturer/thesis":
+      case "/student/topic-registration":
         return {
-          title: "Quản lý Luận văn",
-          subtitle: "Quản lý và tạo mới các đề tài luận văn",
+          title: "Đăng ký đề tài",
+          subtitle: "Đăng ký và chọn đề tài luận văn",
         };
-      case "/lecturer/students":
+      case "/student/group":
         return {
-          title: "Quản lý Sinh viên",
-          subtitle: "Theo dõi và quản lý sinh viên thực hiện luận văn",
+          title: "Nhóm",
+          subtitle: "Quản lý nhóm thực hiện luận văn",
         };
-      case "/lecturer/reports":
+      case "/student/report":
         return {
-          title: "Báo cáo & Thống kê",
-          subtitle: "Xem báo cáo tiến độ và thống kê luận văn",
+          title: "Báo cáo",
+          subtitle: "Nộp và theo dõi tiến độ báo cáo",
         };
-      case "/lecturer/schedule":
+      case "/student/message":
         return {
-          title: "Lịch trình",
-          subtitle: "Quản lý lịch bảo vệ và họp hội đồng",
+          title: "Tin nhắn",
+          subtitle: "Trao đổi với giảng viên và nhóm",
         };
-      case "/lecturer/settings":
+      case "/student/settings":
         return {
           title: "Cài đặt",
-          subtitle: "Cấu hình tài khoản và hệ thống",
+          subtitle: "Cấu hình tài khoản cá nhân",
         };
       default:
         return {
@@ -150,36 +150,36 @@ const LecturerLayout = () => {
   const notifications = [
     {
       id: 1,
-      title: "Báo cáo tiến độ mới",
-      message: "Sinh viên Nguyễn Văn A đã nộp báo cáo tiến độ",
-      time: "2 giờ trước",
+      title: "Phản hồi từ giảng viên",
+      message: "Giảng viên đã phản hồi báo cáo tiến độ của bạn",
+      time: "1 giờ trước",
       isRead: false,
     },
     {
       id: 2,
-      title: "Lịch bảo vệ cập nhật",
-      message: "Lịch bảo vệ luận văn đã được cập nhật",
-      time: "5 giờ trước",
+      title: "Nhắc nhở nộp báo cáo",
+      message: "Hạn nộp báo cáo tiến độ tuần này sắp đến",
+      time: "2 ngày trước",
       isRead: false,
     },
     {
       id: 3,
-      title: "Nhắc nhở chấm điểm",
-      message: "Bạn có 3 bài báo cáo cần chấm điểm",
-      time: "1 ngày trước",
+      title: "Cập nhật đề tài",
+      message: "Đề tài của bạn đã được cập nhật thông tin mới",
+      time: "3 ngày trước",
       isRead: false,
     },
   ];
 
   return (
-    <div className="lecturer-layout">
+    <div className="student-layout">
       {/* Sidebar */}
       <div
-        className={`lecturer-sidebar ${isSidebarOpen ? "open" : "closed"} ${
+        className={`student-sidebar ${isSidebarOpen ? "open" : "closed"} ${
           isCollapsed ? "collapsed" : ""
         }`}
       >
-        <SidebarOfLecturer
+        <SidebarOfStudent
           isCollapsed={isCollapsed}
           onToggleCollapse={handleToggleCollapse}
           onMenuItemClick={handleMenuItemClick}
@@ -192,9 +192,9 @@ const LecturerLayout = () => {
       )}
 
       {/* Main content area */}
-      <div className="lecturer-main-content">
+      <div className="student-main-content">
         {/* Header */}
-        <header className="lecturer-header">
+        <header className="student-header">
           <div className="header-left">
             <div className="page-title-section">
               <h1 className="page-title">{currentPage.title}</h1>
@@ -264,11 +264,11 @@ const LecturerLayout = () => {
                 onClick={handleToggleUserDropdown}
               >
                 <div className="user-avatar">
-                  <span>DSW</span>
+                  <span>SV</span>
                 </div>
                 <div className="user-info">
-                  <div className="user-name">Dr. Hieu Doan The</div>
-                  <div className="user-role">Senior Lecturer</div>
+                  <div className="user-name">Nguyễn Văn Sinh Viên</div>
+                  <div className="user-role">Sinh viên</div>
                 </div>
                 <div className="user-dropdown">
                   <svg
@@ -287,12 +287,12 @@ const LecturerLayout = () => {
                 <div className="user-dropdown-menu">
                   <div className="dropdown-user-info">
                     <div className="dropdown-avatar">
-                      <span>DSW</span>
+                      <span>SV</span>
                     </div>
                     <div className="dropdown-user-details">
-                      <h4>Dr. Hieu Doan The</h4>
-                      <p>Senior Lecturer</p>
-                      <span>hieu.doan@phenikaa.edu.vn</span>
+                      <h4>Nguyễn Văn Sinh Viên</h4>
+                      <p>Sinh viên</p>
+                      <span>sinhvien@phenikaa.edu.vn</span>
                     </div>
                   </div>
                   <div className="dropdown-menu-items">
@@ -349,7 +349,7 @@ const LecturerLayout = () => {
         </header>
 
         {/* Main content */}
-        <main className="lecturer-content">
+        <main className="student-content">
           <div className="content-wrapper">
             <Outlet />
           </div>
@@ -359,4 +359,4 @@ const LecturerLayout = () => {
   );
 };
 
-export default LecturerLayout;
+export default StudentLayout;

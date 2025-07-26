@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_ENDPOINTS, ACADEMIC_YEAR_API_CONFIG } from "../config/api";
+import { getToken } from "../auth/authUtils";
 
 /**
  * Service xử lý Academic Year
@@ -25,10 +26,16 @@ class AcademicYearService {
         params
       );
 
+      const token = getToken();
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const response = await axios.get(
         `${ACADEMIC_YEAR_API_CONFIG.BASE_URL}${API_ENDPOINTS.ACADEMIC_YEAR_LIST}`,
         {
           params,
+          headers, // Thêm header Authorization nếu có
           timeout: 10000,
         }
       );

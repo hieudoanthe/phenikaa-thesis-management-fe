@@ -27,10 +27,10 @@ const NavbarOfLecturer = ({ onToggleSidebar, unreadNotifications = 3 }) => {
 
   // Mock user data - có thể lấy từ context hoặc props
   const userProfile = {
-    name: "Dr. Sarah Wilson",
+    name: "Dr. Hieu Doan The",
     title: "Senior Lecturer",
-    avatar: "/api/avatars/sarah-wilson.jpg", // Fallback sẽ được xử lý trong CSS
-    email: "sarah.wilson@university.edu",
+    avatar: "/api/avatars/hieu-doan.jpg", 
+    email: "hieu.doan@phenikaa.edu.vn",
   };
 
   const handleProfileToggle = () => {
@@ -103,12 +103,14 @@ const NavbarOfLecturer = ({ onToggleSidebar, unreadNotifications = 3 }) => {
                     <p>Sinh viên Nguyễn Văn A đã nộp báo cáo tiến độ</p>
                     <span className="notification-time">2 giờ trước</span>
                   </div>
+                  <div className="notification-dot"></div>
                 </div>
                 <div className="notification-item unread">
                   <div className="notification-content">
                     <p>Lịch bảo vệ luận văn đã được cập nhật</p>
                     <span className="notification-time">5 giờ trước</span>
                   </div>
+                  <div className="notification-dot"></div>
                 </div>
                 <div className="notification-item">
                   <div className="notification-content">

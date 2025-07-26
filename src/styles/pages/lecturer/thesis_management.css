@@ -86,6 +86,8 @@
 }
 
 .form-group {
+  position: relative;
+  margin-bottom: 1.25rem;
   display: flex;
   flex-direction: column;
 }
@@ -105,21 +107,22 @@
 .form-group input,
 .form-group textarea,
 .form-group select {
-  padding: 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.875rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  background: white;
+  padding: 24px 14px 8px 14px;
+  font-size: 1rem;
+  background: #fff;
   color: #111827;
+  outline: none;
+  transition: border 0.2s;
+  resize: none;
 }
 
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-  outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #fff;
 }
 
 .form-group input::placeholder,
@@ -236,7 +239,7 @@
   gap: 1rem;
   flex-wrap: wrap;
   position: fixed;
-  top: 150px;
+  top: 140px;
   left: 280px;
   right: 0;
   background: white;
@@ -902,4 +905,66 @@ html::-webkit-scrollbar {
 
 .submit-btn:disabled:hover {
   background: #9ca3af;
+}
+
+/* Style cho input/select khi edit inline */
+.topics-table input[type="text"],
+.topics-table input[type="number"],
+.topics-table select {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #bfc9d9;
+  border-radius: 4px;
+  font-size: 15px;
+  background: #f8fafc;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.topics-table input[type="text"]:focus,
+.topics-table input[type="number"]:focus,
+.topics-table select:focus {
+  border-color: #1976d2;
+  background: #fff;
+  outline: none;
+}
+
+.topics-table td {
+  vertical-align: middle;
+}
+
+.action-btn.save-btn {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 14px;
+  margin-right: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.action-btn.save-btn:hover {
+  background: #1251a3;
+}
+
+.action-btn.cancel-btn {
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 14px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.action-btn.cancel-btn:hover {
+  background: #bdbdbd;
+}
+
+.inline-edit-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
 }

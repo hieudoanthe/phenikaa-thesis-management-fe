@@ -28,6 +28,14 @@ const ThesisManagement = () => {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // States cho chỉnh sửa trực tiếp
+  const [editingTopicId, setEditingTopicId] = useState(null);
+  const [editRowData, setEditRowData] = useState({});
+
+  // States cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 8;
+
   // Load danh sách topics và academic years khi component mount
   useEffect(() => {
     loadTopics();
@@ -120,6 +128,7 @@ const ThesisManagement = () => {
     try {
       // Chuẩn bị dữ liệu gửi lên API
       const topicData = {
+        topicId: formData.topicId, // Có thể undefined khi tạo mới
         topicCode: formData.topicCode,
         title: formData.title,
         description: formData.description,
@@ -131,14 +140,22 @@ const ThesisManagement = () => {
         difficultyLevel: formData.difficultyLevel,
       };
 
-      const response = await topicService.createTopic(topicData);
+      let response;
+      if (formData.topicId) {
+        // Nếu có topicId thì update
+        response = await topicService.updateTopic(formData.topicId, topicData);
+      } else {
+        // Nếu không có thì create
+        response = await topicService.createTopic(topicData);
+      }
 
       if (response.success) {
-        alert("Tạo đề tài thành công!");
-        // Reload danh sách topics
+        alert(
+          formData.topicId
+            ? "Cập nhật đề tài thành công!"
+            : "Tạo đề tài thành công!"
+        );
         await loadTopics();
-
-        // Reset form
         setFormData({
           topicCode: "",
           title: "",
@@ -149,16 +166,20 @@ const ThesisManagement = () => {
           academicYear: "2024",
           maxStudents: "1",
           difficultyLevel: "MEDIUM",
+          topicId: undefined,
         });
-
-        // Đóng form
-        setIsFormOpen(false);
+        handleCloseForm();
       } else {
-        alert(response.message || "Tạo đề tài thất bại");
+        alert(
+          response.message ||
+            (formData.topicId
+              ? "Cập nhật đề tài thất bại"
+              : "Tạo đề tài thất bại")
+        );
       }
     } catch (error) {
-      console.error("Lỗi khi tạo topic:", error);
-      alert("Đã xảy ra lỗi khi tạo đề tài");
+      console.error("Lỗi khi lưu đề tài:", error);
+      alert("Đã xảy ra lỗi khi lưu đề tài");
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +205,55 @@ const ThesisManagement = () => {
   };
 
   const handleEdit = (id) => {
-    const topic = topics.find((t) => t.id === id);
+    console.log("Edit topic id:", id);
+    const topic = topics.find((t) => String(t.topicId) === String(id));
+    console.log("Found topic:", topic);
+    if (topic) {
+      setEditingTopicId(id);
+      setEditRowData({ ...topic });
+    }
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditRowData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      // Gọi API cập nhật đề tài
+      const updateData = {
+        ...editRowData,
+        topicStatus: editRowData.status,
+        academicYearId: parseInt(editRowData.academicYearId),
+        maxStudents: parseInt(editRowData.maxStudents),
+      };
+      delete updateData.status;
+      const response = await topicService.editTopic(updateData);
+      if (response.success) {
+        alert("Cập nhật đề tài thành công!");
+        setEditingTopicId(null);
+        setEditRowData({});
+        await loadTopics();
+      } else {
+        alert(response.message || "Cập nhật đề tài thất bại");
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật đề tài:", error);
+      alert("Đã xảy ra lỗi khi cập nhật đề tài");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTopicId(null);
+    setEditRowData({});
+  };
+
+  const handleView = (id) => {
+    const topic = topics.find((t) => String(t.topicId) === String(id));
     if (topic) {
       setFormData({
         topicCode: topic.topicCode || "",
@@ -196,21 +265,9 @@ const ThesisManagement = () => {
         academicYear: topic.academicYearId?.toString() || "2024",
         maxStudents: topic.maxStudents?.toString() || "1",
         difficultyLevel: topic.difficultyLevel || "MEDIUM",
+        topicId: topic.topicId,
       });
       setIsFormOpen(true);
-    }
-  };
-
-  const handleView = (id) => {
-    const topic = topics.find((t) => t.id === id);
-    if (topic) {
-      alert(
-        `Xem chi tiết đề tài: ${topic.title || "N/A"}\n\nMô tả: ${
-          topic.description || "N/A"
-        }\nMục tiêu: ${topic.objectives || "N/A"}\nPhương pháp: ${
-          topic.methodology || "N/A"
-        }\nKết quả mong đợi: ${topic.expectedOutcome || "N/A"}`
-      );
     }
   };
 
@@ -347,15 +404,37 @@ const ThesisManagement = () => {
     );
   }
 
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setFormData({
+      topicCode: "",
+      title: "",
+      description: "",
+      objectives: "",
+      methodology: "",
+      expectedOutcome: "",
+      academicYear: "2024",
+      maxStudents: "1",
+      difficultyLevel: "MEDIUM",
+      topicId: undefined,
+    });
+  };
+
+  // Sau khi có filteredTopics:
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredTopics.slice(
+    indexOfFirstRecord,
+    indexOfLastRecord
+  );
+  const totalPages = Math.ceil(filteredTopics.length / recordsPerPage);
+
   return (
     <div className="thesis-management">
       {/* Create New Topic Form */}
       {isFormOpen && (
         <div className="form-card">
-          <div
-            className="form-header"
-            onClick={() => setIsFormOpen(!isFormOpen)}
-          >
+          <div className="form-header" onClick={handleCloseForm}>
             <h2>Save Topic</h2>
             <button className="collapse-btn">
               <svg
@@ -372,100 +451,130 @@ const ThesisManagement = () => {
           <form onSubmit={handleSubmit} className="topic-form">
             <div className="form-row two-columns">
               <div className="form-group">
-                <label htmlFor="topicCode">Topic Code *</label>
                 <input
                   type="text"
                   id="topicCode"
                   name="topicCode"
                   value={formData.topicCode}
                   onChange={handleInputChange}
-                  placeholder="Enter topic code"
                   required
+                  className={formData.topicCode ? "has-value" : ""}
                 />
+                <label
+                  htmlFor="topicCode"
+                  className={formData.topicCode ? "float" : ""}
+                >
+                  Topic Code *
+                </label>
               </div>
               <div className="form-group">
-                <label htmlFor="title">Topic Title *</label>
                 <input
                   type="text"
                   id="title"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  placeholder="Enter topic title"
                   required
+                  className={formData.title ? "has-value" : ""}
                 />
+                <label
+                  htmlFor="title"
+                  className={formData.title ? "float" : ""}
+                >
+                  Topic Title *
+                </label>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="description">Detailed Description *</label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Provide detailed description of the topic"
                   rows="4"
                   required
+                  className={formData.description ? "has-value" : ""}
                 />
+                <label
+                  htmlFor="description"
+                  className={formData.description ? "float" : ""}
+                >
+                  Detailed Description *
+                </label>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="objectives">Objectives *</label>
                 <textarea
                   id="objectives"
                   name="objectives"
                   value={formData.objectives}
                   onChange={handleInputChange}
-                  placeholder="List the main objectives"
                   rows="4"
                   required
+                  className={formData.objectives ? "has-value" : ""}
                 />
+                <label
+                  htmlFor="objectives"
+                  className={formData.objectives ? "float" : ""}
+                >
+                  Objectives *
+                </label>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="methodology">Methodology *</label>
                 <textarea
                   id="methodology"
                   name="methodology"
                   value={formData.methodology}
                   onChange={handleInputChange}
-                  placeholder="Describe research methodology"
                   rows="4"
                   required
+                  className={formData.methodology ? "has-value" : ""}
                 />
+                <label
+                  htmlFor="methodology"
+                  className={formData.methodology ? "float" : ""}
+                >
+                  Methodology *
+                </label>
               </div>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="expectedOutcome">Expected Outcome *</label>
                 <textarea
                   id="expectedOutcome"
                   name="expectedOutcome"
                   value={formData.expectedOutcome}
                   onChange={handleInputChange}
-                  placeholder="Describe expected outcomes"
                   rows="4"
                   required
+                  className={formData.expectedOutcome ? "has-value" : ""}
                 />
+                <label
+                  htmlFor="expectedOutcome"
+                  className={formData.expectedOutcome ? "float" : ""}
+                >
+                  Expected Outcome *
+                </label>
               </div>
             </div>
 
             <div className="form-row three-columns">
               <div className="form-group">
-                <label htmlFor="academicYear">Academic Year *</label>
                 <select
                   id="academicYear"
                   name="academicYear"
                   value={formData.academicYear}
                   onChange={handleInputChange}
                   required
+                  className={formData.academicYear ? "has-value" : ""}
                 >
                   {academicYears.length > 0 ? (
                     academicYears.map((year) => (
@@ -477,9 +586,14 @@ const ThesisManagement = () => {
                     <option value="">Đang tải...</option>
                   )}
                 </select>
+                <label
+                  htmlFor="academicYear"
+                  className={formData.academicYear ? "float" : ""}
+                >
+                  Academic Year *
+                </label>
               </div>
               <div className="form-group">
-                <label htmlFor="maxStudents">Max Students *</label>
                 <input
                   type="number"
                   id="maxStudents"
@@ -489,21 +603,34 @@ const ThesisManagement = () => {
                   min="1"
                   max="10"
                   required
+                  className={formData.maxStudents ? "has-value" : ""}
                 />
+                <label
+                  htmlFor="maxStudents"
+                  className={formData.maxStudents ? "float" : ""}
+                >
+                  Max Students *
+                </label>
               </div>
               <div className="form-group">
-                <label htmlFor="difficultyLevel">Difficulty Level *</label>
                 <select
                   id="difficultyLevel"
                   name="difficultyLevel"
                   value={formData.difficultyLevel}
                   onChange={handleInputChange}
                   required
+                  className={formData.difficultyLevel ? "has-value" : ""}
                 >
                   <option value="EASY">Easy</option>
                   <option value="MEDIUM">Medium</option>
                   <option value="HARD">Hard</option>
                 </select>
+                <label
+                  htmlFor="difficultyLevel"
+                  className={formData.difficultyLevel ? "float" : ""}
+                >
+                  Difficulty Level *
+                </label>
               </div>
             </div>
 
@@ -616,177 +743,286 @@ const ThesisManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredTopics.map((topic) => (
-                  <tr key={topic.id || `topic-${Math.random()}`}>
-                    <td className="topic-code">{topic.topicCode || "N/A"}</td>
-                    <td className="topic-title">{topic.title || "N/A"}</td>
-                    <td>{getAcademicYearName(topic.academicYearId)}</td>
-                    <td>{topic.maxStudents || "N/A"}</td>
-                    <td>
-                      <span
-                        className={getApprovalBadgeClass(
-                          topic.approvalStatus || topic.status
-                        )}
-                      >
-                        {topic.approvalStatus || topic.status || "Pending"}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`status-badge ${getStatusBadgeClass(
-                          topic.status || topic.topicStatus || "Active"
-                        )}`}
-                      >
-                        {topic.status || topic.topicStatus || "Active"}
-                      </span>
-                    </td>
-                    <td className="accept-actions">
-                      {(() => {
-                        const approvalStatus =
-                          topic.approvalStatus || topic.status || "";
-                        const statusLower = approvalStatus.toLowerCase();
-
-                        // Hiển thị nút Accept/Reject cho trạng thái pending
-                        if (statusLower === "pending") {
-                          return (
-                            <div className="accept-buttons">
-                              <button
-                                className="accept-btn approve-btn"
-                                onClick={() => handleApprove(topic.id || 0)}
-                                title="Approve"
-                              >
-                                <svg
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                >
-                                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                </svg>
-                                Accept
-                              </button>
-                              <button
-                                className="accept-btn reject-btn"
-                                onClick={() => handleReject(topic.id || 0)}
-                                title="Reject"
-                              >
-                                <svg
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                >
-                                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                                </svg>
-                                Reject
-                              </button>
-                            </div>
-                          );
-                        }
-
-                        // Hiển thị trạng thái đã phê duyệt
-                        if (statusLower === "approved") {
-                          return (
-                            <span className="accept-status-text">Accepted</span>
-                          );
-                        }
-
-                        if (statusLower === "rejected") {
-                          return (
-                            <span className="accept-status-text">Rejected</span>
-                          );
-                        }
-
-                        // Hiển thị trạng thái available
-                        if (statusLower === "available") {
-                          return (
-                            <span className="accept-status-text">
-                              Available
-                            </span>
-                          );
-                        }
-
-                        // Fallback: hiển thị nút Accept/Reject nếu không xác định được trạng thái
-                        return (
-                          <div className="accept-buttons">
+                {currentRecords.map((topic) => (
+                  <tr key={topic.topicId}>
+                    {editingTopicId === topic.topicId ? (
+                      <>
+                        {/* KHÔNG render topicId */}
+                        <td>
+                          <input
+                            type="text"
+                            name="topicCode"
+                            value={editRowData.topicCode || ""}
+                            onChange={handleEditInputChange}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            name="title"
+                            value={editRowData.title || ""}
+                            onChange={handleEditInputChange}
+                          />
+                        </td>
+                        <td>
+                          <select
+                            name="academicYearId"
+                            value={editRowData.academicYearId || ""}
+                            onChange={handleEditInputChange}
+                          >
+                            {academicYears.map((year) => (
+                              <option key={year.id} value={year.id}>
+                                {year.name}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            name="maxStudents"
+                            min="1"
+                            max="10"
+                            value={editRowData.maxStudents || ""}
+                            onChange={handleEditInputChange}
+                          />
+                        </td>
+                        <td>
+                          <select
+                            name="approvalStatus"
+                            value={editRowData.approvalStatus || ""}
+                            onChange={handleEditInputChange}
+                          >
+                            <option value="PENDING">PENDING</option>
+                            <option value="AVAILABLE">AVAILABLE</option>
+                            <option value="APPROVED">APPROVED</option>
+                            <option value="REJECTED">REJECTED</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            name="status"
+                            value={editRowData.status || ""}
+                            onChange={handleEditInputChange}
+                          >
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                            <option value="ARCHIVED">ARCHIVED</option>
+                            <option value="DELETED">DELETED</option>
+                          </select>
+                        </td>
+                        <td>
+                          <span className="accept-status-text">
+                            {editRowData.approvalStatus ||
+                              editRowData.status ||
+                              "Available"}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="inline-edit-actions">
                             <button
-                              className="accept-btn approve-btn"
-                              onClick={() => handleApprove(topic.id || 0)}
-                              title="Approve"
+                              className="action-btn save-btn"
+                              onClick={handleSaveEdit}
                             >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                              >
-                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                              </svg>
-                              Accept
+                              Save
                             </button>
                             <button
-                              className="accept-btn reject-btn"
-                              onClick={() => handleReject(topic.id || 0)}
-                              title="Reject"
+                              className="action-btn cancel-btn"
+                              onClick={handleCancelEdit}
                             >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
-                              >
-                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                              </svg>
-                              Reject
+                              Cancel
                             </button>
                           </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="actions">
-                      <button
-                        className="action-btn view-btn"
-                        onClick={() => handleView(topic.id || 0)}
-                        title="View"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                        </svg>
-                      </button>
-                      <button
-                        className="action-btn edit-btn"
-                        onClick={() => handleEdit(topic.id || 0)}
-                        title="Edit"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                        </svg>
-                      </button>
-                      <button
-                        className="action-btn delete-btn"
-                        onClick={() => handleDelete(topic.id || 0)}
-                        title="Delete"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                        </svg>
-                      </button>
-                    </td>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        {/* KHÔNG render topicId */}
+                        <td className="topic-code">
+                          {topic.topicCode || "N/A"}
+                        </td>
+                        <td className="topic-title">{topic.title || "N/A"}</td>
+                        <td>{getAcademicYearName(topic.academicYearId)}</td>
+                        <td>{topic.maxStudents || "N/A"}</td>
+                        <td>
+                          <span
+                            className={getApprovalBadgeClass(
+                              topic.approvalStatus || topic.status
+                            )}
+                          >
+                            {topic.approvalStatus || topic.status || "Pending"}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`status-badge ${getStatusBadgeClass(
+                              topic.status || topic.topicStatus || "Active"
+                            )}`}
+                          >
+                            {topic.status || topic.topicStatus || "Active"}
+                          </span>
+                        </td>
+                        <td className="accept-actions">
+                          {(() => {
+                            const approvalStatus =
+                              topic.approvalStatus || topic.status || "";
+                            const statusLower = approvalStatus.toLowerCase();
+
+                            // Hiển thị nút Accept/Reject cho trạng thái pending
+                            if (statusLower === "pending") {
+                              return (
+                                <div className="accept-buttons">
+                                  <button
+                                    className="accept-btn approve-btn"
+                                    onClick={() =>
+                                      handleApprove(topic.topicId || 0)
+                                    }
+                                    title="Approve"
+                                  >
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      fill="currentColor"
+                                    >
+                                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                    </svg>
+                                    Accept
+                                  </button>
+                                  <button
+                                    className="accept-btn reject-btn"
+                                    onClick={() =>
+                                      handleReject(topic.topicId || 0)
+                                    }
+                                    title="Reject"
+                                  >
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      fill="currentColor"
+                                    >
+                                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                                    </svg>
+                                    Reject
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            // Hiển thị trạng thái đã phê duyệt
+                            if (statusLower === "approved") {
+                              return (
+                                <span className="accept-status-text">
+                                  Accepted
+                                </span>
+                              );
+                            }
+
+                            if (statusLower === "rejected") {
+                              return (
+                                <span className="accept-status-text">
+                                  Rejected
+                                </span>
+                              );
+                            }
+
+                            // Hiển thị trạng thái available
+                            if (statusLower === "available") {
+                              return (
+                                <span className="accept-status-text">
+                                  Available
+                                </span>
+                              );
+                            }
+
+                            // Fallback: hiển thị nút Accept/Reject nếu không xác định được trạng thái
+                            return (
+                              <div className="accept-buttons">
+                                <button
+                                  className="accept-btn approve-btn"
+                                  onClick={() =>
+                                    handleApprove(topic.topicId || 0)
+                                  }
+                                  title="Approve"
+                                >
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                  >
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                  </svg>
+                                  Accept
+                                </button>
+                                <button
+                                  className="accept-btn reject-btn"
+                                  onClick={() =>
+                                    handleReject(topic.topicId || 0)
+                                  }
+                                  title="Reject"
+                                >
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                  >
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                                  </svg>
+                                  Reject
+                                </button>
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="actions">
+                          <button
+                            className="action-btn view-btn"
+                            onClick={() => handleView(topic.topicId || 0)}
+                            title="View"
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                            </svg>
+                          </button>
+                          <button
+                            className="action-btn edit-btn"
+                            onClick={() => handleEdit(topic.topicId)}
+                            title="Edit"
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                            </svg>
+                          </button>
+                          <button
+                            className="action-btn delete-btn"
+                            onClick={() => handleDelete(topic.topicId || 0)}
+                            title="Delete"
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                            </svg>
+                          </button>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -800,10 +1036,23 @@ const ThesisManagement = () => {
               results
             </div>
             <div className="pagination-controls">
-              <button className="pagination-btn" disabled>
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
                 Previous
               </button>
-              <button className="pagination-btn" disabled>
+              <span>
+                Trang {currentPage} / {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
                 Next
               </button>
             </div>

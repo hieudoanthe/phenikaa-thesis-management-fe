@@ -1,7 +1,6 @@
 import axios from "axios";
 import { getToken, logout, refreshToken } from "../auth/authUtils";
 
-// Cấu hình cho API chính (có thể là port khác)
 const MAIN_API_CONFIG = {
   BASE_URL: import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8081/api/auth/login",
   TIMEOUT: 10000,

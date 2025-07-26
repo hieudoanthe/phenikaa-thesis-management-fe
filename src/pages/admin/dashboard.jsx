@@ -1,5 +1,4 @@
 import React from "react";
-import AdminLayout from "../../components/layout/admin_layout";
 import "../../styles/pages/admin/style.css";
 
 const stats = [
@@ -46,7 +45,7 @@ const statusClass = {
 };
 
 const Dashboard = () => (
-  <AdminLayout>
+  <div>
     <div className="dashboard-stats-row">
       {stats.map((s) => (
         <div className="dashboard-stat-card" key={s.label}>
@@ -148,7 +147,7 @@ const Dashboard = () => (
       </table>
       <button className="dashboard-add-btn">+</button>
     </div>
-  </AdminLayout>
+  </div>
 );
 
 export default Dashboard;

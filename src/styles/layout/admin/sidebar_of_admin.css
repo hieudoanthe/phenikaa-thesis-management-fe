@@ -1,5 +1,5 @@
-/* Lecturer Sidebar Styles */
-.lecturer-sidebar {
+/* Admin Sidebar Styles */
+.admin-sidebar {
   width: 100%;
   height: 100%;
   display: flex;
@@ -111,37 +111,37 @@
 }
 
 /* Collapsed state */
-.lecturer-sidebar.collapsed .sidebar-title {
+.admin-sidebar.collapsed .sidebar-title {
   opacity: 0;
   visibility: hidden;
   width: 0; /* Ẩn hoàn toàn để không chiếm không gian */
 }
 
-.lecturer-sidebar.collapsed .menu-text {
+.admin-sidebar.collapsed .menu-text {
   opacity: 0;
   visibility: hidden;
 }
 
-.lecturer-sidebar.collapsed .menu-link {
+.admin-sidebar.collapsed .menu-link {
   justify-content: center;
   padding: 0.875rem;
 }
 
-.lecturer-sidebar.collapsed .menu-icon {
+.admin-sidebar.collapsed .menu-icon {
   margin-right: 0;
 }
 
-.lecturer-sidebar.collapsed .collapse-btn svg {
+.admin-sidebar.collapsed .collapse-btn svg {
   transform: rotate(180deg);
 }
 
 /* Đảm bảo nút collapse luôn hiển thị khi collapsed */
-.lecturer-sidebar.collapsed .sidebar-header {
+.admin-sidebar.collapsed .sidebar-header {
   justify-content: center;
   padding: 1.5rem 0.5rem;
 }
 
-.lecturer-sidebar.collapsed .collapse-btn {
+.admin-sidebar.collapsed .collapse-btn {
   opacity: 1;
   visibility: visible;
 }
@@ -171,41 +171,41 @@
   transition: all 0.2s ease;
 }
 
-.lecturer-sidebar.collapsed .menu-item[data-tooltip]:hover::after {
+.admin-sidebar.collapsed .menu-item[data-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
 }
 
-.lecturer-sidebar:not(.collapsed) .menu-item[data-tooltip]:hover::after {
+.admin-sidebar:not(.collapsed) .menu-item[data-tooltip]:hover::after {
   display: none;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .lecturer-sidebar {
+  .admin-sidebar {
     width: 280px;
   }
 
-  .lecturer-sidebar.collapsed {
+  .admin-sidebar.collapsed {
     width: 280px;
   }
 
-  .lecturer-sidebar.collapsed .sidebar-title,
-  .lecturer-sidebar.collapsed .menu-text {
+  .admin-sidebar.collapsed .sidebar-title,
+  .admin-sidebar.collapsed .menu-text {
     opacity: 1;
     visibility: visible;
   }
 
-  .lecturer-sidebar.collapsed .menu-link {
+  .admin-sidebar.collapsed .menu-link {
     justify-content: flex-start;
     padding: 0.875rem 1.5rem;
   }
 
-  .lecturer-sidebar.collapsed .menu-icon {
+  .admin-sidebar.collapsed .menu-icon {
     margin-right: 0.75rem;
   }
 
-  .lecturer-sidebar.collapsed .collapse-btn svg {
+  .admin-sidebar.collapsed .collapse-btn svg {
     transform: none;
   }
 }
@@ -226,20 +226,20 @@
 }
 
 /* Custom scrollbar */
-.lecturer-sidebar::-webkit-scrollbar {
+.admin-sidebar::-webkit-scrollbar {
   width: 4px;
 }
 
-.lecturer-sidebar::-webkit-scrollbar-track {
+.admin-sidebar::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.lecturer-sidebar::-webkit-scrollbar-thumb {
+.admin-sidebar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 2px;
 }
 
-.lecturer-sidebar::-webkit-scrollbar-thumb:hover {
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
 

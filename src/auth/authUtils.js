@@ -91,7 +91,19 @@ export const getUserInfo = async () => {
 export const getCachedUserInfo = () => {
   try {
     const userInfo = localStorage.getItem("userInfo");
-    return userInfo ? JSON.parse(userInfo) : null;
+    console.log(
+      "getCachedUserInfo - Raw userInfo from localStorage:",
+      userInfo
+    );
+
+    if (userInfo) {
+      const parsedUser = JSON.parse(userInfo);
+      console.log("getCachedUserInfo - Parsed user info:", parsedUser);
+      return parsedUser;
+    } else {
+      console.log("getCachedUserInfo - No userInfo found in localStorage");
+      return null;
+    }
   } catch (error) {
     console.error("Lỗi khi đọc cache user info:", error);
     return null;

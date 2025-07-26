@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import AdminLayout from "../../components/layout/admin_layout";
 import AddTopicModal from "../../components/modals/add_topic_modal";
 import topicService from "../../services/topicService";
 import "../../styles/pages/admin/style.css";
@@ -178,7 +177,7 @@ const TopicManagement = () => {
   };
 
   return (
-    <AdminLayout welcomeText="Topic Management">
+    <div>
       <div className="topic-mgmt-card">
         <div className="topic-mgmt-search-row">
           <div className="topic-mgmt-search-wrap">
@@ -313,7 +312,7 @@ const TopicManagement = () => {
         onClose={handleClose}
         onSubmit={handleSubmit}
       />
-    </AdminLayout>
+    </div>
   );
 };
 
