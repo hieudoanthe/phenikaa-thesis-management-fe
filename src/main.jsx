@@ -21,7 +21,7 @@ import ErrorBoundary from "./components/common/ErrorBoundary";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ThesisRegister from "./pages/student/thesis_register.jsx";
 import TopicRegistration from "./pages/student/topic_registration.jsx";
-// KHÔNG import StudentLayout, StudentHome nữa
+import StudentHome from "./pages/student/home.jsx";
 
 // Import CSS
 import "./styles/common/placeholder.css";
@@ -37,24 +37,6 @@ createRoot(document.getElementById("root")).render(
             {/* Route công khai - trang đăng nhập */}
             <Route path="/" element={<App />} />
 
-            {/* Route yêu cầu xác thực - Student */}
-            <Route
-              path="/home"
-              element={
-                <PrivateRoute>
-                  <Home />
-                </PrivateRoute>
-              }
-            />
-
-            <Route
-              path="/thesis"
-              element={
-                <PrivateRoute>
-                  <ThesisList />
-                </PrivateRoute>
-              }
-            />
 
             {/* Route yêu cầu xác thực - Lecturer (chỉ cho TEACHER role) */}
             <Route
@@ -143,7 +125,7 @@ createRoot(document.getElementById("root")).render(
                 </StudentRoute>
               }
             >
-              <Route path="home" element={<Home />} />
+              <Route path="home" element={<StudentHome />} />
               <Route path="topic" element={<ThesisRegister />} />
               <Route
                 path="topic-registration"

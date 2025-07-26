@@ -1024,3 +1024,271 @@
   font-size: 16px;
   font-weight: 500;
 }
+
+/* Modal Add User Styles */
+.add-user-modal {
+  min-width: 650px;
+  max-width: 750px;
+  padding: 32px 32px 24px 32px;
+}
+
+.add-user-modal .modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #222b45;
+}
+
+.add-user-modal .modal-form {
+  gap: 24px;
+}
+
+.form-row {
+  display: flex;
+  gap: 24px;
+}
+
+.form-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.form-group .modal-label {
+  font-size: 1rem;
+  color: #222b45;
+  font-weight: 500;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.form-group .modal-label::after {
+  content: " *";
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: #374151;
+}
+
+.password-input-container .modal-input {
+  padding-right: 40px;
+}
+
+.add-user-modal .modal-input {
+  height: 44px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #374151;
+}
+
+.add-user-modal .modal-input:focus {
+  border-color: #ff6600;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+}
+
+.add-user-modal .modal-input::placeholder {
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
+
+.add-user-modal .modal-btn-row {
+  margin-top: 28px;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.add-user-modal .modal-btn {
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.add-user-modal .modal-btn.cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.add-user-modal .modal-btn.cancel:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.add-user-modal .modal-btn.create {
+  background: #ff6600;
+  color: #fff;
+  border: 1px solid #ff6600;
+}
+
+.add-user-modal .modal-btn.create:hover {
+  background: #e65c00;
+  border-color: #e65c00;
+}
+
+/* Responsive cho Add User Modal */
+@media (max-width: 768px) {
+  .add-user-modal {
+    min-width: 95vw;
+    max-width: 98vw;
+    margin: 20px;
+    padding: 24px 20px 20px 20px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .form-column {
+    gap: 16px;
+  }
+
+  .add-user-modal .modal-btn-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .add-user-modal .modal-btn {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+.floating-input-group {
+  position: relative;
+  margin-top: 8px;
+}
+
+.floating-input-group .modal-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  padding: 20px 16px 8px 16px;
+  height: 44px;
+  font-size: 1rem;
+  color: #374151;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.floating-input-group .modal-input:focus {
+  border-color: #ff6600;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+  outline: none;
+}
+
+.floating-label {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  font-size: 1rem;
+  color: #6b7280;
+  background: #fff;
+  padding: 0 4px;
+  pointer-events: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+}
+
+.floating-input-group .modal-input:focus + .floating-label,
+.floating-input-group .modal-input:not(:placeholder-shown) + .floating-label {
+  top: -10px;
+  left: 12px;
+  font-size: 0.85rem;
+  color: #ff6600;
+  font-weight: 500;
+  background: #fff;
+}
+
+/* Đảm bảo password-toggle không che label */
+.floating-input-group .password-toggle {
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+}
+
+.modal-label .required {
+  color: #ef4444;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-left: 2px;
+  display: inline;
+}
+
+.modal-label {
+  margin-bottom: 10px;
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #222b45;
+  position: relative;
+  z-index: 1;
+}
+
+/* Đảm bảo Select không bị dư margin-top/margin-bottom */
+.form-group .role-select__control {
+  min-height: 44px !important;
+  height: 44px !important;
+  font-size: 1rem !important;
+  border-radius: 8px !important;
+  border: 1px solid #d1d5db !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  box-sizing: border-box;
+  padding: 0 !important;
+  margin-top: 10px;
+}
+
+.add-user-modal .role-select__value-container {
+  padding: 0 16px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}

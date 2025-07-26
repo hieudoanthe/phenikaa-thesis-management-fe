@@ -451,7 +451,7 @@
 }
 
 .content-wrapper {
-  padding: 0;
+  padding: 0 26px;
   min-height: calc(100vh - 70px);
 }
 
