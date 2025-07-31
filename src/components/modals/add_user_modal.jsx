@@ -3,9 +3,9 @@ import Select from "react-select";
 import "../../styles/pages/admin/style.css";
 
 const roleOptions = [
-  { value: "Student", label: "Sinh viên" },
-  { value: "Lecturer", label: "Giảng viên" },
-  { value: "Admin", label: "Admin" },
+  { value: 1, label: "Sinh viên", role: "USER" },
+  { value: 2, label: "Quản trị viên", role: "ADMIN" },
+  { value: 3, label: "Giảng viên", role: "TEACHER" },
 ];
 
 const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
@@ -13,7 +13,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
     fullName: "",
     username: "",
     password: "",
-    role: null,
+    roles: [],
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -24,22 +24,46 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (
       formData.fullName &&
       formData.username &&
       formData.password &&
-      formData.role
+      formData.roles.length > 0
     ) {
-      onAddUser(formData);
-      setFormData({
-        fullName: "",
-        username: "",
-        password: "",
-        role: null,
-      });
-      onClose();
+      // Chuyển đổi roles thành format phù hợp cho backend
+      const userData = {
+        ...formData,
+        roleIds: formData.roles.map((role) => role.value),
+        roles: formData.roles.map((role) => role.role),
+      };
+
+      try {
+        // Gọi onAddUser và chờ kết quả
+        await onAddUser(userData);
+
+        // Reset form
+        setFormData({
+          fullName: "",
+          username: "",
+          password: "",
+          roles: [],
+        });
+
+        // Đóng modal sau khi thành công
+        onClose();
+      } catch (error) {
+        // Nếu có lỗi, không đóng modal và hiển thị toast lỗi
+        if (window.addToast) {
+          window.addToast("Có lỗi xảy ra khi thêm người dùng!", "error");
+        }
+      }
+    } else {
+      // Hiển thị thông báo lỗi nếu form không hợp lệ
+      if (window.addToast) {
+        window.addToast("Vui lòng điền đầy đủ thông tin!", "error");
+      }
     }
   };
 
@@ -48,7 +72,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
       fullName: "",
       username: "",
       password: "",
-      role: null,
+      roles: [],
     });
     onClose();
   };
@@ -156,11 +180,16 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               <div className="form-group">
                 <Select
                   classNamePrefix="role-select"
-                  value={formData.role}
-                  onChange={(option) => handleInputChange("role", option)}
+                  value={formData.roles}
+                  onChange={(selectedOptions) =>
+                    handleInputChange("roles", selectedOptions || [])
+                  }
                   options={roleOptions}
-                  placeholder="Chọn vai trò"
-                  isSearchable={false}
+                  isMulti={true}
+                  closeMenuOnSelect={false}
+                  blurInputOnSelect={false}
+                  hideSelectedOptions={false}
+                  placeholder="Chọn vai trò..."
                   styles={{
                     control: (base) => ({
                       ...base,
@@ -184,20 +213,92 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                         backgroundColor: getBgColor(state),
                         color: state.isSelected ? "#fff" : "#222b45",
                         cursor: "pointer",
+                        padding: "12px 16px",
+                        "&:hover": {
+                          backgroundColor: state.isSelected
+                            ? "#ff6600"
+                            : "#f3f4f6",
+                        },
                       };
                     },
-                    singleValue: (base) => ({
+                    multiValue: (base) => ({
                       ...base,
-                      color: "#374151",
+                      backgroundColor: "#ff6600",
+                      color: "#fff",
+                      borderRadius: 6,
+                      margin: "2px 4px 2px 0",
+                    }),
+                    multiValueLabel: (base) => ({
+                      ...base,
+                      color: "#fff",
+                      fontWeight: 500,
+                      padding: "4px 8px",
+                    }),
+                    multiValueRemove: (base) => ({
+                      ...base,
+                      color: "#fff",
+                      padding: "0 4px",
+                      "&:hover": {
+                        backgroundColor: "#e65c00",
+                        color: "#fff",
+                      },
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      padding: "8px 12px",
+                      minHeight: "28px",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "4px",
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      margin: "0",
+                      padding: "0",
+                      minWidth: "60px",
+                    }),
+                    indicatorsContainer: (base) => ({
+                      ...base,
+                      padding: "0 8px",
+                    }),
+                    indicatorSeparator: (base) => ({
+                      ...base,
+                      display: "none",
+                    }),
+                    dropdownIndicator: (base) => ({
+                      ...base,
+                      color: "#6b7280",
+                      "&:hover": {
+                        color: "#ff6600",
+                      },
+                    }),
+                    clearIndicator: (base) => ({
+                      ...base,
+                      color: "#6b7280",
+                      "&:hover": {
+                        color: "#ff6600",
+                      },
                     }),
                     menu: (base) => ({
                       ...base,
                       borderRadius: 8,
                       zIndex: 20,
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                      border: "1px solid #e5e7eb",
+                    }),
+                    menuList: (base) => ({
+                      ...base,
+                      padding: "4px 0",
                     }),
                     placeholder: (base) => ({
                       ...base,
                       color: "#6b7280",
+                      fontSize: "1rem",
+                    }),
+                    noOptionsMessage: (base) => ({
+                      ...base,
+                      color: "#6b7280",
+                      fontSize: "1rem",
                     }),
                   }}
                 />
@@ -213,7 +314,11 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
             >
               Hủy
             </button>
-            <button type="button" className="modal-btn create">
+            <button
+              type="button"
+              className="modal-btn create"
+              onClick={handleSubmit}
+            >
               Thêm người dùng
             </button>
           </div>

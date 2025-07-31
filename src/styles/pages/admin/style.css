@@ -1273,7 +1273,6 @@
 /* Đảm bảo Select không bị dư margin-top/margin-bottom */
 .form-group .role-select__control {
   min-height: 44px !important;
-  height: 44px !important;
   font-size: 1rem !important;
   border-radius: 8px !important;
   border: 1px solid #d1d5db !important;
@@ -1282,13 +1281,107 @@
   box-sizing: border-box;
   padding: 0 !important;
   margin-top: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group .role-select__control:hover {
+  border-color: #ff6600 !important;
+}
+
+.form-group .role-select__control--is-focused {
+  border-color: #ff6600 !important;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1) !important;
 }
 
 .add-user-modal .role-select__value-container {
-  padding: 0 16px !important;
-  height: 44px !important;
-  min-height: 44px !important;
+  padding: 8px 12px !important;
+  min-height: 28px !important;
   display: flex;
   align-items: center;
   box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.add-user-modal .role-select__input {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-width: 60px !important;
+}
+
+.add-user-modal .role-select__indicators {
+  padding: 0 8px !important;
+}
+
+.add-user-modal .role-select__indicator-separator {
+  display: none !important;
+}
+
+.add-user-modal .role-select__dropdown-indicator {
+  color: #6b7280 !important;
+}
+
+.add-user-modal .role-select__dropdown-indicator:hover {
+  color: #ff6600 !important;
+}
+
+.add-user-modal .role-select__clear-indicator {
+  color: #6b7280 !important;
+}
+
+.add-user-modal .role-select__clear-indicator:hover {
+  color: #ff6600 !important;
+}
+
+.add-user-modal .role-select__menu {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #e5e7eb !important;
+  z-index: 20 !important;
+}
+
+.add-user-modal .role-select__menu-list {
+  padding: 4px 0 !important;
+}
+
+.add-user-modal .role-select__option {
+  font-size: 1rem !important;
+  padding: 12px 16px !important;
+}
+
+.add-user-modal .role-select__option--is-focused {
+  background-color: #f3f4f6 !important;
+}
+
+.add-user-modal .role-select__option--is-selected {
+  background-color: #ff6600 !important;
+  color: #fff !important;
+}
+
+.add-user-modal .role-select__multi-value {
+  background-color: #ff6600 !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  margin: 2px 4px 2px 0 !important;
+}
+
+.add-user-modal .role-select__multi-value__label {
+  color: #fff !important;
+  font-weight: 500 !important;
+  padding: 4px 8px !important;
+}
+
+.add-user-modal .role-select__multi-value__remove {
+  color: #fff !important;
+  padding: 0 4px !important;
+}
+
+.add-user-modal .role-select__multi-value__remove:hover {
+  background-color: #e65c00 !important;
+  color: #fff !important;
+}
+
+.add-user-modal .role-select__placeholder {
+  color: #6b7280 !important;
+  font-size: 1rem !important;
 }

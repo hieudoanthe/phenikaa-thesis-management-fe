@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import Select from "react-select";
 import AddUserModal from "../../components/modals/add_user_modal";
+import { ToastContainer } from "../../components/common";
+import { userService } from "../../services";
 import "../../styles/pages/admin/user_management.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -74,10 +76,63 @@ const UserManagement = () => {
     return "#fff";
   };
 
-  const handleAddUser = (userData) => {
+  const handleAddUser = async (userData) => {
     console.log("Thêm người dùng mới:", userData);
-    // Xử lý thêm user vào danh sách
-    // Có thể gọi API hoặc cập nhật state
+
+    // Kiểm tra dữ liệu
+    if (
+      !userData.fullName ||
+      !userData.username ||
+      !userData.password ||
+      !userData.roleIds
+    ) {
+      console.error("Dữ liệu không đầy đủ");
+      if (window.addToast) {
+        window.addToast("Dữ liệu không đầy đủ!", "error");
+      }
+      throw new Error("Dữ liệu không đầy đủ");
+    }
+
+    try {
+      // Gọi API để tạo user
+      const response = await userService.createUser(userData);
+      console.log("API response:", response);
+
+      // Tạo user object mới cho UI
+      const newUser = {
+        name: userData.fullName,
+        username: userData.username,
+        email: userData.username, // Giả sử username là email
+        role: userData.roles.join(", "), // Hiển thị tất cả roles
+        status: "Hoạt động",
+        avatar: `https://randomuser.me/api/portraits/${
+          Math.random() > 0.5 ? "men" : "women"
+        }/${Math.floor(Math.random() * 100)}.jpg`,
+      };
+
+      console.log("User object mới:", newUser);
+
+      // Thêm vào danh sách users (trong thực tế sẽ gọi API)
+      users.push(newUser);
+
+      // Hiển thị thông báo thành công ngay lập tức
+      if (window.addToast) {
+        window.addToast("Thêm người dùng thành công!", "success");
+      }
+
+      // Trả về kết quả để modal biết đã thành công
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi tạo user:", error);
+
+      // Hiển thị thông báo lỗi
+      if (window.addToast) {
+        window.addToast("Lỗi khi thêm người dùng. Vui lòng thử lại!", "error");
+      }
+
+      // Throw error để modal biết có lỗi
+      throw error;
+    }
   };
 
   return (
@@ -226,6 +281,9 @@ const UserManagement = () => {
         onClose={() => setIsModalOpen(false)}
         onAddUser={handleAddUser}
       />
+
+      {/* Toast Container */}
+      <ToastContainer />
     </div>
   );
 };

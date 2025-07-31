@@ -39,7 +39,7 @@ const PhenikaaLogin = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:8081/api/auth/login",
+        "http://localhost:8080/api/auth/login",
         { username, password, role }
       );
 
@@ -95,19 +95,22 @@ const PhenikaaLogin = () => {
         role
       );
 
-      if (userRole === "ADMIN") {
-        console.log("Chuyển hướng đến /admin/dashboard");
-        window.location.href = "/admin/dashboard";
-      } else if (userRole === "TEACHER") {
-        console.log("Chuyển hướng đến /lecturer/home");
-        window.location.href = "/lecturer/home";
-      } else if (userRole === "USER") {
-        console.log("Chuyển hướng đến /student/home");
-        window.location.href = "/student/home";
-      } else {
-        console.log("Chuyển hướng đến /home (default)");
-        window.location.href = "/home";
-      }
+      // Thêm delay 1.5 giây trước khi chuyển hướng
+      setTimeout(() => {
+        if (userRole === "ADMIN") {
+          console.log("Chuyển hướng đến /admin/dashboard");
+          navigate("/admin/dashboard");
+        } else if (userRole === "TEACHER") {
+          console.log("Chuyển hướng đến /lecturer/home");
+          navigate("/lecturer/home");
+        } else if (userRole === "USER") {
+          console.log("Chuyển hướng đến /student/home");
+          navigate("/student/home");
+        } else {
+          console.log("Chuyển hướng đến /home (default)");
+          navigate("/home");
+        }
+      }, 1500);
     } catch (err) {
       let errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
 
@@ -451,7 +454,7 @@ const PhenikaaLogin = () => {
               style={{ animationDelay: "0.4s", position: "relative" }}
               disabled={loading}
             >
-              Đăng nhập
+              {loading ? "Đang xử lý..." : "Đăng nhập"}
               {loading && (
                 <span className="spinner" style={{ marginLeft: 20 }}></span>
               )}

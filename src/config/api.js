@@ -7,7 +7,7 @@ export const APP_CONFIG = {
 
 export const API_URL = {
   BASE_URL: "http://localhost:8080",
-}
+};
 
 // Academic Year API Configuration
 export const ACADEMIC_YEAR_API_CONFIG = {
@@ -23,6 +23,9 @@ export const TOPIC_API_CONFIG = {
 export const API_ENDPOINTS = {
   // Academic Year Management
   ACADEMIC_YEAR_LIST: "/internal/listAcademicYear",
+
+  // Admin Permission
+  SAVE_USER: "/api/admin/saveUser",
 
   // Teacher Topic Management
   CREATE_TOPIC: `${TOPIC_API_CONFIG.BASE_URL}/api/lecturer/thesis/createTopic`,
