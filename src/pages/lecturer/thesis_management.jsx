@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/pages/lecturer/thesis_management.css";
-import topicService from "../../services/topicService";
-import academicYearService from "../../services/academicYearService";
+import topicService from "../../services/topic.service";
+import academicYearService from "../../services/academic-year.service";
 
 const ThesisManagement = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);

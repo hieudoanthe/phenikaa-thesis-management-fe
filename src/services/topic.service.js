@@ -1,6 +1,5 @@
+import { apiPost, apiGet, apiPut, apiDelete } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
-import axios from "axios";
-import { getToken } from "../auth/authUtils";
 
 class TopicService {
   /**
@@ -13,34 +12,17 @@ class TopicService {
       console.log("Đang gọi API createTopic với dữ liệu:", topicData);
       console.log("API URL:", API_ENDPOINTS.CREATE_TOPIC);
 
-      const token = getToken();
-      const headers = {
-        "Content-Type": "application/json",
-      };
+      const response = await apiPost(API_ENDPOINTS.CREATE_TOPIC, topicData);
 
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await axios.post(API_ENDPOINTS.CREATE_TOPIC, topicData, {
-        headers,
-        timeout: 10000,
-      });
-
-      console.log("API createTopic response:", response.data);
+      console.log("API createTopic response:", response);
 
       return {
         success: true,
-        data: response.data,
+        data: response,
         message: "Tạo đề tài thành công",
       };
     } catch (error) {
       console.error("Lỗi khi tạo topic:", error);
-
-      if (error.response) {
-        console.error("Error response:", error.response.data);
-        console.error("Error status:", error.response.status);
-      }
 
       return {
         success: false,
@@ -57,22 +39,11 @@ class TopicService {
    */
   async getTopicList(params = {}) {
     try {
-      const token = getToken();
-      const headers = {};
-
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await axios.get(API_ENDPOINTS.GET_TOPIC_LIST, {
-        params,
-        headers,
-        timeout: 10000,
-      });
+      const response = await apiGet(API_ENDPOINTS.GET_TOPIC_LIST, params);
 
       return {
         success: true,
-        data: response.data,
+        data: response,
         message: "Lấy danh sách đề tài thành công",
       };
     } catch (error) {
@@ -93,20 +64,10 @@ class TopicService {
    */
   async editTopic(topicData) {
     try {
-      const token = getToken();
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      const response = await axios.post(API_ENDPOINTS.EDIT_TOPIC, topicData, {
-        headers,
-        timeout: 10000,
-      });
+      const response = await apiPost(API_ENDPOINTS.EDIT_TOPIC, topicData);
       return {
         success: true,
-        data: response.data,
+        data: response,
         message: "Sửa đề tài thành công",
       };
     } catch (error) {
@@ -126,26 +87,11 @@ class TopicService {
    */
   async updateTopic(topicId, topicData) {
     try {
-      const token = getToken();
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await axios.put(
-        `${API_ENDPOINTS.UPDATE_TOPIC}`, topicData,
-        {
-          headers,
-          timeout: 10000,
-        }
-      );
+      const response = await apiPut(API_ENDPOINTS.UPDATE_TOPIC, topicData);
 
       return {
         success: true,
-        data: response.data,
+        data: response,
         message: "Cập nhật đề tài thành công",
       };
     } catch (error) {
@@ -166,24 +112,13 @@ class TopicService {
    */
   async deleteTopic(topicId) {
     try {
-      const token = getToken();
-      const headers = {};
-
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await axios.delete(
-        `${API_ENDPOINTS.DELETE_TOPIC}?topicId=${topicId}`,
-        {
-          headers,
-          timeout: 10000,
-        }
+      const response = await apiDelete(
+        `${API_ENDPOINTS.DELETE_TOPIC}?topicId=${topicId}`
       );
 
       return {
         success: true,
-        data: response.data,
+        data: response,
         message: "Xóa đề tài thành công",
       };
     } catch (error) {

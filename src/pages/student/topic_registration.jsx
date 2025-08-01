@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/pages/student/topic_registration.css";
-import registrationService from "../../services/registrationService";
+import registrationService from "../../services/registration.service";
 
 const difficultyMap = {
   ADVANCED: { label: "Khó", class: "advanced" },
@@ -58,7 +58,6 @@ const TopicRegistration = () => {
       const res = await registrationService.registerTopic(topicId);
       console.log("Kết quả đăng ký:", res);
       alert(res.message || "Đăng ký thành công");
-      
     } catch (err) {
       alert("Đã xảy ra lỗi khi đăng ký đề tài");
     } finally {

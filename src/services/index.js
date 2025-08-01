@@ -1,7 +1,10 @@
 // Export tất cả services
-export { default as authService } from "./authService";
-export { default as academicYearService } from "./academicYearService";
+export { default as authService } from "./auth.service";
+export { default as academicYearService } from "./academic-year.service";
 export { default as userService } from "./user.service";
+export { default as topicService } from "./topic.service";
+export { default as registrationService } from "./registration.service";
+export { suggestTopicForStudent } from "./suggest.service";
 
 // Export HTTP clients
 export { default as mainHttpClient } from "./mainHttpClient";

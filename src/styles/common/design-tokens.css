@@ -1,0 +1,605 @@
+/* ========================================
+   DESIGN TOKENS - PHENIKAA THESIS MANAGEMENT
+   ======================================== */
+
+:root {
+  /* ========================================
+     COLOR PALETTE
+     ======================================== */
+
+  /* Primary Colors */
+  --color-primary: #ff6600;
+  --color-primary-hover: #e65c00;
+  --color-primary-light: #ff8533;
+  --color-primary-dark: #cc5200;
+
+  /* Secondary Colors */
+  --color-secondary: #23395d;
+  --color-secondary-hover: #1a2a45;
+  --color-secondary-light: #394a7c;
+  --color-secondary-dark: #0f1a2e;
+
+  /* Neutral Colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-success-light: #d4edda;
+  --color-success-dark: #059669;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --color-warning-dark: #d97706;
+  --color-error: #ef4444;
+  --color-error-light: #f8d7da;
+  --color-error-dark: #dc2626;
+  --color-info: #3b82f6;
+  --color-info-light: #dbeafe;
+  --color-info-dark: #1d4ed8;
+
+  /* Background Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f6f8fb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-bg-dark: #1f2937;
+  --color-bg-card: #ffffff;
+  --color-bg-sidebar: #394a7c;
+  --color-bg-navbar: #ffffff;
+
+  /* Text Colors */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
+  --color-text-muted: #6b7280;
+
+  /* Border Colors */
+  --color-border-primary: #d1d5db;
+  --color-border-secondary: #e5e7eb;
+  --color-border-focus: #ff6600;
+  --color-border-error: #ef4444;
+  --color-border-success: #10b981;
+
+  /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+
+  /* Font Families */
+  --font-family-primary: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-family-secondary: Arial, sans-serif;
+  --font-family-mono: "Courier New", monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
+  --font-size-5xl: 3rem; /* 48px */
+
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+
+  /* ========================================
+     SPACING
+     ======================================== */
+
+  --spacing-0: 0;
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-2: 0.5rem; /* 8px */
+  --spacing-3: 0.75rem; /* 12px */
+  --spacing-4: 1rem; /* 16px */
+  --spacing-5: 1.25rem; /* 20px */
+  --spacing-6: 1.5rem; /* 24px */
+  --spacing-8: 2rem; /* 32px */
+  --spacing-10: 2.5rem; /* 40px */
+  --spacing-12: 3rem; /* 48px */
+  --spacing-16: 4rem; /* 64px */
+  --spacing-20: 5rem; /* 80px */
+  --spacing-24: 6rem; /* 96px */
+
+  /* ========================================
+     BORDER RADIUS
+     ======================================== */
+
+  --border-radius-none: 0;
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  --border-radius-xl: 12px;
+  --border-radius-2xl: 14px;
+  --border-radius-3xl: 16px;
+  --border-radius-full: 50%;
+
+  /* ========================================
+     BOX SHADOWS
+     ======================================== */
+
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* Custom Shadows */
+  --shadow-card: 0 2px 8px rgba(35, 57, 93, 0.07);
+  --shadow-card-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+  --shadow-modal: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-focus: 0 0 0 3px rgba(255, 102, 0, 0.1);
+
+  /* ========================================
+     TRANSITIONS
+     ======================================== */
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-slower: 0.5s ease;
+
+  /* ========================================
+     Z-INDEX
+     ======================================== */
+
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+
+  /* ========================================
+     LAYOUT
+     ======================================== */
+
+  /* Container */
+  --container-max-width: 1200px;
+  --container-padding: 1rem;
+
+  /* Sidebar */
+  --sidebar-width: 250px;
+  --sidebar-width-collapsed: 64px;
+
+  /* Header */
+  --header-height: 64px;
+
+  /* ========================================
+     COMPONENT SPECIFIC
+     ======================================== */
+
+  /* Button */
+  --button-height-sm: 32px;
+  --button-height-md: 40px;
+  --button-height-lg: 48px;
+  --button-padding-x: 1rem;
+  --button-padding-y: 0.5rem;
+
+  /* Input */
+  --input-height: 44px;
+  --input-padding-x: 0.75rem;
+  --input-padding-y: 0.5rem;
+  --input-border-width: 1px;
+
+  /* Card */
+  --card-padding: 1.5rem;
+  --card-border-width: 1px;
+
+  /* Modal */
+  --modal-padding: 1.5rem;
+  --modal-border-radius: 12px;
+  --modal-backdrop-opacity: 0.5;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* Color Utilities */
+.text-primary {
+  color: var(--color-primary) !important;
+}
+.text-secondary {
+  color: var(--color-secondary) !important;
+}
+.text-success {
+  color: var(--color-success) !important;
+}
+.text-warning {
+  color: var(--color-warning) !important;
+}
+.text-error {
+  color: var(--color-error) !important;
+}
+.text-info {
+  color: var(--color-info) !important;
+}
+.text-muted {
+  color: var(--color-text-muted) !important;
+}
+.text-inverse {
+  color: var(--color-text-inverse) !important;
+}
+
+.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+.bg-secondary {
+  background-color: var(--color-secondary) !important;
+}
+.bg-success {
+  background-color: var(--color-success) !important;
+}
+.bg-warning {
+  background-color: var(--color-warning) !important;
+}
+.bg-error {
+  background-color: var(--color-error) !important;
+}
+.bg-info {
+  background-color: var(--color-info) !important;
+}
+.bg-card {
+  background-color: var(--color-bg-card) !important;
+}
+.bg-sidebar {
+  background-color: var(--color-bg-sidebar) !important;
+}
+
+.border-primary {
+  border-color: var(--color-border-primary) !important;
+}
+.border-secondary {
+  border-color: var(--color-border-secondary) !important;
+}
+.border-focus {
+  border-color: var(--color-border-focus) !important;
+}
+.border-error {
+  border-color: var(--color-border-error) !important;
+}
+.border-success {
+  border-color: var(--color-border-success) !important;
+}
+
+/* Typography Utilities */
+.font-primary {
+  font-family: var(--font-family-primary) !important;
+}
+.font-secondary {
+  font-family: var(--font-family-secondary) !important;
+}
+.font-mono {
+  font-family: var(--font-family-mono) !important;
+}
+
+.text-xs {
+  font-size: var(--font-size-xs) !important;
+}
+.text-sm {
+  font-size: var(--font-size-sm) !important;
+}
+.text-base {
+  font-size: var(--font-size-base) !important;
+}
+.text-lg {
+  font-size: var(--font-size-lg) !important;
+}
+.text-xl {
+  font-size: var(--font-size-xl) !important;
+}
+.text-2xl {
+  font-size: var(--font-size-2xl) !important;
+}
+.text-3xl {
+  font-size: var(--font-size-3xl) !important;
+}
+.text-4xl {
+  font-size: var(--font-size-4xl) !important;
+}
+.text-5xl {
+  font-size: var(--font-size-5xl) !important;
+}
+
+.font-light {
+  font-weight: var(--font-weight-light) !important;
+}
+.font-normal {
+  font-weight: var(--font-weight-normal) !important;
+}
+.font-medium {
+  font-weight: var(--font-weight-medium) !important;
+}
+.font-semibold {
+  font-weight: var(--font-weight-semibold) !important;
+}
+.font-bold {
+  font-weight: var(--font-weight-bold) !important;
+}
+.font-extrabold {
+  font-weight: var(--font-weight-extrabold) !important;
+}
+
+.leading-tight {
+  line-height: var(--line-height-tight) !important;
+}
+.leading-normal {
+  line-height: var(--line-height-normal) !important;
+}
+.leading-relaxed {
+  line-height: var(--line-height-relaxed) !important;
+}
+
+.tracking-tight {
+  letter-spacing: var(--letter-spacing-tight) !important;
+}
+.tracking-normal {
+  letter-spacing: var(--letter-spacing-normal) !important;
+}
+.tracking-wide {
+  letter-spacing: var(--letter-spacing-wide) !important;
+}
+
+/* Spacing Utilities */
+.p-0 {
+  padding: var(--spacing-0) !important;
+}
+.p-1 {
+  padding: var(--spacing-1) !important;
+}
+.p-2 {
+  padding: var(--spacing-2) !important;
+}
+.p-3 {
+  padding: var(--spacing-3) !important;
+}
+.p-4 {
+  padding: var(--spacing-4) !important;
+}
+.p-5 {
+  padding: var(--spacing-5) !important;
+}
+.p-6 {
+  padding: var(--spacing-6) !important;
+}
+.p-8 {
+  padding: var(--spacing-8) !important;
+}
+
+.m-0 {
+  margin: var(--spacing-0) !important;
+}
+.m-1 {
+  margin: var(--spacing-1) !important;
+}
+.m-2 {
+  margin: var(--spacing-2) !important;
+}
+.m-3 {
+  margin: var(--spacing-3) !important;
+}
+.m-4 {
+  margin: var(--spacing-4) !important;
+}
+.m-5 {
+  margin: var(--spacing-5) !important;
+}
+.m-6 {
+  margin: var(--spacing-6) !important;
+}
+.m-8 {
+  margin: var(--spacing-8) !important;
+}
+
+/* Border Radius Utilities */
+.rounded-none {
+  border-radius: var(--border-radius-none) !important;
+}
+.rounded-sm {
+  border-radius: var(--border-radius-sm) !important;
+}
+.rounded-md {
+  border-radius: var(--border-radius-md) !important;
+}
+.rounded-lg {
+  border-radius: var(--border-radius-lg) !important;
+}
+.rounded-xl {
+  border-radius: var(--border-radius-xl) !important;
+}
+.rounded-2xl {
+  border-radius: var(--border-radius-2xl) !important;
+}
+.rounded-3xl {
+  border-radius: var(--border-radius-3xl) !important;
+}
+.rounded-full {
+  border-radius: var(--border-radius-full) !important;
+}
+
+/* Shadow Utilities */
+.shadow-none {
+  box-shadow: var(--shadow-none) !important;
+}
+.shadow-sm {
+  box-shadow: var(--shadow-sm) !important;
+}
+.shadow-md {
+  box-shadow: var(--shadow-md) !important;
+}
+.shadow-lg {
+  box-shadow: var(--shadow-lg) !important;
+}
+.shadow-xl {
+  box-shadow: var(--shadow-xl) !important;
+}
+.shadow-2xl {
+  box-shadow: var(--shadow-2xl) !important;
+}
+.shadow-card {
+  box-shadow: var(--shadow-card) !important;
+}
+.shadow-card-hover {
+  box-shadow: var(--shadow-card-hover) !important;
+}
+.shadow-modal {
+  box-shadow: var(--shadow-modal) !important;
+}
+.shadow-dropdown {
+  box-shadow: var(--shadow-dropdown) !important;
+}
+.shadow-focus {
+  box-shadow: var(--shadow-focus) !important;
+}
+
+/* Transition Utilities */
+.transition-fast {
+  transition: all var(--transition-fast) !important;
+}
+.transition-normal {
+  transition: all var(--transition-normal) !important;
+}
+.transition-slow {
+  transition: all var(--transition-slow) !important;
+}
+.transition-slower {
+  transition: all var(--transition-slower) !important;
+}
+
+/* ========================================
+   COMPONENT MIXINS (for reference)
+   ======================================== */
+
+/* Button Mixin */
+.btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-decoration: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-secondary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-secondary-hover);
+  border-color: var(--color-secondary-hover);
+}
+
+/* Input Mixin */
+.input-base {
+  display: block;
+  width: 100%;
+  height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  border: var(--input-border-width) solid var(--color-border-primary);
+  border-radius: var(--border-radius-lg);
+  transition: border-color var(--transition-normal),
+    box-shadow var(--transition-normal);
+}
+
+.input-base:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Card Mixin */
+.card-base {
+  background-color: var(--color-bg-card);
+  border: var(--card-border-width) solid var(--color-border-secondary);
+  border-radius: var(--border-radius-xl);
+  padding: var(--card-padding);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-normal);
+}
+
+.card-base:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Modal Mixin */
+.modal-base {
+  background-color: var(--color-bg-primary);
+  border-radius: var(--modal-border-radius);
+  padding: var(--modal-padding);
+  box-shadow: var(--shadow-modal);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.modal-overlay-base {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, var(--modal-backdrop-opacity));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-index-modal-backdrop);
+}

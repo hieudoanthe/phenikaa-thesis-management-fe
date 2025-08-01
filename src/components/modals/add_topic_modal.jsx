@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/pages/admin/style.css";
 import PropTypes from "prop-types";
-import academicYearService from "../../services/academicYearService";
-import topicService from "../../services/topicService";
+import academicYearService from "../../services/academic-year.service";
+import topicService from "../../services/topic.service";
 
 const AddTopicModal = ({ open, onClose, onSubmit }) => {
   // Form ban đầu

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import "../../styles/pages/admin/style.css";
 
@@ -16,6 +16,19 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
     roles: [],
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  // Reset form khi modal đóng
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        fullName: "",
+        username: "",
+        password: "",
+        roles: [],
+      });
+      setShowPassword(false);
+    }
+  }, [isOpen]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -188,7 +201,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   isMulti={true}
                   closeMenuOnSelect={false}
                   blurInputOnSelect={false}
-                  hideSelectedOptions={false}
+                  hideSelectedOptions={true}
                   placeholder="Chọn vai trò..."
                   styles={{
                     control: (base) => ({

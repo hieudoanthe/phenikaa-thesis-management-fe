@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AddTopicModal from "../../components/modals/add_topic_modal";
-import topicService from "../../services/topicService";
+import topicService from "../../services/topic.service";
 import "../../styles/pages/admin/style.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 

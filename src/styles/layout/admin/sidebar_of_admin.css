@@ -4,8 +4,12 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-  color: white;
+  background: linear-gradient(
+    135deg,
+    var(--color-secondary) 0%,
+    var(--color-secondary-light) 100%
+  );
+  color: var(--color-text-inverse);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -14,29 +18,33 @@
 .sidebar-header {
   padding: 1.28rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-secondary) 0%,
+    var(--color-secondary-light) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .sidebar-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: white;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-inverse);
   margin: 0;
   letter-spacing: 0.5px;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-slow);
 }
 
 .collapse-btn {
   background: none;
   border: none;
-  color: white;
+  color: var(--color-text-inverse);
   cursor: pointer;
   padding: 6px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-slow);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,7 +56,7 @@
 }
 
 .collapse-btn svg {
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-slow);
 }
 
 /* Sidebar Navigation */
@@ -74,21 +82,21 @@
   padding: 0.875rem 1.5rem;
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all var(--transition-normal);
   position: relative;
   border-left: 3px solid transparent;
 }
 
 .menu-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
-  color: white;
+  color: var(--color-text-inverse);
   border-left-color: rgba(255, 255, 255, 0.3);
 }
 
 .menu-item.active .menu-link {
   background-color: rgba(255, 255, 255, 0.15);
-  color: white;
-  border-left-color: #f59e0b;
+  color: var(--color-text-inverse);
+  border-left-color: var(--color-warning);
 }
 
 .menu-icon {
@@ -102,12 +110,12 @@
 }
 
 .menu-text {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-slow);
 }
 
 /* Collapsed state */
@@ -157,18 +165,18 @@
   left: 100%;
   top: 50%;
   transform: translateY(-50%);
-  background-color: #1f2937;
-  color: white;
+  background-color: var(--color-gray-800);
+  color: var(--color-text-inverse);
   padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-xs);
   white-space: nowrap;
-  z-index: 1000;
+  z-index: var(--z-index-tooltip);
   margin-left: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-dropdown);
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease;
+  transition: all var(--transition-normal);
 }
 
 .admin-sidebar.collapsed .menu-item[data-tooltip]:hover::after {
@@ -213,7 +221,7 @@
 /* Smooth animations */
 .menu-link {
   transform: translateX(0);
-  transition: all 0.2s ease;
+  transition: all var(--transition-normal);
 }
 
 .menu-link:hover {
@@ -256,7 +264,7 @@
   }
 
   .menu-item.active .menu-link {
-    border-left-color: #ffffff;
+    border-left-color: var(--color-text-inverse);
   }
 }
 

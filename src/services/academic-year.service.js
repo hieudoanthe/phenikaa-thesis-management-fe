@@ -1,6 +1,5 @@
-import axios from "axios";
-import { API_ENDPOINTS, ACADEMIC_YEAR_API_CONFIG } from "../config/api";
-import { getToken } from "../auth/authUtils";
+import { apiGet } from "./mainHttpClient";
+import { API_ENDPOINTS } from "../config/api";
 
 /**
  * Service xử lý Academic Year
@@ -21,30 +20,18 @@ class AcademicYearService {
 
       console.log(
         "Đang gọi API:",
-        `${ACADEMIC_YEAR_API_CONFIG.BASE_URL}${API_ENDPOINTS.ACADEMIC_YEAR_LIST}`,
+        API_ENDPOINTS.ACADEMIC_YEAR_LIST,
         "với params:",
         params
       );
 
-      const token = getToken();
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      const response = await axios.get(
-        `${ACADEMIC_YEAR_API_CONFIG.BASE_URL}${API_ENDPOINTS.ACADEMIC_YEAR_LIST}`,
-        {
-          params,
-          headers, // Thêm header Authorization nếu có
-          timeout: 10000,
-        }
-      );
+      const response = await apiGet(API_ENDPOINTS.ACADEMIC_YEAR_LIST, params);
 
-      console.log("API response:", response.data);
+      console.log("API response:", response);
 
       // Kiểm tra response có phải array không
-      if (!Array.isArray(response.data)) {
-        console.error("API response không phải array:", response.data);
+      if (!Array.isArray(response)) {
+        console.error("API response không phải array:", response);
         return {
           success: false,
           error: "Invalid response format",
@@ -53,7 +40,7 @@ class AcademicYearService {
       }
 
       // Chuyển đổi cấu trúc từ API response sang format cần thiết
-      const academicYears = response.data.map((item) => ({
+      const academicYears = response.map((item) => ({
         id: item.academicYearId,
         name: item.yearName,
       }));
@@ -66,7 +53,6 @@ class AcademicYearService {
     } catch (error) {
       console.error("Lỗi API call chi tiết:", error);
       console.error("Error message:", error.message);
-      console.error("Error response:", error.response);
 
       return {
         success: false,
@@ -84,16 +70,13 @@ class AcademicYearService {
    */
   async getAcademicYear(yearId, yearName) {
     try {
-      const response = await axios.get(
-        `${ACADEMIC_YEAR_API_CONFIG.BASE_URL}${API_ENDPOINTS.ACADEMIC_YEAR_DETAIL}`,
-        {
-          params: { yearId, yearName },
-          timeout: 10000,
-        }
-      );
+      const response = await apiGet(API_ENDPOINTS.ACADEMIC_YEAR_DETAIL, {
+        yearId,
+        yearName,
+      });
       return {
         success: true,
-        data: response.data,
+        data: response,
         message: "Lấy thông tin năm học thành công",
       };
     } catch (error) {

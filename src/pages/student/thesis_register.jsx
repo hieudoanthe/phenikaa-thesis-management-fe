@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "../../styles/pages/student/thesis_register.css";
-import { suggestTopicForStudent } from "../../services/suggestService";
+import { suggestTopicForStudent } from "../../services/suggest.service";
 
 const lecturersMock = [
   {

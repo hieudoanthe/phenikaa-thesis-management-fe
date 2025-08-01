@@ -1,26 +1,29 @@
 * {
   box-sizing: border-box;
 }
+
 body,
 html,
 #root {
   margin: 0;
   height: 100%;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f3f4f6;
+  font-family: var(--font-family-primary);
+  background-color: var(--color-bg-tertiary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 .container {
   display: flex;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
 }
+
 .left-side {
   flex: 1;
-  background-color: #2c3e72;
-  color: white;
+  background-color: var(--color-secondary);
+  color: var(--color-text-inverse);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -30,16 +33,18 @@ html,
   position: relative;
   min-width: 380px;
 }
+
 .left-side h2 {
   margin: 0;
-  font-weight: 700;
-  font-size: 2.6rem;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-4xl);
   line-height: 3rem;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--letter-spacing-wide);
   max-width: none;
   margin-bottom: 3rem;
   outline: none;
 }
+
 .students-image {
   width: 100%;
   max-width: 520px;
@@ -47,18 +52,20 @@ html,
   outline: none;
   pointer-events: none;
 }
+
 .right-side {
   flex: 1;
-  background-color: #f9fafb;
+  background-color: var(--color-gray-50);
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 4rem 1.5rem;
   min-width: 380px;
 }
+
 .login-card {
-  background: white;
-  border-radius: 12px;
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-xl);
   box-shadow: 0 10px 40px rgba(7, 47, 95, 0.1);
   width: 100%;
   max-width: 450px;
@@ -67,41 +74,48 @@ html,
   flex-direction: column;
   align-items: center;
 }
+
 .logo {
   margin-bottom: 1.5rem;
 }
+
 .logo img {
   width: 200px;
   height: auto;
   pointer-events: none;
   outline: none;
 }
+
 .title {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   font-size: 1.15rem;
   margin-bottom: 0.3rem;
   outline: none;
-  color: #111827;
+  color: var(--color-text-primary);
 }
+
 .info-text {
-  font-size: 0.875rem;
-  color: #b91c1c;
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
   font-style: italic;
   text-align: center;
   margin-bottom: 1.5rem;
   outline: none;
 }
+
 form {
   width: 100%;
 }
+
 label {
   display: block;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--color-gray-700);
   margin-bottom: 0.5rem;
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   outline: none;
 }
+
 select,
 input[type="text"],
 input[type="password"],
@@ -109,11 +123,11 @@ input[type="email"] {
   width: 100%;
   padding: 12px 14px;
   font-size: 0.95rem;
-  border: 1.5px solid #d1d5db;
-  border-radius: 8px;
+  border: 1.5px solid var(--color-border-primary);
+  border-radius: var(--border-radius-lg);
   outline-offset: 2px;
-  transition: all 0.2s ease;
-  background-color: #ffffff;
+  transition: all var(--transition-normal);
+  background-color: var(--color-bg-primary);
 }
 
 .input-group {
@@ -126,10 +140,10 @@ input[type="email"] {
   top: 12px;
   left: 14px;
   font-size: 0.95rem;
-  color: #6b7280;
-  transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal);
   pointer-events: none;
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
   padding: 0 4px;
   margin: 0;
 }
@@ -139,10 +153,10 @@ input[type="email"] {
   top: 12px;
   left: 14px;
   font-size: 0.95rem;
-  color: #6b7280;
-  transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal);
   pointer-events: none;
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
   padding: 0 4px;
   margin: 0;
   z-index: 1;
@@ -153,17 +167,17 @@ input[type="email"] {
 .input-group select:focus + label,
 .input-group select:not([value=""]) + label {
   top: -8px;
-  font-size: 0.75rem;
-  color: #2c3e72;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  color: var(--color-secondary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .input-group .password-container input:focus ~ label,
 .input-group .password-container input:not(:placeholder-shown) ~ label {
   top: -8px;
-  font-size: 0.75rem;
-  color: #2c3e72;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  color: var(--color-secondary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .input-group .password-container + label {
@@ -171,10 +185,10 @@ input[type="email"] {
   top: 12px;
   left: 14px;
   font-size: 0.95rem;
-  color: #6b7280;
-  transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-normal);
   pointer-events: none;
-  background-color: #ffffff;
+  background-color: var(--color-bg-primary);
   padding: 0 4px;
   margin: 0;
   z-index: 1;
@@ -183,26 +197,27 @@ input[type="email"] {
 .input-group .password-container input:focus + label,
 .input-group .password-container input:not(:placeholder-shown) + label {
   top: -8px;
-  font-size: 0.75rem;
-  color: #2563eb;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  color: var(--color-info);
+  font-weight: var(--font-weight-semibold);
 }
 
 .input-group input:focus,
 .input-group select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  border-color: var(--color-info);
+  box-shadow: var(--shadow-focus);
 }
 
 .input-group .password-container input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  border-color: var(--color-info);
+  box-shadow: var(--shadow-focus);
 }
 
 .password-container {
   position: relative;
   width: 100%;
 }
+
 .show-password-toggle {
   position: absolute;
   right: 8px;
@@ -210,84 +225,94 @@ input[type="email"] {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
-  color: #6b7280;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
   outline: none;
 }
+
 button[type="submit"] {
   margin-top: 1.5rem;
-  background-color: #1e3286;
+  background-color: var(--color-secondary);
   border: none;
-  color: white;
+  color: var(--color-text-inverse);
   width: 100%;
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
   padding: 12px 0;
-  border-radius: 6px;
+  border-radius: var(--border-radius-md);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color var(--transition-slow);
   user-select: none;
   -webkit-user-select: none;
 }
+
 button[type="submit"]:hover {
-  background-color: #163273;
+  background-color: var(--color-secondary-hover);
 }
+
 .links {
   display: flex;
   justify-content: space-between;
   gap: 2rem;
   margin-top: 1.5rem;
   font-size: 0.95rem;
-  color: #2563eb;
+  color: var(--color-info);
   width: 100%;
   padding: 0 1.2rem;
 }
+
 .link-button {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   padding: 0;
   margin: 0;
-  transition: color 0.2s;
+  transition: color var(--transition-normal);
 }
+
 .link-button:hover {
-  color: #1e3286;
+  color: var(--color-secondary);
 }
 
 .footer-text {
   font-size: 0.7rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-top: 2rem;
   text-align: center;
 }
+
 .footer-text strong {
-  font-weight: 600;
-  color: #111827;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
 }
+
 .footer-address {
   font-size: 0.75rem;
   margin-top: 0.2rem;
-  color: #374151;
+  color: var(--color-gray-700);
   text-align: center;
 }
+
 .social-icons {
   margin-top: 1.8rem;
   display: flex;
   justify-content: center;
   gap: 1.8rem;
 }
+
 .social-icon {
   width: 24px;
   height: 24px;
   cursor: pointer;
-  fill: #374151;
-  transition: fill 0.3s ease;
+  fill: var(--color-gray-700);
+  transition: fill var(--transition-slow);
   user-select: none;
   -webkit-user-select: none;
 }
+
 .social-icon:hover {
-  fill: #1e3286;
+  fill: var(--color-secondary);
 }
 
 .fade-in {
@@ -304,16 +329,17 @@ button[type="submit"]:hover {
 }
 
 .spinner {
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #fff;
-  border-right: 2px solid #fff;
-  border-radius: 50%;
+  border: 2px solid var(--color-gray-100);
+  border-top: 2px solid var(--color-text-inverse);
+  border-right: 2px solid var(--color-text-inverse);
+  border-radius: var(--border-radius-full);
   width: 18px;
   height: 18px;
   display: inline-block;
   animation: spin 0.7s linear infinite;
   vertical-align: middle;
 }
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -343,7 +369,7 @@ button[type="submit"]:hover {
   .left-side h2 {
     max-width: none;
     margin-bottom: 2rem;
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
     line-height: 1.8rem;
   }
   .students-image {
@@ -356,7 +382,7 @@ button[type="submit"]:hover {
   }
   .login-card {
     max-width: 100%;
-    border-radius: 10px;
+    border-radius: var(--border-radius-xl);
     padding: 2rem 1.5rem 2.5rem;
   }
   .left-side {

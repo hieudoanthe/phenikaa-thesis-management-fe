@@ -1,8 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
-import Home from "./pages/user/home.jsx";
-import ThesisList from "./pages/thesis/index.jsx";
 import Dashboard from "./pages/admin/dashboard.jsx";
 import TopicManagement from "./pages/admin/topic_management.jsx";
 import UserManagement from "./pages/admin/user_management.jsx";
@@ -11,7 +9,6 @@ import LecturerDashboard from "./pages/lecturer/dasboard.jsx";
 import ThesisManagement from "./pages/lecturer/thesis_management.jsx";
 import AssignmentManagement from "./pages/lecturer/assignment_management.jsx";
 import LecturerLayout from "./components/layout/lecturer/lecturer_layout.jsx";
-import PrivateRoute from "./routers/PrivateRoute.jsx";
 import LecturerRoute from "./routers/LecturerRoute.jsx";
 import StudentRoute from "./routers/StudentRoute.jsx";
 import StudentLayout from "./components/layout/student/student_layout.jsx";
@@ -24,7 +21,7 @@ import TopicRegistration from "./pages/student/topic_registration.jsx";
 import StudentHome from "./pages/student/home.jsx";
 
 // Import CSS
-import "./styles/common/placeholder.css";
+import "./styles/common/index.js";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/admin_layout.jsx";
 
@@ -36,7 +33,6 @@ createRoot(document.getElementById("root")).render(
           <Routes>
             {/* Route công khai - trang đăng nhập */}
             <Route path="/" element={<App />} />
-
 
             {/* Route yêu cầu xác thực - Lecturer (chỉ cho TEACHER role) */}
             <Route
