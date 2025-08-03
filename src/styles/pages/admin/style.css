@@ -1,4 +1,4 @@
-/* Sidebar hiện đại */
+/* Sidebar */
 .sidebar-modern {
   width: 250px;
   background: #394a7c;
@@ -37,7 +37,7 @@
 .sidebar-nav-modern li {
   display: flex;
   align-items: center;
-  gap: 16px; /* tăng từ 12px lên 16px hoặc lớn hơn nếu muốn */
+  gap: 16px;
   padding: 10px 18px;
   cursor: pointer;
   font-size: 1.08rem;
@@ -62,7 +62,7 @@
   font-size: 1.2rem;
   min-width: 22px;
   min-height: 22px;
-  margin-right: 14px; /* hoặc 12px, tuỳ ý bạn */
+  margin-right: 14px;
 }
 .sidebar-nav-modern li.active .sidebar-label {
   color: #fff;
@@ -74,7 +74,7 @@
   font-weight: 500;
 }
 
-/* Navbar hiện đại */
+/* Navbar */
 .navbar-modern {
   display: flex;
   justify-content: space-between;

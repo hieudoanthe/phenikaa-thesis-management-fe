@@ -5,27 +5,17 @@ export const APP_CONFIG = {
   DEBUG_MODE: import.meta.env.VITE_DEBUG_MODE === "true",
 };
 
-export const API_URL = {
-  BASE_URL: "http://localhost:8080",
-};
-
 // Academic Year API Configuration
 export const ACADEMIC_YEAR_API_CONFIG = {
   BASE_URL: "http://localhost:8087",
 };
 
-// Topic API Configuration
-export const TOPIC_API_CONFIG = {
-  BASE_URL: "http://localhost:8080",
-};
 
 // API Endpoints
 export const API_ENDPOINTS = {
   // Authentication
   LOGIN: "/api/auth/login",
-  REGISTER: "/api/auth/register",
   LOGOUT: "/api/auth/logout",
-  ME: "/api/auth/me",
   REFRESH: "/api/auth/refresh",
 
   // Academic Year Management
@@ -34,6 +24,7 @@ export const API_ENDPOINTS = {
 
   // Admin Permission
   SAVE_USER: "/api/admin/saveUser",
+  GET_USERS: "/api/admin/getUsers",
 
   // Teacher Topic Management
   CREATE_TOPIC: "/api/lecturer/thesis/createTopic",

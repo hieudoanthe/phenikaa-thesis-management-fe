@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import AddUserModal from "../../components/modals/add_user_modal";
 import { ToastContainer } from "../../components/common";
@@ -6,43 +6,19 @@ import { userService } from "../../services";
 import "../../styles/pages/admin/user_management.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const users = [
-  {
-    name: "Sarah Johnson",
-    role: "Student",
-    email: "sarah.j@university.edu",
-    status: "Hoạt động",
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  {
-    name: "Dr. Michael Chen",
-    role: "Lecturer",
-    email: "m.chen@university.edu",
-    status: "Hoạt động",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  {
-    name: "Prof. Emily Brown",
-    role: "Admin",
-    email: "e.brown@university.edu",
-    status: "Hoạt động",
-    avatar: "https://randomuser.me/api/portraits/women/65.jpg",
-  },
-  {
-    name: "James Wilson",
-    role: "Student",
-    email: "j.wilson@university.edu",
-    status: "Không hoạt động",
-    avatar: "https://randomuser.me/api/portraits/men/41.jpg",
-  },
-  {
-    name: "Dr. Lisa Anderson",
-    role: "Lecturer",
-    email: "l.anderson@university.edu",
-    status: "Hoạt động",
-    avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-  },
-];
+// Mapping roleIds sang tên hiển thị
+const roleMapping = {
+  1: "Sinh viên",
+  2: "Giảng viên",
+  3: "Quản trị viên",
+};
+
+// Mapping roleIds sang role value cho filter
+const roleValueMapping = {
+  1: "Student",
+  2: "Lecturer",
+  3: "Admin",
+};
 
 const statusClass = {
   "Hoạt động": "user-status active",
@@ -53,20 +29,79 @@ const roleOptions = [
   { value: "all", label: "Tất cả vai trò" },
   { value: "Student", label: "Sinh viên" },
   { value: "Lecturer", label: "Giảng viên" },
-  { value: "Admin", label: "Admin" },
+  { value: "Admin", label: "Quản trị viên" },
 ];
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch users từ API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await userService.getUsers();
+        console.log("API response:", response);
+
+        // Transform data từ API sang format hiển thị
+        const transformedUsers = response.map((user) => ({
+          userId: user.userId,
+          name: user.fullName,
+          username: user.username,
+          email: user.username, 
+          roleIds: user.roleIds,
+          status: user.status === 1 ? "Hoạt động" : "Không hoạt động",
+          avatar: `https://randomuser.me/api/portraits/${
+            Math.random() > 0.5 ? "men" : "women"
+          }/${Math.floor(Math.random() * 100)}.jpg`,
+        }));
+
+        setUsers(transformedUsers);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách users:", error);
+        setError("Không thể tải danh sách người dùng");
+        if (window.addToast) {
+          window.addToast("Lỗi khi tải danh sách người dùng!", "error");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Hàm helper để lấy role display từ roleIds
+  const getRoleDisplay = (roleIds) => {
+    if (!roleIds || roleIds.length === 0) return "Chưa phân quyền";
+
+    const roleNames = roleIds
+      .map((roleId) => roleMapping[roleId])
+      .filter(Boolean);
+    return roleNames.join(", ");
+  };
+
+  // Hàm helper để kiểm tra user có role tương ứng không
+  const hasRole = (userRoleIds, selectedRoleValue) => {
+    if (selectedRoleValue === "all") return true;
+
+    const roleId = Object.keys(roleValueMapping).find(
+      (key) => roleValueMapping[key] === selectedRoleValue
+    );
+
+    return userRoleIds.includes(parseInt(roleId));
+  };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole =
-      selectedRole.value === "all" || user.role === selectedRole.value;
+    const matchesRole = hasRole(user.roleIds, selectedRole.value);
     return matchesSearch && matchesRole;
   });
 
@@ -100,10 +135,11 @@ const UserManagement = () => {
 
       // Tạo user object mới cho UI
       const newUser = {
+        userId: response.userId || Date.now(), // Fallback nếu API không trả về userId
         name: userData.fullName,
         username: userData.username,
-        email: userData.username, // Giả sử username là email
-        role: userData.roles.join(", "), // Hiển thị tất cả roles
+        email: userData.username,
+        roleIds: userData.roleIds,
         status: "Hoạt động",
         avatar: `https://randomuser.me/api/portraits/${
           Math.random() > 0.5 ? "men" : "women"
@@ -112,8 +148,8 @@ const UserManagement = () => {
 
       console.log("User object mới:", newUser);
 
-      // Thêm vào danh sách users (trong thực tế sẽ gọi API)
-      users.push(newUser);
+      // Thêm vào danh sách users
+      setUsers((prevUsers) => [...prevUsers, newUser]);
 
       // Hiển thị thông báo thành công ngay lập tức
       if (window.addToast) {
@@ -134,6 +170,28 @@ const UserManagement = () => {
       throw error;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="user-management-container">
+        <div style={{ textAlign: "center", padding: "50px" }}>
+          <div className="loading-spinner"></div>
+          <p>Đang tải danh sách người dùng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="user-management-container">
+        <div style={{ textAlign: "center", padding: "50px" }}>
+          <p style={{ color: "red" }}>{error}</p>
+          <button onClick={() => window.location.reload()}>Thử lại</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="user-management-container">
@@ -218,7 +276,7 @@ const UserManagement = () => {
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user.email}>
+              <tr key={user.userId}>
                 <td>
                   <span className="user-mgmt-avatar-wrap">
                     <img
@@ -229,7 +287,7 @@ const UserManagement = () => {
                   </span>
                   <span className="user-mgmt-name">{user.name}</span>
                 </td>
-                <td>{user.role}</td>
+                <td>{getRoleDisplay(user.roleIds)}</td>
                 <td>{user.email}</td>
                 <td>
                   <span
@@ -261,7 +319,7 @@ const UserManagement = () => {
       {/* Footer */}
       <div className="table-footer">
         <div className="entries-info">
-          Hiển thị 1 đến {filteredUsers.length} trên {filteredUsers.length}
+          Hiển thị 1 đến {filteredUsers.length} trên {users.length}
           bản ghi
         </div>
         <div className="pagination">

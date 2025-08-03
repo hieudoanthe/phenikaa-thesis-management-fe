@@ -45,6 +45,11 @@ const AdminLayout = () => {
           title: "Quản lý nhiệm vụ",
           subtitle: "Phân công và theo dõi nhiệm vụ cho sinh viên",
         };
+      case "/admin/academic-year":
+        return {
+          title: "Quản lý năm học",
+          subtitle: "Quản lý và cấu hình các năm học trong hệ thống",
+        };
       case "/admin/defense-schedule":
         return {
           title: "Lịch bảo vệ",

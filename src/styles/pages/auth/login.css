@@ -242,8 +242,8 @@ button[type="submit"] {
   border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: background-color var(--transition-slow);
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 button[type="submit"]:hover {
@@ -307,8 +307,8 @@ button[type="submit"]:hover {
   cursor: pointer;
   fill: var(--color-gray-700);
   transition: fill var(--transition-slow);
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 .social-icon:hover {

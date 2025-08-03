@@ -19,11 +19,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ThesisRegister from "./pages/student/thesis_register.jsx";
 import TopicRegistration from "./pages/student/topic_registration.jsx";
 import StudentHome from "./pages/student/home.jsx";
-
-// Import CSS
-import "./styles/common/index.js";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/admin_layout.jsx";
+import ThesisTopicsManagement from "./pages/admin/thesis_topics_management.jsx";
+import AcademicYearManagement from "./pages/admin/academic_year_management.jsx";
+import DefenseSessionsSchedule from "./pages/admin/defense_sessions_schedule.jsx";
+// Import CSS
+import "./styles/common/index.js";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -140,7 +142,14 @@ createRoot(document.getElementById("root")).render(
               }
             >
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="topic-management" element={<TopicManagement />} />
+              <Route
+                path="thesis-topics-management"
+                element={<ThesisTopicsManagement />}
+              />
+              <Route
+                path="academic-year"
+                element={<AcademicYearManagement />}
+              />
               <Route path="user-management" element={<UserManagement />} />
               <Route
                 path="groups"
@@ -162,12 +171,7 @@ createRoot(document.getElementById("root")).render(
               />
               <Route
                 path="defense-schedule"
-                element={
-                  <PlaceholderPage
-                    title="Lịch Bảo vệ"
-                    description="Tính năng quản lý lịch bảo vệ đang được phát triển."
-                  />
-                }
+                element={<DefenseSessionsSchedule />}
               />
               <Route
                 path="statistics"
