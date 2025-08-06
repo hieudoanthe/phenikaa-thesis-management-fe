@@ -36,7 +36,7 @@ const LecturerRoute = ({ children }) => {
     if (userRole === "ADMIN") {
       return <Navigate to="/admin/dashboard" replace />;
     } else if (userRole === "USER") {
-      return <Navigate to="/home" replace />;
+      return <Navigate to="/student/home" replace />;
     } else {
       return <Navigate to="/" replace />;
     }

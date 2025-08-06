@@ -7,9 +7,8 @@ export const APP_CONFIG = {
 
 // Academic Year API Configuration
 export const ACADEMIC_YEAR_API_CONFIG = {
-  BASE_URL: "http://localhost:8087",
+  BASE_URL: "http://localhost:8080",
 };
-
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -19,8 +18,8 @@ export const API_ENDPOINTS = {
   REFRESH: "/api/auth/refresh",
 
   // Academic Year Management
-  ACADEMIC_YEAR_LIST: "/internal/listAcademicYear",
-  ACADEMIC_YEAR_DETAIL: "/internal/getAcademicYear",
+  ACADEMIC_YEAR_LIST: "/academic-config/listAcademicYear",
+  ACADEMIC_YEAR_DETAIL: "/academic-config/getAcademicYear",
 
   // Admin Permission
   SAVE_USER: "/api/admin/saveUser",
