@@ -28,6 +28,56 @@ export const getSessionKey = (key) => {
 };
 
 /**
+ * Lấy cookie value theo name
+ * @param {string} name - Tên cookie
+ * @returns {string|null}
+ */
+export const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null;
+};
+
+/**
+ * Set cookie với options
+ * @param {string} name - Tên cookie
+ * @param {string} value - Giá trị cookie
+ * @param {Object} options - Options (expires, path, secure, etc.)
+ */
+export const setCookie = (name, value, options = {}) => {
+  const {
+    expires = 7, // Mặc định 7 ngày
+    path = "/",
+    secure = window.location.protocol === "https:",
+    sameSite = "Lax",
+  } = options;
+
+  let cookieString = `${name}=${value}`;
+
+  if (expires) {
+    const date = new Date();
+    date.setTime(date.getTime() + expires * 24 * 60 * 60 * 1000);
+    cookieString += `; expires=${date.toUTCString()}`;
+  }
+
+  cookieString += `; path=${path}`;
+  if (secure) cookieString += "; secure";
+  cookieString += `; samesite=${sameSite}`;
+
+  document.cookie = cookieString;
+};
+
+/**
+ * Xóa cookie
+ * @param {string} name - Tên cookie
+ * @param {string} path - Path của cookie
+ */
+export const removeCookie = (name, path = "/") => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}`;
+};
+
+/**
  * Kiểm tra xem user đã đăng nhập hay chưa
  * @returns {boolean}
  */
@@ -37,53 +87,92 @@ export const isAuthenticated = () => {
 };
 
 /**
- * Lấy token từ session storage
+ * Lấy token từ session storage hoặc cookie
  * @returns {string|null}
  */
 export const getToken = () => {
+  // Ưu tiên session storage trước
   const sessionKey = getSessionKey("accessToken");
-  return (
-    sessionStorage.getItem(sessionKey) || localStorage.getItem("accessToken")
-  );
+  const sessionToken = sessionStorage.getItem(sessionKey);
+
+  if (sessionToken) {
+    return sessionToken;
+  }
+
+  // Fallback về localStorage
+  const localToken = localStorage.getItem("accessToken");
+  if (localToken) {
+    return localToken;
+  }
+
+  // Cuối cùng là cookie
+  const cookieToken = getCookie("accessToken");
+  return cookieToken;
 };
 
 /**
- * Lưu token vào session storage
+ * Lưu token vào session storage và cookie
  * @param {string} token - JWT token
+ * @param {boolean} persistent - Có lưu vào cookie không
  */
-export const setToken = (token) => {
+export const setToken = (token, persistent = false) => {
   if (token) {
     const sessionKey = getSessionKey("accessToken");
     sessionStorage.setItem(sessionKey, token);
-    // Vẫn lưu vào localStorage để backup
     localStorage.setItem("accessToken", token);
+
+    // Nếu persistent thì lưu vào cookie
+    if (persistent) {
+      setCookie("accessToken", token, { expires: 7 }); // 7 ngày
+    }
   }
 };
 
 /**
  * Xóa token và đăng xuất user
+ * @param {string} refreshToken - Refresh token cần xóa khỏi database
  */
-export const logout = () => {
-  const sessionId = getSessionId();
+export const logout = async (refreshToken) => {
+  console.log("logout() được gọi với refreshToken:", refreshToken);
 
-  // Xóa tất cả data liên quan đến session hiện tại
-  const keysToRemove = [
-    getSessionKey("accessToken"),
-    getSessionKey("refreshToken"),
-    getSessionKey("userInfo"),
-  ];
+  try {
+    // Gọi API để xóa refreshToken khỏi database
+    if (refreshToken) {
+      console.log("Gọi API logout với refreshToken:", refreshToken);
+      const result = await authService.logout(refreshToken);
+      console.log("Kết quả API logout:", result);
+    } else {
+      console.log("Không có refreshToken để gửi");
+    }
+  } catch (error) {
+    console.error("Lỗi khi gọi API logout:", error);
+  } finally {
+    const sessionId = getSessionId();
 
-  keysToRemove.forEach((key) => {
-    sessionStorage.removeItem(key);
-  });
+    // Xóa tất cả data liên quan đến session hiện tại
+    const keysToRemove = [
+      getSessionKey("accessToken"),
+      getSessionKey("refreshToken"),
+      getSessionKey("userInfo"),
+    ];
 
-  // Xóa session ID
-  sessionStorage.removeItem("sessionId");
+    keysToRemove.forEach((key) => {
+      sessionStorage.removeItem(key);
+    });
 
-  // Xóa data từ localStorage nếu cần
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("userInfo");
+    // Xóa session ID
+    sessionStorage.removeItem("sessionId");
+
+    // Xóa data từ localStorage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userInfo");
+
+    // Xóa cookies
+    removeCookie("accessToken");
+    removeCookie("refreshToken");
+    removeCookie("userInfo");
+  }
 };
 
 /**
@@ -135,17 +224,23 @@ export const getUserInfo = async () => {
 };
 
 /**
- * Lấy thông tin user từ cache (session storage)
+ * Lấy thông tin user từ cache (session storage, localStorage, hoặc cookie)
  * @returns {Object|null}
  */
 export const getCachedUserInfo = () => {
   try {
+    // Ưu tiên session storage
     const sessionKey = getSessionKey("userInfo");
     let userInfo = sessionStorage.getItem(sessionKey);
 
-    // Fallback về localStorage nếu không có trong session
+    // Fallback về localStorage
     if (!userInfo) {
       userInfo = localStorage.getItem("userInfo");
+    }
+
+    // Fallback về cookie
+    if (!userInfo) {
+      userInfo = getCookie("userInfo");
     }
 
     console.log("getCachedUserInfo - Raw userInfo from storage:", userInfo);
@@ -171,6 +266,7 @@ export const clearUserCache = () => {
   const sessionKey = getSessionKey("userInfo");
   sessionStorage.removeItem(sessionKey);
   localStorage.removeItem("userInfo");
+  removeCookie("userInfo");
 };
 
 /**
@@ -202,7 +298,9 @@ export const refreshToken = async () => {
     const sessionKey = getSessionKey("refreshToken");
     const refreshTokenValue =
       sessionStorage.getItem(sessionKey) ||
-      localStorage.getItem("refreshToken");
+      localStorage.getItem("refreshToken") ||
+      getCookie("refreshToken");
+
     if (!refreshTokenValue) return null;
 
     const result = await authService.refreshToken(refreshTokenValue);
@@ -220,13 +318,32 @@ export const refreshToken = async () => {
 /**
  * Lưu refresh token
  * @param {string} refreshToken - Refresh token
+ * @param {boolean} persistent - Có lưu vào cookie không
  */
-export const setRefreshToken = (refreshToken) => {
+export const setRefreshToken = (refreshToken, persistent = false) => {
+  console.log("setRefreshToken() được gọi với:", {
+    refreshToken,
+    persistent,
+  });
+
   if (refreshToken) {
     const sessionKey = getSessionKey("refreshToken");
+    console.log("setRefreshToken() - sessionKey:", sessionKey);
+
     sessionStorage.setItem(sessionKey, refreshToken);
-    // Backup vào localStorage
     localStorage.setItem("refreshToken", refreshToken);
+
+    console.log(
+      "setRefreshToken() - Đã lưu vào sessionStorage và localStorage"
+    );
+
+    // Nếu persistent thì lưu vào cookie
+    if (persistent) {
+      setCookie("refreshToken", refreshToken, { expires: 30 });
+      console.log("setRefreshToken() - Đã lưu vào cookie");
+    }
+  } else {
+    console.log("setRefreshToken() - refreshToken là null hoặc empty");
   }
 };
 
@@ -236,7 +353,39 @@ export const setRefreshToken = (refreshToken) => {
  */
 export const getRefreshToken = () => {
   const sessionKey = getSessionKey("refreshToken");
-  return (
-    sessionStorage.getItem(sessionKey) || localStorage.getItem("refreshToken")
-  );
+  const sessionToken = sessionStorage.getItem(sessionKey);
+  const localToken = localStorage.getItem("refreshToken");
+  const cookieToken = getCookie("refreshToken");
+
+  console.log("getRefreshToken() - sessionKey:", sessionKey);
+  console.log("getRefreshToken() - sessionStorage:", sessionToken);
+  console.log("getRefreshToken() - localStorage:", localToken);
+  console.log("getRefreshToken() - cookie:", cookieToken);
+
+  const result = sessionToken || localToken || cookieToken;
+  console.log("getRefreshToken() - kết quả cuối:", result);
+
+  // Debug: Kiểm tra tất cả keys trong storage
+  console.log("Tất cả sessionStorage keys:", Object.keys(sessionStorage));
+  console.log("Tất cả localStorage keys:", Object.keys(localStorage));
+
+  return result;
+};
+
+/**
+ * Lưu user info vào cookie (cho persistent login)
+ * @param {Object} userData - Thông tin user
+ * @param {boolean} persistent - Có lưu vào cookie không
+ */
+export const setUserInfo = (userData, persistent = false) => {
+  if (userData) {
+    const sessionKey = getSessionKey("userInfo");
+    sessionStorage.setItem(sessionKey, JSON.stringify(userData));
+    localStorage.setItem("userInfo", JSON.stringify(userData));
+
+    // Nếu persistent thì lưu vào cookie
+    if (persistent) {
+      setCookie("userInfo", JSON.stringify(userData), { expires: 7 }); 
+    }
+  }
 };

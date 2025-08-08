@@ -2,7 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import Dashboard from "./pages/admin/dashboard.jsx";
-import TopicManagement from "./pages/admin/topic_management.jsx";
 import UserManagement from "./pages/admin/user_management.jsx";
 import LecturerHome from "./pages/lecturer/home.jsx";
 import LecturerDashboard from "./pages/lecturer/dasboard.jsx";
@@ -16,7 +15,6 @@ import PlaceholderPage from "./components/common/PlaceholderPage.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import SessionManager from "./components/common/SessionManager";
-import SessionDebugPanel from "./components/common/SessionDebugPanel";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ThesisRegister from "./pages/student/thesis_register.jsx";
 import TopicRegistration from "./pages/student/topic_registration.jsx";
@@ -38,6 +36,7 @@ createRoot(document.getElementById("root")).render(
             <Routes>
               {/* Route công khai - trang đăng nhập */}
               <Route path="/" element={<App />} />
+              <Route path="/login" element={<App />} />
 
               {/* Route yêu cầu xác thực - Lecturer (chỉ cho TEACHER role) */}
               <Route
@@ -206,7 +205,6 @@ createRoot(document.getElementById("root")).render(
               </Route>
             </Routes>
           </BrowserRouter>
-          <SessionDebugPanel />
         </AuthProvider>
       </SessionManager>
     </ErrorBoundary>

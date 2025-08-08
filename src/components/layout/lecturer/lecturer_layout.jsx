@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import SidebarOfLecturer from "./sidebar_of_lecturer";
+import { logout, getRefreshToken } from "../../../auth/authUtils";
 import "../../../styles/layout/lecturer/lecturer_layout.css";
 
 const LecturerLayout = () => {
@@ -13,6 +14,7 @@ const LecturerLayout = () => {
   const notificationRef = useRef(null);
   const userDropdownRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
@@ -143,6 +145,17 @@ const LecturerLayout = () => {
   const handleMenuItemClick = () => {
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
+    }
+  };
+
+  // Hàm xử lý logout
+  const handleLogout = async () => {
+    try {
+      const refreshToken = getRefreshToken();
+      await logout(refreshToken);
+      navigate("/login"); // Chuyển về trang đăng nhập
+    } catch (error) {
+      console.error("Lỗi khi đăng xuất:", error);
     }
   };
 
@@ -330,7 +343,10 @@ const LecturerLayout = () => {
                       Trợ giúp
                     </button>
                     <div className="dropdown-divider"></div>
-                    <button className="dropdown-item logout">
+                    <button
+                      className="dropdown-item logout"
+                      onClick={handleLogout}
+                    >
                       <svg
                         width="16"
                         height="16"

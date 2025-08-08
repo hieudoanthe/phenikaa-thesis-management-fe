@@ -15,7 +15,7 @@ export const API_ENDPOINTS = {
   // Authentication
   LOGIN: "/api/auth/login",
   LOGOUT: "/api/auth/logout",
-  REFRESH: "/api/auth/refresh",
+  REFRESH: "/api/auth/refresh-token",
 
   // Academic Year Management
   ACADEMIC_YEAR_LIST: "/academic-config/listAcademicYear",

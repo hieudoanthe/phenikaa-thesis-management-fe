@@ -1,4 +1,4 @@
-import { apiPost, apiGet } from "./mainHttpClient";
+import { apiPost } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
 
 /**
@@ -30,64 +30,27 @@ class AuthService {
   }
 
   /**
-   * Đăng ký
-   * @param {Object} userData - Thông tin đăng ký
-   * @returns {Promise<Object>} - Kết quả đăng ký
-   */
-  async register(userData) {
-    try {
-      const response = await apiPost(API_ENDPOINTS.REGISTER, userData);
-      return {
-        success: true,
-        data: response,
-        message: "Đăng ký thành công",
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        message: "Đăng ký thất bại",
-      };
-    }
-  }
-
-  /**
    * Đăng xuất
+   * @param {string} refreshToken - Refresh token cần xóa khỏi database
    * @returns {Promise<Object>} - Kết quả đăng xuất
    */
-  async logout() {
+  async logout(refreshToken) {
     try {
-      await apiPost(API_ENDPOINTS.LOGOUT);
+      // Gửi refreshToken trong request body để backend xóa khỏi database
+      const response = await apiPost(API_ENDPOINTS.LOGOUT, {
+        refreshToken: refreshToken,
+      });
+      console.log("API logout response:", response);
       return {
         success: true,
         message: "Đăng xuất thành công",
       };
     } catch (error) {
+      console.error("API logout error:", error);
       return {
         success: false,
         error: error.message,
         message: "Đăng xuất thất bại",
-      };
-    }
-  }
-
-  /**
-   * Lấy thông tin user hiện tại
-   * @returns {Promise<Object>} - Thông tin user
-   */
-  async getCurrentUser() {
-    try {
-      const response = await apiGet(API_ENDPOINTS.ME);
-      return {
-        success: true,
-        data: response,
-        message: "Lấy thông tin user thành công",
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        message: "Lấy thông tin user thất bại",
       };
     }
   }
@@ -99,7 +62,9 @@ class AuthService {
    */
   async refreshToken(refreshToken) {
     try {
-      const response = await apiPost(API_ENDPOINTS.REFRESH, { refreshToken });
+      const response = await apiPost(API_ENDPOINTS.REFRESH, {
+        refreshToken: refreshToken,
+      });
       return {
         success: true,
         data: response,
@@ -111,19 +76,6 @@ class AuthService {
         error: error.message,
         message: "Refresh token thất bại",
       };
-    }
-  }
-
-  /**
-   * Kiểm tra token có hợp lệ không
-   * @returns {Promise<boolean>} - Token có hợp lệ không
-   */
-  async validateToken() {
-    try {
-      await apiGet(API_ENDPOINTS.ME);
-      return true;
-    } catch (error) {
-      return false;
     }
   }
 }

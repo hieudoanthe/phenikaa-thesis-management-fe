@@ -1,5 +1,10 @@
 import axios from "axios";
-import { getToken, logout, refreshToken } from "../auth/authUtils";
+import {
+  getToken,
+  logout,
+  refreshToken,
+  getRefreshToken,
+} from "../auth/authUtils";
 
 const MAIN_API_CONFIG = {
   BASE_URL: import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080",
@@ -50,13 +55,15 @@ mainHttpClient.interceptors.response.use(
           return mainHttpClient(originalRequest);
         } else {
           // Refresh token thất bại, logout
-          logout();
+          const refreshToken = getRefreshToken();
+          await logout(refreshToken);
           window.location.href = "/";
           return Promise.reject(error);
         }
       } catch (refreshError) {
         // Refresh token thất bại, logout
-        logout();
+        const refreshToken = getRefreshToken();
+        await logout(refreshToken);
         window.location.href = "/";
         return Promise.reject(refreshError);
       }

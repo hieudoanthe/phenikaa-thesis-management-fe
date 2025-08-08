@@ -15,6 +15,7 @@ const PhenikaaLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
@@ -44,6 +45,8 @@ const PhenikaaLogin = () => {
       );
 
       console.log("Response từ server:", response.data);
+      console.log("🔍 Response có refreshToken:", !!response.data.refreshToken);
+      console.log("🔍 RefreshToken value:", response.data.refreshToken);
 
       // Xử lý linh hoạt response data từ server
       let accessToken, refreshToken, user;
@@ -75,13 +78,14 @@ const PhenikaaLogin = () => {
 
       console.log("Dữ liệu được extract:", { accessToken, refreshToken, user });
 
-      if (refreshToken) {
-        localStorage.setItem("refreshToken", refreshToken);
-      }
-
       console.log("Đăng nhập thành công:", { accessToken, user, role });
 
-      const loginResult = await login(accessToken, user);
+      const loginResult = await login(
+        accessToken,
+        user,
+        refreshToken,
+        rememberMe
+      );
       console.log("Kết quả login:", loginResult);
 
       addToast("Đăng nhập thành công !");
@@ -446,6 +450,21 @@ const PhenikaaLogin = () => {
             </div>
 
             {error && <p style={{ color: "red" }}>{error}</p>}
+
+            <div
+              className="remember-me-container fade-in"
+              style={{ animationDelay: "0.35s" }}
+            >
+              <label className="remember-me-label">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="remember-me-checkbox"
+                />
+                <span className="remember-me-text">Ghi nhớ đăng nhập</span>
+              </label>
+            </div>
 
             <button
               type="submit"

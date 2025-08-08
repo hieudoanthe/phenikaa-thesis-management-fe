@@ -13,6 +13,7 @@ import {
   setRefreshToken,
   getSessionKey,
   getSessionId,
+  setUserInfo,
 } from "../auth/authUtils";
 import PropTypes from "prop-types";
 
@@ -79,28 +80,26 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const login = async (token, userData, refreshToken) => {
+  const login = async (token, userData, refreshToken, persistent = false) => {
     console.log("AuthContext - Login called with:", {
       token,
       userData,
       refreshToken,
+      persistent,
     });
 
     // Sử dụng các hàm mới từ authUtils
-    setToken(token);
+    setToken(token, persistent);
     if (refreshToken) {
-      setRefreshToken(refreshToken);
+      setRefreshToken(refreshToken, persistent);
     }
     if (userData) {
       console.log(
         "AuthContext - Saving user data to session storage:",
         userData
       );
-      // Lưu user info vào session storage
-      const sessionKey = getSessionKey("userInfo");
-      sessionStorage.setItem(sessionKey, JSON.stringify(userData));
-      // Backup vào localStorage
-      localStorage.setItem("userInfo", JSON.stringify(userData));
+      // Lưu user info vào session storage và cookie nếu persistent
+      setUserInfo(userData, persistent);
       setUser(userData);
     } else {
       console.log("AuthContext - No user data provided, setting user to null");
