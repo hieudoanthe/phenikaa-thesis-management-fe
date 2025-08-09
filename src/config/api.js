@@ -22,9 +22,13 @@ export const API_ENDPOINTS = {
   ACADEMIC_YEAR_DETAIL: "/academic-config/getAcademicYear",
 
   // Admin Permission
+  // User Management
   SAVE_USER: "/api/admin/saveUser",
   GET_USERS: "/api/admin/getUsers",
+  GET_USERS_PAGED: "/api/admin/getUsersPaged",
   DELETE_USER: "/api/admin/deleteUser",
+  UPDATE_USER: "/api/admin/updateUser",
+  CHANGE_STATUS_USER: "/api/admin/changeStatusUser",
 
   // Teacher Topic Management
   CREATE_TOPIC: "/api/lecturer/thesis/createTopic",

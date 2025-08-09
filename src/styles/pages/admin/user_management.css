@@ -565,6 +565,51 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+/* Inline edit styles */
+.inline-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.inline-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.inline-role-select__control {
+  min-height: 36px;
+  border-color: #d1d5db;
+  box-shadow: none;
+}
+.inline-role-select__control--is-focused {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.inline-role-select__value-container {
+  padding: 4px 8px;
+}
+.inline-role-select__multi-value {
+  background: #2563eb;
+  color: #fff;
+}
+.inline-role-select__multi-value__label {
+  color: #fff;
+  font-size: 0.8rem;
+}
+.inline-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+.inline-save {
+  background: #10b981;
+  color: #fff;
+}
+.inline-cancel {
+  background: #f3f4f6;
+}
+
 .user-mgmt-table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -626,6 +671,15 @@
   background: #b91c1c;
 }
 
+/* Trạng thái bị chặn */
+.user-status.blocked {
+  background: #fff7ed; /* cam nhạt */
+  color: #c2410c; /* cam đậm */
+}
+.user-status.blocked .user-status-dot {
+  background: #ea580c;
+}
+
 /* Action icons */
 .user-mgmt-action {
   display: inline-flex;
@@ -661,6 +715,24 @@
 
 .user-mgmt-action:active {
   transform: scale(0.98);
+}
+
+/* Icon khóa đổi màu khi user bị chặn */
+.user-mgmt-action.is-blocked-lock i {
+  color: #c2410c; /* cam đậm cho trạng thái bị chặn */
+}
+.user-mgmt-action.is-blocked-lock:hover i {
+  color: #9a3412;
+}
+
+/* icon loading cho nút trạng thái */
+.user-mgmt-action .bi-arrow-repeat.spin {
+  animation: um-spin 0.8s linear infinite;
+}
+@keyframes um-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Container chung */

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import Select from "react-select";
 import academicYearService from "../../services/academic-year.service";
 import topicService from "../../services/topic.service";
 
@@ -23,6 +24,13 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Options cho react-select
+  const difficultyOptions = [
+    { value: "EASY", label: "Dễ" },
+    { value: "MEDIUM", label: "Trung bình" },
+    { value: "HARD", label: "Khó" },
+  ];
+
   // Load danh sách năm học khi modal mở
   useEffect(() => {
     if (open) {
@@ -45,6 +53,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
       setLoading(false);
     }
   };
+
+  // Convert academic years to react-select options
+  const academicYearOptions = academicYearList.map((year) => ({
+    value: year.id,
+    label: year.name,
+  }));
 
   // Function để lấy thông tin chi tiết năm học từ API
   const getAcademicYearDetails = async (yearId, yearName) => {
@@ -87,6 +101,14 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  // Handler cho react-select
+  const handleSelectChange = (selectedOption, actionMeta) => {
+    const { name } = actionMeta;
+    const value = selectedOption ? selectedOption.value : "";
+
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const resetForm = () => {
@@ -164,363 +186,445 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
   };
 
   return (
-    <>
-      <style>
-        {`
-          .admin-modal-box::-webkit-scrollbar { display: none; }
-        `}
-      </style>
-      <div className="admin-modal-overlay">
-        <div
-          className="admin-modal-box"
+    <div
+      style={{
+        position: "fixed",
+        top: "70px", // Chiều cao navbar
+        left: "280px", // Chiều rộng sidebar
+        right: 0,
+        bottom: 0,
+        background: "#fff",
+        zIndex: 1000,
+        display: "flex",
+        flexDirection: "column",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+      }}
+    >
+      {/* Header cố định - click để đóng */}
+      <div
+        onClick={onClose}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "24px 32px",
+          borderBottom: "1px solid #e0e6ed",
+          background: "#fff",
+          flexShrink: 0,
+          cursor: "pointer",
+          transition: "background-color 0.2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.backgroundColor = "#f8fafc";
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.backgroundColor = "#fff";
+        }}
+      >
+        <h2
           style={{
-            borderRadius: 16,
-            padding: 0,
-            minWidth: 480,
-            maxWidth: 640,
-            width: "98vw",
-            maxHeight: "90vh",
-            display: "flex",
-            flexDirection: "column",
-            boxShadow: "0 8px 32px rgba(44,65,115,0.18)",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
+            margin: 0,
+            fontSize: "1.5rem",
+            fontWeight: 600,
+            color: "#2d3748",
           }}
         >
-          {/* Header cố định */}
+          Tạo đề tài
+        </h2>
+      </div>
+
+      {/* Form có thể cuộn */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "24px 32px",
+          background: "#f8fafc",
+        }}
+      >
+        <style>{`.admin-modal-form::-webkit-scrollbar { display: none; }`}</style>
+        <form
+          className="admin-modal-form"
+          onSubmit={handleSubmit}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+            maxWidth: "1000px",
+            margin: "0 auto",
+          }}
+        >
+          {/* Dòng 1: Mã đề tài + Tiêu đề đề tài */}
           <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "32px 32px 16px 32px",
-              borderBottom: "1px solid #e0e6ed",
-              background: "#fff",
-              borderRadius: "16px 16px 0 0",
-            }}
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
           >
-            <div
-              className="admin-modal-title"
-              style={{
-                fontSize: "1.18rem",
-                fontWeight: 600,
-                marginBottom: 0,
-                color: "#222b45",
-              }}
-            >
-              Tạo Đề Tài Mới
+            <div className="admin-floating-input-group">
+              <input
+                id="topicCode"
+                className="admin-modal-input"
+                name="topicCode"
+                value={form.topicCode}
+                onChange={handleChange}
+                placeholder=" "
+                autoComplete="off"
+                style={{ width: "100%" }}
+              />
+              <label htmlFor="topicCode" className="admin-floating-label">
+                Mã đề tài *
+              </label>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: 22,
-                color: "#6b7a90",
-                cursor: "pointer",
-                fontWeight: 500,
-                lineHeight: 1,
-              }}
-            >
-              ×
-            </button>
+
+            <div className="admin-floating-input-group">
+              <input
+                id="title"
+                className="admin-modal-input"
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                placeholder=" "
+                required
+                style={{ width: "100%" }}
+              />
+              <label htmlFor="title" className="admin-floating-label">
+                Tiêu đề đề tài *
+              </label>
+            </div>
           </div>
 
-          {/* Form có thể cuộn */}
+          {/* Mô tả chi tiết - full width */}
+          <div className="admin-floating-input-group">
+            <textarea
+              id="description"
+              className="admin-modal-input"
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              placeholder=" "
+              rows={3}
+              required
+              style={{ width: "100%", resize: "none" }}
+            />
+            <label htmlFor="description" className="admin-floating-label">
+              Mô tả chi tiết *
+            </label>
+          </div>
+
+          {/* Dòng 2: Mục tiêu + Phương pháp */}
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
+          >
+            <div className="admin-floating-input-group">
+              <textarea
+                id="objectives"
+                className="admin-modal-input"
+                name="objectives"
+                value={form.objectives}
+                onChange={handleChange}
+                placeholder=" "
+                rows={3}
+                required
+                style={{ width: "100%", resize: "none" }}
+              />
+              <label htmlFor="objectives" className="admin-floating-label">
+                Mục tiêu *
+              </label>
+            </div>
+
+            <div className="admin-floating-input-group">
+              <textarea
+                id="methodology"
+                className="admin-modal-input"
+                name="methodology"
+                value={form.methodology}
+                onChange={handleChange}
+                placeholder=" "
+                rows={3}
+                required
+                style={{ width: "100%", resize: "none" }}
+              />
+              <label htmlFor="methodology" className="admin-floating-label">
+                Phương pháp *
+              </label>
+            </div>
+          </div>
+
+          {/* Kết quả mong đợi - full width */}
+          <div className="admin-floating-input-group">
+            <textarea
+              id="expectedOutcome"
+              className="admin-modal-input"
+              name="expectedOutcome"
+              value={form.expectedOutcome}
+              onChange={handleChange}
+              placeholder=" "
+              rows={3}
+              required
+              style={{ width: "100%", resize: "none" }}
+            />
+            <label htmlFor="expectedOutcome" className="admin-floating-label">
+              Kết quả mong đợi *
+            </label>
+          </div>
+
+          {/* Dòng 3: Năm học + Số sinh viên + Mức độ khó */}
           <div
             style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "16px 32px 32px 32px",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 20,
             }}
           >
-            <style>{`.admin-modal-form::-webkit-scrollbar { display: none; }`}</style>
-            <form
-              className="admin-modal-form"
-              onSubmit={handleSubmit}
-              style={{ display: "flex", flexDirection: "column", gap: 16 }}
-            >
+            <div style={{ position: "relative" }}>
               <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Mã Đề Tài
-                <input
-                  className="admin-modal-input"
-                  name="topicCode"
-                  value={form.topicCode}
-                  onChange={handleChange}
-                  placeholder="Nhập mã đề tài"
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#f6f8fb",
-                    marginTop: 4,
-                  }}
-                />
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Tiêu Đề Đề Tài
-                <input
-                  className="admin-modal-input"
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder="Nhập tiêu đề đề tài"
-                  required
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#f6f8fb",
-                    marginTop: 4,
-                  }}
-                />
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Mô Tả Chi Tiết
-                <textarea
-                  className="admin-modal-input"
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder="Nhập mô tả chi tiết về đề tài"
-                  rows={3}
-                  required
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#f6f8fb",
-                    marginTop: 4,
-                    resize: "vertical",
-                  }}
-                />
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Mục Tiêu
-                <textarea
-                  className="admin-modal-input"
-                  name="objectives"
-                  value={form.objectives}
-                  onChange={handleChange}
-                  placeholder="Nhập các mục tiêu của đề tài"
-                  rows={3}
-                  required
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#f6f8fb",
-                    marginTop: 4,
-                    resize: "vertical",
-                  }}
-                />
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Phương Pháp
-                <textarea
-                  className="admin-modal-input"
-                  name="methodology"
-                  value={form.methodology}
-                  onChange={handleChange}
-                  placeholder="Nhập phương pháp nghiên cứu"
-                  rows={3}
-                  required
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#f6f8fb",
-                    marginTop: 4,
-                    resize: "vertical",
-                  }}
-                />
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Kết Quả Mong Đợi
-                <textarea
-                  className="admin-modal-input"
-                  name="expectedOutcome"
-                  value={form.expectedOutcome}
-                  onChange={handleChange}
-                  placeholder="Nhập kết quả mong đợi của đề tài"
-                  rows={3}
-                  required
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#f6f8fb",
-                    marginTop: 4,
-                    resize: "vertical",
-                  }}
-                />
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Năm Học
-                <select
-                  className="admin-modal-input"
-                  name="academicYearId"
-                  value={form.academicYearId}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: loading ? "#f5f5f5" : "#fff",
-                    marginTop: 4,
-                    cursor: loading ? "not-allowed" : "pointer",
-                  }}
-                >
-                  <option value="">
-                    {loading ? "Đang tải..." : "Chọn năm học"}
-                  </option>
-                  {academicYearList.map((year) => (
-                    <option key={year.id} value={year.id}>
-                      {year.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Số Sinh Viên Tối Đa
-                <input
-                  className="admin-modal-input"
-                  name="maxStudents"
-                  value={form.maxStudents}
-                  onChange={handleChange}
-                  placeholder="Nhập số sinh viên tối đa"
-                  type="number"
-                  min={1}
-                  required
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#f6f8fb",
-                    marginTop: 4,
-                  }}
-                />
-              </label>
-              <label
-                className="admin-modal-label"
-                style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
-              >
-                Mức Độ Khó
-                <select
-                  className="admin-modal-input"
-                  name="difficultyLevel"
-                  value={form.difficultyLevel}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    borderRadius: 8,
-                    border: "1px solid #e0e6ed",
-                    padding: "10px 12px",
-                    fontSize: "1rem",
-                    background: "#fff",
-                    marginTop: 4,
-                  }}
-                >
-                  <option value="EASY">Dễ</option>
-                  <option value="MEDIUM">Trung bình</option>
-                  <option value="HARD">Khó</option>
-                </select>
-              </label>
-              <div
-                className="admin-modal-btn-row"
                 style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 8,
-                  marginTop: 18,
+                  position: "absolute",
+                  top: "-8px",
+                  left: "12px",
+                  background: "#f8fafc",
+                  padding: "0 6px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#ff6600",
+                  zIndex: 1,
                 }}
               >
-                <button
-                  type="button"
-                  className="admin-modal-btn cancel"
-                  onClick={() => {
-                    resetForm();
-                    onClose();
-                  }}
-                  style={{
-                    background: "#f6f8fb",
-                    color: "#6b7a90",
-                    borderRadius: 8,
-                    fontSize: "1rem",
-                    fontWeight: 500,
-                    padding: "9px 22px",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "background 0.18s, color 0.18s",
-                    minWidth: 100,
-                    width: "auto",
-                  }}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="admin-modal-btn create"
-                  disabled={submitting}
-                  style={{
-                    background: submitting ? "#ccc" : "#ff6600",
-                    color: "#fff",
-                    borderRadius: 8,
-                    fontSize: "1rem",
-                    fontWeight: 500,
-                    padding: "9px 22px",
-                    border: "none",
-                    cursor: submitting ? "not-allowed" : "pointer",
-                    transition: "background 0.18s, color 0.18s",
-                    minWidth: 120,
-                    width: "auto",
-                  }}
-                >
-                  {submitting ? "Đang tạo..." : "Tạo Đề Tài"}
-                </button>
-              </div>
-            </form>
+                Năm học *
+              </label>
+              <Select
+                name="academicYearId"
+                options={academicYearOptions}
+                value={
+                  academicYearOptions.find(
+                    (option) => option.value === form.academicYearId
+                  ) || null
+                }
+                onChange={(selectedOption) =>
+                  handleSelectChange(selectedOption, { name: "academicYearId" })
+                }
+                placeholder={loading ? "Đang tải..." : "Chọn năm học"}
+                isLoading={loading}
+                isDisabled={loading}
+                isClearable
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: "50px",
+                    border: "2px solid #e2e8f0",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    backgroundColor: "#fff",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
+                      : "none",
+                    borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
+                    "&:hover": {
+                      borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
+                    },
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    padding: "8px 18px",
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: "#64748b",
+                    opacity: 1,
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: "#4a5568",
+                    fontWeight: 400,
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#ff6600"
+                      : state.isFocused
+                      ? "#fff5f0"
+                      : "#fff",
+                    color: state.isSelected ? "#fff" : "#4a5568",
+                    fontWeight: state.isSelected ? 500 : 400,
+                    "&:hover": {
+                      backgroundColor: state.isSelected ? "#ff6600" : "#fff5f0",
+                      color: state.isSelected ? "#fff" : "#4a5568",
+                    },
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    border: "2px solid #e2e8f0",
+                    borderRadius: "8px",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  }),
+                }}
+              />
+            </div>
+
+            <div className="admin-floating-input-group">
+              <input
+                id="maxStudents"
+                className="admin-modal-input"
+                name="maxStudents"
+                value={form.maxStudents}
+                onChange={handleChange}
+                placeholder=" "
+                type="number"
+                min={1}
+                required
+                style={{
+                  width: "100%",
+                  height: "50px",
+                  padding: "0 18px",
+                  fontSize: "16px",
+                }}
+              />
+              <label htmlFor="maxStudents" className="admin-floating-label">
+                Số sinh viên tối đa *
+              </label>
+            </div>
+
+            <div style={{ position: "relative" }}>
+              <label
+                style={{
+                  position: "absolute",
+                  top: "-8px",
+                  left: "12px",
+                  background: "#f8fafc",
+                  padding: "0 6px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#ff6600",
+                  zIndex: 1,
+                }}
+              >
+                Mức Độ Khó *
+              </label>
+              <Select
+                name="difficultyLevel"
+                options={difficultyOptions}
+                value={
+                  difficultyOptions.find(
+                    (option) => option.value === form.difficultyLevel
+                  ) || null
+                }
+                onChange={(selectedOption) =>
+                  handleSelectChange(selectedOption, {
+                    name: "difficultyLevel",
+                  })
+                }
+                placeholder="Chọn mức độ khó"
+                isClearable
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: "50px",
+                    border: "2px solid #e2e8f0",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    backgroundColor: "#fff",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
+                      : "none",
+                    borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
+                    "&:hover": {
+                      borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
+                    },
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    padding: "8px 18px",
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: "#64748b",
+                    opacity: 1,
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: "#4a5568",
+                    fontWeight: 400,
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#ff6600"
+                      : state.isFocused
+                      ? "#fff5f0"
+                      : "#fff",
+                    color: state.isSelected ? "#fff" : "#4a5568",
+                    fontWeight: state.isSelected ? 500 : 400,
+                    "&:hover": {
+                      backgroundColor: state.isSelected ? "#ff6600" : "#fff5f0",
+                      color: state.isSelected ? "#fff" : "#4a5568",
+                    },
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    border: "2px solid #e2e8f0",
+                    borderRadius: "8px",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                  }),
+                }}
+              />
+            </div>
           </div>
-        </div>
+          <div
+            className="admin-modal-btn-row"
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+              marginTop: 18,
+            }}
+          >
+            <button
+              type="button"
+              className="admin-modal-btn cancel"
+              onClick={() => {
+                resetForm();
+                onClose();
+              }}
+              style={{
+                background: "#f6f8fb",
+                color: "#6b7a90",
+                borderRadius: 8,
+                fontSize: "1rem",
+                fontWeight: 500,
+                padding: "9px 22px",
+                border: "none",
+                cursor: "pointer",
+                transition: "background 0.18s, color 0.18s",
+                minWidth: 100,
+                width: "auto",
+              }}
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="admin-modal-btn create"
+              disabled={submitting}
+              style={{
+                background: submitting ? "#ccc" : "#ff6600",
+                color: "#fff",
+                borderRadius: 8,
+                fontSize: "1rem",
+                fontWeight: 500,
+                padding: "9px 22px",
+                border: "none",
+                cursor: submitting ? "not-allowed" : "pointer",
+                transition: "background 0.18s, color 0.18s",
+                minWidth: 120,
+                width: "auto",
+              }}
+            >
+              {submitting ? "Đang tạo..." : "Tạo Đề Tài"}
+            </button>
+          </div>
+        </form>
       </div>
-    </>
+    </div>
   );
 };
 

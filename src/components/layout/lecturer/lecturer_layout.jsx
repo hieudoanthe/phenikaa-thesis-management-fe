@@ -209,9 +209,9 @@ const LecturerLayout = () => {
         {/* Header */}
         <header className="lecturer-header">
           <div className="header-left">
-            <div className="page-title-section">
-              <h1 className="page-title">{currentPage.title}</h1>
-              <p className="page-subtitle">{currentPage.subtitle}</p>
+            <div className="lecturer-page-title-section">
+              <h1 className="lecturer-page-title">{currentPage.title}</h1>
+              <p className="lecturer-page-subtitle">{currentPage.subtitle}</p>
             </div>
           </div>
 

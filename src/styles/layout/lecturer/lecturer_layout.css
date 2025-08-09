@@ -54,7 +54,7 @@
   z-index: var(--z-index-sticky);
 }
 
-.header-left {
+.lecturer-header .header-left {
   display: flex;
   align-items: center;
   flex: 1;
@@ -434,24 +434,24 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .notification-dropdown {
+  .lecturer-header .notification-dropdown {
     width: 320px;
     right: -80px;
   }
 
-  .user-dropdown-menu {
+  .lecturer-header .user-dropdown-menu {
     width: 260px;
     right: -20px;
   }
 }
 
 @media (max-width: 480px) {
-  .notification-dropdown {
+  .lecturer-header .notification-dropdown {
     width: 280px;
     right: -120px;
   }
 
-  .user-dropdown-menu {
+  .lecturer-header .user-dropdown-menu {
     width: 240px;
     right: -40px;
   }

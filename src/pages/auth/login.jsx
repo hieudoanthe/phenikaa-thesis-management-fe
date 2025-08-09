@@ -45,8 +45,8 @@ const PhenikaaLogin = () => {
       );
 
       console.log("Response từ server:", response.data);
-      console.log("🔍 Response có refreshToken:", !!response.data.refreshToken);
-      console.log("🔍 RefreshToken value:", response.data.refreshToken);
+      console.log("Response có refreshToken:", !!response.data.refreshToken);
+      console.log("RefreshToken value:", response.data.refreshToken);
 
       // Xử lý linh hoạt response data từ server
       let accessToken, refreshToken, user;
@@ -88,7 +88,7 @@ const PhenikaaLogin = () => {
       );
       console.log("Kết quả login:", loginResult);
 
-      addToast("Đăng nhập thành công !");
+      addToast("Đăng nhập thành công!");
 
       // Chuyển hướng dựa trên role từ user data (ưu tiên) hoặc role từ form
       const userRole = user?.role || role;
