@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
   // Admin Permission
   SAVE_USER: "/api/admin/saveUser",
   GET_USERS: "/api/admin/getUsers",
+  DELETE_USER: "/api/admin/deleteUser",
 
   // Teacher Topic Management
   CREATE_TOPIC: "/api/lecturer/thesis/createTopic",

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "../../styles/pages/admin/style.css";
 import PropTypes from "prop-types";
 import academicYearService from "../../services/academic-year.service";
 import topicService from "../../services/topic.service";
@@ -168,14 +167,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
     <>
       <style>
         {`
-          .modal-box::-webkit-scrollbar {
-            display: none;
-          }
+          .admin-modal-box::-webkit-scrollbar { display: none; }
         `}
       </style>
-      <div className="modal-overlay">
+      <div className="admin-modal-overlay">
         <div
-          className="modal-box"
+          className="admin-modal-box"
           style={{
             borderRadius: 16,
             padding: 0,
@@ -186,8 +183,8 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
             display: "flex",
             flexDirection: "column",
             boxShadow: "0 8px 32px rgba(44,65,115,0.18)",
-            scrollbarWidth: "none", // Firefox
-            msOverflowStyle: "none", // IE/Edge
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
           }}
         >
           {/* Header cố định */}
@@ -203,7 +200,7 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
             }}
           >
             <div
-              className="modal-title"
+              className="admin-modal-title"
               style={{
                 fontSize: "1.18rem",
                 fontWeight: 600,
@@ -236,29 +233,23 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
               flex: 1,
               overflowY: "auto",
               padding: "16px 32px 32px 32px",
-              scrollbarWidth: "none", // Firefox
-              msOverflowStyle: "none", // IE/Edge
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
             }}
           >
-            <style>
-              {`
-                .modal-form::-webkit-scrollbar {
-                  display: none;
-                }
-              `}
-            </style>
+            <style>{`.admin-modal-form::-webkit-scrollbar { display: none; }`}</style>
             <form
-              className="modal-form"
+              className="admin-modal-form"
               onSubmit={handleSubmit}
               style={{ display: "flex", flexDirection: "column", gap: 16 }}
             >
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Mã Đề Tài
                 <input
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="topicCode"
                   value={form.topicCode}
                   onChange={handleChange}
@@ -274,12 +265,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 />
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Tiêu Đề Đề Tài
                 <input
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="title"
                   value={form.title}
                   onChange={handleChange}
@@ -296,12 +287,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 />
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Mô Tả Chi Tiết
                 <textarea
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="description"
                   value={form.description}
                   onChange={handleChange}
@@ -320,12 +311,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 />
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Mục Tiêu
                 <textarea
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="objectives"
                   value={form.objectives}
                   onChange={handleChange}
@@ -344,12 +335,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 />
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Phương Pháp
                 <textarea
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="methodology"
                   value={form.methodology}
                   onChange={handleChange}
@@ -368,12 +359,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 />
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Kết Quả Mong Đợi
                 <textarea
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="expectedOutcome"
                   value={form.expectedOutcome}
                   onChange={handleChange}
@@ -392,12 +383,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 />
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Năm Học
                 <select
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="academicYearId"
                   value={form.academicYearId}
                   onChange={handleChange}
@@ -424,12 +415,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 </select>
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Số Sinh Viên Tối Đa
                 <input
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="maxStudents"
                   value={form.maxStudents}
                   onChange={handleChange}
@@ -448,12 +439,12 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 />
               </label>
               <label
-                className="modal-label"
+                className="admin-modal-label"
                 style={{ fontWeight: 500, color: "#222b45", marginBottom: 2 }}
               >
                 Mức Độ Khó
                 <select
-                  className="modal-input"
+                  className="admin-modal-input"
                   name="difficultyLevel"
                   value={form.difficultyLevel}
                   onChange={handleChange}
@@ -473,7 +464,7 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 </select>
               </label>
               <div
-                className="modal-btn-row"
+                className="admin-modal-btn-row"
                 style={{
                   display: "flex",
                   justifyContent: "flex-end",
@@ -483,7 +474,7 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
               >
                 <button
                   type="button"
-                  className="modal-btn cancel"
+                  className="admin-modal-btn cancel"
                   onClick={() => {
                     resetForm();
                     onClose();
@@ -506,7 +497,7 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 </button>
                 <button
                   type="submit"
-                  className="modal-btn create"
+                  className="admin-modal-btn create"
                   disabled={submitting}
                   style={{
                     background: submitting ? "#ccc" : "#ff6600",

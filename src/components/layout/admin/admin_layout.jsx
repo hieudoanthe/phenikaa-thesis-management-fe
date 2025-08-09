@@ -227,9 +227,9 @@ const AdminLayout = () => {
         {/* Header */}
         <header className="admin-header">
           <div className="header-left">
-            <div className="page-title-section">
-              <h1 className="page-title">{currentPage.title}</h1>
-              <p className="page-subtitle">{currentPage.subtitle}</p>
+            <div className="admin-page-title-section">
+              <h1 className="admin-page-title">{currentPage.title}</h1>
+              <p className="admin-page-subtitle">{currentPage.subtitle}</p>
             </div>
           </div>
 

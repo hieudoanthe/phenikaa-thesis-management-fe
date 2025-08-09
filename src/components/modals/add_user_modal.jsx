@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
-import "../../styles/pages/admin/style.css";
 
 const roleOptions = [
   { value: 1, label: "Sinh viên", role: "USER" },
@@ -94,7 +93,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
 
   return (
     <div
-      className="modal-overlay"
+      className="admin-modal-overlay"
       onClick={onClose}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
@@ -105,21 +104,21 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
       tabIndex={0}
     >
       <div
-        className="modal-box add-user-modal"
+        className="admin-modal-box admin-add-user-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="modal-title">Thêm người dùng mới</h2>
+        <h2 className="admin-modal-title">Thêm người dùng mới</h2>
 
-        <form className="modal-form" onSubmit={handleSubmit}>
-          <div className="form-row">
+        <form className="admin-modal-form" onSubmit={handleSubmit}>
+          <div className="admin-form-row">
             {/* Left Column */}
-            <div className="form-column">
-              <div className="form-group">
-                <div className="floating-input-group">
+            <div className="admin-form-column">
+              <div className="admin-form-group">
+                <div className="admin-floating-input-group">
                   <input
                     id="fullName"
                     type="text"
-                    className="modal-input"
+                    className="admin-modal-input"
                     placeholder=" "
                     value={formData.fullName}
                     onChange={(e) =>
@@ -127,18 +126,18 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                     }
                     required
                   />
-                  <label htmlFor="fullName" className="floating-label">
+                  <label htmlFor="fullName" className="admin-floating-label">
                     Họ và tên
                   </label>
                 </div>
               </div>
 
-              <div className="form-group">
-                <div className="floating-input-group">
+              <div className="admin-form-group">
+                <div className="admin-floating-input-group">
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    className="modal-input"
+                    className="admin-modal-input"
                     placeholder=" "
                     value={formData.password}
                     onChange={(e) =>
@@ -146,12 +145,12 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                     }
                     required
                   />
-                  <label htmlFor="password" className="floating-label">
+                  <label htmlFor="password" className="admin-floating-label">
                     Mật khẩu
                   </label>
                   <button
                     type="button"
-                    className="password-toggle"
+                    className="admin-password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -170,13 +169,13 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
             </div>
 
             {/* Right Column */}
-            <div className="form-column">
-              <div className="form-group">
-                <div className="floating-input-group">
+            <div className="admin-form-column">
+              <div className="admin-form-group">
+                <div className="admin-floating-input-group">
                   <input
                     id="username"
                     type="text"
-                    className="modal-input"
+                    className="admin-modal-input"
                     placeholder=" "
                     value={formData.username}
                     onChange={(e) =>
@@ -184,15 +183,15 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                     }
                     required
                   />
-                  <label htmlFor="username" className="floating-label">
+                  <label htmlFor="username" className="admin-floating-label">
                     Tên đăng nhập
                   </label>
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <Select
-                  classNamePrefix="role-select"
+                  classNamePrefix="admin-role-select"
                   value={formData.roles}
                   onChange={(selectedOptions) =>
                     handleInputChange("roles", selectedOptions || [])
@@ -203,115 +202,34 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   blurInputOnSelect={false}
                   hideSelectedOptions={true}
                   placeholder="Chọn vai trò..."
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                  menuPlacement="auto"
+                  menuShouldScrollIntoView={false}
+                  maxMenuHeight={160}
+                  isClearable
                   styles={{
-                    control: (base) => ({
-                      ...base,
-                      borderRadius: 8,
-                      minHeight: 44,
-                      fontSize: "1rem",
-                      borderColor: "#d1d5db",
-                      boxShadow: "none",
-                      backgroundColor: "#fff",
-                    }),
-                    option: (base, state) => {
-                      const getBgColor = (state) => {
-                        if (state.isSelected) return "#ff6600";
-                        if (state.isFocused) return "#f3f4f6";
-                        return "#fff";
-                      };
-
-                      return {
-                        ...base,
-                        fontSize: "1rem",
-                        backgroundColor: getBgColor(state),
-                        color: state.isSelected ? "#fff" : "#222b45",
-                        cursor: "pointer",
-                        padding: "12px 16px",
-                        "&:hover": {
-                          backgroundColor: state.isSelected
-                            ? "#ff6600"
-                            : "#f3f4f6",
-                        },
-                      };
-                    },
-                    multiValue: (base) => ({
-                      ...base,
-                      backgroundColor: "#ff6600",
-                      color: "#fff",
-                      borderRadius: 6,
-                      margin: "2px 4px 2px 0",
-                    }),
-                    multiValueLabel: (base) => ({
-                      ...base,
-                      color: "#fff",
-                      fontWeight: 500,
-                      padding: "4px 8px",
-                    }),
-                    multiValueRemove: (base) => ({
-                      ...base,
-                      color: "#fff",
-                      padding: "0 4px",
-                      "&:hover": {
-                        backgroundColor: "#e65c00",
-                        color: "#fff",
-                      },
-                    }),
-                    valueContainer: (base) => ({
-                      ...base,
-                      padding: "8px 12px",
-                      minHeight: "28px",
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "4px",
-                    }),
-                    input: (base) => ({
-                      ...base,
-                      margin: "0",
-                      padding: "0",
-                      minWidth: "60px",
-                    }),
-                    indicatorsContainer: (base) => ({
-                      ...base,
-                      padding: "0 8px",
-                    }),
-                    indicatorSeparator: (base) => ({
-                      ...base,
-                      display: "none",
-                    }),
-                    dropdownIndicator: (base) => ({
-                      ...base,
-                      color: "#6b7280",
-                      "&:hover": {
-                        color: "#ff6600",
-                      },
-                    }),
-                    clearIndicator: (base) => ({
-                      ...base,
-                      color: "#6b7280",
-                      "&:hover": {
-                        color: "#ff6600",
-                      },
-                    }),
+                    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
                     menu: (base) => ({
                       ...base,
-                      borderRadius: 8,
-                      zIndex: 20,
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                      border: "1px solid #e5e7eb",
+                      zIndex: 2000,
+                      marginTop: 6,
+                      maxHeight: 160,
                     }),
                     menuList: (base) => ({
                       ...base,
-                      padding: "4px 0",
+                      paddingTop: 4,
+                      paddingBottom: 4,
                     }),
-                    placeholder: (base) => ({
+                    option: (base) => ({
                       ...base,
-                      color: "#6b7280",
-                      fontSize: "1rem",
+                      padding: "6px 10px",
+                      fontSize: "0.9rem",
                     }),
-                    noOptionsMessage: (base) => ({
+                    control: (base) => ({
                       ...base,
-                      color: "#6b7280",
-                      fontSize: "1rem",
+                      minHeight: 44,
+                      height: "auto",
                     }),
                   }}
                 />
@@ -319,17 +237,17 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
             </div>
           </div>
 
-          <div className="modal-btn-row">
+          <div className="admin-modal-btn-row">
             <button
               type="button"
-              className="modal-btn cancel"
+              className="admin-modal-btn cancel"
               onClick={handleCancel}
             >
               Hủy
             </button>
             <button
               type="button"
-              className="modal-btn create"
+              className="admin-modal-btn create"
               onClick={handleSubmit}
             >
               Thêm người dùng

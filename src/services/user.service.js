@@ -1,4 +1,4 @@
-import { apiPost, apiGet } from "./mainHttpClient";
+import { apiPost, apiGet, apiDelete } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
 
 class UserService {
@@ -18,6 +18,23 @@ class UserService {
       return response;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách user:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa user
+   * @param {number} userId - ID user
+   * @returns {Promise<any>} - Kết quả xóa
+   */
+  async deleteUser(userId) {
+    try {
+      const response = await apiDelete(
+        `${API_ENDPOINTS.DELETE_USER}?userId=${userId}`
+      );
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi xóa user:", error);
       throw error;
     }
   }

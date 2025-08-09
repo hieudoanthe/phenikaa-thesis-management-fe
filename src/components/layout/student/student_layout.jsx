@@ -209,9 +209,9 @@ const StudentLayout = () => {
         {/* Header */}
         <header className="student-header">
           <div className="header-left">
-            <div className="page-title-section">
-              <h1 className="page-title">{currentPage.title}</h1>
-              <p className="page-subtitle">{currentPage.subtitle}</p>
+            <div className="student-page-title-section">
+              <h1 className="student-page-title">{currentPage.title}</h1>
+              <p className="student-page-subtitle">{currentPage.subtitle}</p>
             </div>
           </div>
 

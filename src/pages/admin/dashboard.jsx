@@ -1,5 +1,5 @@
 import React from "react";
-import "../../styles/pages/admin/style.css";
+import "../../styles/pages/admin/dashboard.css";
 
 const stats = [
   { label: "Total Projects", value: 186, icon: "📋" },
@@ -39,40 +39,40 @@ const defenses = [
 ];
 
 const statusClass = {
-  Scheduled: "defense-status scheduled",
-  "In Progress": "defense-status inprogress",
-  Completed: "defense-status completed",
+  Scheduled: "admin-defense-status scheduled",
+  "In Progress": "admin-defense-status inprogress",
+  Completed: "admin-defense-status completed",
 };
 
 const Dashboard = () => (
   <div>
-    <div className="dashboard-stats-row">
+    <div className="admin-dashboard-stats-row">
       {stats.map((s) => (
-        <div className="dashboard-stat-card" key={s.label}>
-          <div className="stat-label">{s.label}</div>
-          <div className="stat-value">{s.value}</div>
-          <div className="stat-icon">{s.icon}</div>
+        <div className="admin-dashboard-stat-card" key={s.label}>
+          <div className="admin-stat-label">{s.label}</div>
+          <div className="admin-stat-value">{s.value}</div>
+          <div className="admin-stat-icon">{s.icon}</div>
         </div>
       ))}
     </div>
-    <div className="dashboard-charts-row">
-      <div className="dashboard-chart-box">
-        <div className="chart-title">Topics by Major</div>
-        <div className="bar-chart-modern">
+    <div className="admin-dashboard-charts-row">
+      <div className="admin-dashboard-chart-box">
+        <div className="admin-chart-title">Topics by Major</div>
+        <div className="admin-bar-chart-modern">
           {barData.map((val, idx) => (
-            <div className="bar-item-modern" key={barLabels[idx]}>
+            <div className="admin-bar-item-modern" key={barLabels[idx]}>
               <div
-                className="bar-modern"
+                className="admin-bar-modern"
                 style={{ height: `${val * 2}px` }}
               ></div>
-              <div className="bar-label-modern">{barLabels[idx]}</div>
+              <div className="admin-bar-label-modern">{barLabels[idx]}</div>
             </div>
           ))}
         </div>
       </div>
-      <div className="dashboard-chart-box">
-        <div className="chart-title">Topic Status</div>
-        <div className="donut-chart-modern">
+      <div className="admin-dashboard-chart-box">
+        <div className="admin-chart-title">Topic Status</div>
+        <div className="admin-donut-chart-modern">
           <svg width="120" height="120" viewBox="0 0 42 42">
             <circle
               cx="21"
@@ -119,9 +119,9 @@ const Dashboard = () => (
         </div>
       </div>
     </div>
-    <div className="dashboard-table-section">
-      <div className="table-title">Upcoming Defenses</div>
-      <table className="dashboard-table">
+    <div className="admin-dashboard-table-section">
+      <div className="admin-table-title">Upcoming Defenses</div>
+      <table className="admin-dashboard-table">
         <thead>
           <tr>
             <th>Date</th>
@@ -145,7 +145,7 @@ const Dashboard = () => (
           ))}
         </tbody>
       </table>
-      <button className="dashboard-add-btn">+</button>
+      <button className="admin-dashboard-add-btn">+</button>
     </div>
   </div>
 );

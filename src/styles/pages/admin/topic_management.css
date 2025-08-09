@@ -1,0 +1,243 @@
+/* Admin Topic Management Styles (tách từ style.css) */
+
+.admin-topic-mgmt-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.admin-topic-mgmt-filter-row {
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.admin-topic-mgmt-search {
+  flex: 1;
+  position: relative;
+  max-width: 300px;
+}
+.admin-topic-mgmt-search input {
+  width: 100%;
+  padding: 12px 16px 12px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+.admin-topic-mgmt-search:focus {
+  outline: none;
+  border-color: #ff6600;
+}
+.admin-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 1rem;
+}
+.admin-topic-mgmt-filter-group {
+  display: flex;
+  gap: 8px;
+}
+.admin-topic-mgmt-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.admin-topic-mgmt-filter-btn:hover {
+  background: #ff6600;
+  color: #fff;
+  border-color: #ff6600;
+}
+.admin-topic-mgmt-reset-btn {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.admin-topic-mgmt-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-topic-mgmt-table th,
+.admin-topic-mgmt-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+.admin-topic-mgmt-table th {
+  font-weight: 600;
+  color: #374151;
+  background: #f9fafb;
+}
+.admin-topic-mgmt-table tbody tr {
+  transition: background 0.2s;
+}
+
+.admin-status-label {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.admin-status-label.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+.admin-status-label.approved {
+  background: #d1fae5;
+  color: #059669;
+}
+.admin-status-label.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.admin-status-label.available {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.admin-topic-mgmt-action {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+.admin-topic-mgmt-action:hover {
+  background: #f3f4f6;
+}
+.admin-topic-mgmt-action.approve {
+  background: #d1fae5;
+  color: #059669;
+}
+.admin-topic-mgmt-action.approve:hover {
+  background: #a7f3d0;
+}
+
+.admin-topic-mgmt-footer-row {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.admin-topic-mgmt-pagination {
+  display: flex;
+  gap: 8px;
+}
+.admin-topic-mgmt-page-btn {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.admin-topic-mgmt-page-btn i {
+  font-size: 0.8rem;
+}
+.admin-topic-mgmt-page-btn.active {
+  background: #ff6600;
+  color: #fff;
+  border-color: #ff6600;
+}
+.admin-topic-mgmt-page-btn:not(.active):hover {
+  background: #f3f4f6;
+}
+
+.admin-topic-mgmt-create-btn {
+  background: #ff6600;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-topic-mgmt-create-btn:hover {
+  background: #e65c00;
+}
+
+.admin-topic-mgmt-search-row {
+  padding: 24px 24px 0 24px;
+}
+.admin-topic-mgmt-search-wrap {
+  position: relative;
+  max-width: 400px;
+}
+
+/* Loading/Error/Empty */
+.admin-topic-mgmt-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+}
+.admin-topic-mgmt-loading-text {
+  margin-top: 16px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+.admin-topic-mgmt-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  color: #dc2626;
+}
+.admin-topic-mgmt-error-text {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+.admin-topic-mgmt-retry-btn {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: #ff6600;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+.admin-topic-mgmt-retry-btn:hover {
+  background: #e65c00;
+}
+.admin-topic-mgmt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  color: #6b7280;
+}

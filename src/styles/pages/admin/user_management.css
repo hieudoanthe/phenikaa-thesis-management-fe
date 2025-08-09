@@ -18,23 +18,6 @@
   background: var(--color-primary-hover);
 }
 
-.role-filter {
-  width: 15%;
-  padding: 9px 14px;
-  border: 1.5px solid var(--color-border-primary);
-  border-radius: var(--border-radius-lg);
-  background: var(--color-bg-primary);
-  font-size: 0.95rem;
-  color: var(--color-gray-700);
-  transition: all var(--transition-normal);
-  outline: none;
-}
-
-.role-filter:focus {
-  border-color: var(--color-info);
-  box-shadow: var(--shadow-focus);
-}
-
 .user-management-toolbar {
   display: flex;
   justify-content: space-between;
@@ -159,4 +142,574 @@
 .pagination-btn.prev-btn,
 .pagination-btn.next-btn {
   color: var(--color-text-secondary);
+}
+
+/* Admin Modal Styles (chỉ cho AddUserModal; ConfirmModal đã tách file riêng) */
+.admin-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.admin-modal-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.admin-modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #23395d;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.admin-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-modal-label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  display: block;
+}
+.admin-modal-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+.admin-modal-input:focus {
+  outline: none;
+  border-color: #ff6600;
+}
+.admin-modal-btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.admin-modal-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 0.9rem;
+}
+.admin-modal-btn.cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+.admin-modal-btn.cancel:hover {
+  background: #e5e7eb;
+}
+.admin-modal-btn.create {
+  background: #ff6600;
+  color: #fff;
+}
+.admin-modal-btn.create:hover {
+  background: #e65c00;
+}
+
+/* Các biến thể nút của ConfirmModal đã nằm trong styles/modal/confirm_modal.css */
+
+@media (max-width: 600px) {
+  .admin-modal-box {
+    padding: 24px;
+    margin: 20px;
+  }
+  .admin-modal-title {
+    font-size: 1.25rem;
+  }
+  .admin-modal-btn-row {
+    flex-direction: column;
+  }
+  .admin-modal-btn {
+    width: 100%;
+  }
+}
+
+/* Add User Modal Specific */
+.admin-add-user-modal {
+  max-width: 600px;
+}
+.admin-add-user-modal .admin-modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #23395d;
+  margin-top: 0;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.admin-add-user-modal .admin-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.admin-form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-form-group .admin-modal-label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  display: block;
+}
+.admin-form-group .admin-modal-label::after {
+  content: " *";
+  color: #dc2626;
+}
+.admin-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 1rem;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.admin-password-toggle:hover {
+  color: #374151;
+}
+
+.admin-add-user-modal .admin-modal-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+.admin-add-user-modal .admin-modal-input:focus {
+  outline: none;
+  border-color: #ff6600;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+}
+.admin-add-user-modal .admin-modal-input::placeholder {
+  color: #9ca3af;
+}
+
+.admin-add-user-modal .admin-modal-btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+.admin-add-user-modal .admin-modal-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 0.9rem;
+}
+.admin-add-user-modal .admin-modal-btn.cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+.admin-add-user-modal .admin-modal-btn.cancel:hover {
+  background: #e5e7eb;
+}
+.admin-add-user-modal .admin-modal-btn.create {
+  background: #ff6600;
+  color: #fff;
+}
+.admin-add-user-modal .admin-modal-btn.create:hover {
+  background: #e65c00;
+}
+
+@media (max-width: 768px) {
+  .admin-add-user-modal {
+    max-width: 100%;
+    margin: 20px;
+  }
+  .admin-form-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-form-column {
+    gap: 16px;
+  }
+  .admin-add-user-modal .admin-modal-btn-row {
+    flex-direction: column;
+  }
+  .admin-add-user-modal .admin-modal-btn {
+    width: 100%;
+  }
+}
+
+/* Floating Label Input Group */
+.admin-floating-input-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.admin-floating-input-group .admin-modal-input {
+  padding: 16px 12px 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.admin-floating-input-group .admin-modal-input:focus {
+  outline: none;
+  border-color: #ff6600;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+}
+.admin-floating-label {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  pointer-events: none;
+  background: #fff;
+  padding: 0 4px;
+  line-height: 1;
+}
+.admin-floating-input-group .admin-modal-input:focus + .admin-floating-label,
+.admin-floating-input-group
+  .admin-modal-input:not(:placeholder-shown)
+  + .admin-floating-label {
+  top: -6px; /* đẩy sát viền trên */
+  transform: none; /* bỏ translate để không bị lệch */
+  font-size: 0.75rem;
+  color: #ff6600;
+  font-weight: 500;
+  z-index: 1; /* nằm trên border của input */
+}
+.admin-floating-input-group .admin-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 1rem;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.admin-modal-label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  display: block;
+  font-size: 0.9rem;
+}
+
+/* React Select customization */
+.admin-form-group .admin-role-select__control {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  min-height: 44px;
+  box-shadow: none;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+.admin-form-group .admin-role-select__control:hover {
+  border-color: #9ca3af;
+}
+.admin-form-group .admin-role-select__control--is-focused {
+  border-color: #ff6600;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+}
+.admin-add-user-modal .admin-role-select__value-container {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: #374151;
+}
+.admin-add-user-modal .admin-role-select__input {
+  color: #374151;
+  font-size: 0.9rem;
+}
+.admin-add-user-modal .admin-role-select__indicators {
+  padding-right: 8px;
+}
+.admin-add-user-modal .admin-role-select__indicator-separator {
+  display: none;
+}
+.admin-add-user-modal .admin-role-select__dropdown-indicator {
+  color: #6b7280;
+  padding: 4px;
+}
+.admin-add-user-modal .admin-role-select__dropdown-indicator:hover {
+  color: #374151;
+}
+.admin-add-user-modal .admin-role-select__clear-indicator {
+  color: #6b7280;
+  padding: 4px;
+}
+.admin-add-user-modal .admin-role-select__clear-indicator:hover {
+  color: #dc2626;
+}
+.admin-add-user-modal .admin-role-select__menu {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #fff;
+}
+.admin-add-user-modal .admin-role-select__menu-list {
+  padding: 4px;
+}
+.admin-add-user-modal .admin-role-select__option {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.admin-add-user-modal .admin-role-select__option--is-focused {
+  background: #f3f4f6;
+  color: #374151;
+}
+.admin-add-user-modal .admin-role-select__option--is-selected {
+  background: #ff6600;
+  color: #fff;
+}
+.admin-add-user-modal .admin-role-select__multi-value {
+  background: #ff6600;
+  border-radius: 4px;
+  margin: 2px;
+  padding: 2px 6px;
+}
+.admin-add-user-modal .admin-role-select__multi-value__label {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.admin-add-user-modal .admin-role-select__multi-value__remove {
+  color: #fff;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.admin-add-user-modal .admin-role-select__multi-value__remove:hover {
+  color: #fee2e2;
+}
+.admin-add-user-modal .admin-role-select__placeholder {
+  color: #9ca3af;
+}
+
+/* Bảng người dùng */
+.user-table-container {
+  margin-top: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.user-mgmt-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.user-mgmt-table thead th {
+  background: #fafbfc;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 14px 20px;
+  text-align: left;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.user-mgmt-table tbody td {
+  padding: 16px 20px;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.user-mgmt-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Avatar + tên */
+.user-mgmt-avatar-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.user-mgmt-avatar-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-right: 10px;
+}
+
+.user-mgmt-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Status badge */
+.user-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.user-status .user-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  display: inline-block;
+}
+
+.user-status.active {
+  background: #ecfdf5;
+  color: #059669;
+}
+.user-status.active .user-status-dot {
+  background: #059669;
+}
+
+.user-status.inactive {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.user-status.inactive .user-status-dot {
+  background: #b91c1c;
+}
+
+/* Action icons */
+.user-mgmt-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  margin-right: 6px;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.user-mgmt-action i {
+  font-size: 1.1rem;
+}
+
+.user-mgmt-action:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.user-mgmt-action:focus-visible {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  border-radius: 6px;
+}
+
+.user-mgmt-action:active {
+  transform: scale(0.98);
+}
+
+/* Container chung */
+.user-management-container {
+  padding: 8px 12px;
+}
+
+/* Tối ưu dropdown của react-select trong modal */
+.admin-add-user-modal .admin-role-select__menu {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  margin-top: 6px;
+}
+/* Ẩn scrollbar trên các trình duyệt phổ biến */
+.admin-add-user-modal .admin-role-select__menu::-webkit-scrollbar {
+  display: none; /* WebKit (Chrome, Safari, Edge Chromium) */
+}
+/* Firefox only */
+@supports (scrollbar-width: none) {
+  .admin-add-user-modal .admin-role-select__menu {
+    scrollbar-width: none;
+  }
+}
+/* IE/Edge Legacy */
+.admin-add-user-modal .admin-role-select__menu {
+  -ms-overflow-style: none;
+}
+
+/* Căn dropdown không lệch và không bị cắt trong modal (khi không dùng portal) */
+.admin-add-user-modal .admin-role-select__menu {
+  position: absolute;
+}
+
+/* Khi dùng portal, rely z-index cao để nổi trên overlay */
+.react-select__menu-portal {
+  z-index: 2000;
+}
+
+/* Khi portal của Select gắn vào modal */
+.admin-add-user-modal .admin-role-select__menu-portal {
+  position: relative;
+  z-index: 1100;
+}
+.admin-add-user-modal .admin-role-select__menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
 }

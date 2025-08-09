@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import AddUserModal from "../../components/modals/add_user_modal";
+import ConfirmModal from "../../components/modals/confirm_modal";
 import { ToastContainer } from "../../components/common";
 import { userService } from "../../services";
 import "../../styles/pages/admin/user_management.css";
@@ -39,6 +40,11 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    userId: null,
+    loading: false,
+  });
 
   // Fetch users từ API
   useEffect(() => {
@@ -53,7 +59,7 @@ const UserManagement = () => {
           userId: user.userId,
           name: user.fullName,
           username: user.username,
-          email: user.username, 
+          email: user.username,
           roleIds: user.roleIds,
           status: user.status === 1 ? "Hoạt động" : "Không hoạt động",
           avatar: `https://randomuser.me/api/portraits/${
@@ -168,6 +174,30 @@ const UserManagement = () => {
 
       // Throw error để modal biết có lỗi
       throw error;
+    }
+  };
+
+  const handleDeleteUser = (userId) => {
+    setConfirmState({ open: true, userId, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    const { userId } = confirmState;
+    if (!userId) {
+      setConfirmState({ open: false, userId: null, loading: false });
+      return;
+    }
+    try {
+      setConfirmState((s) => ({ ...s, loading: true }));
+      await userService.deleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.userId !== userId));
+      if (window.addToast)
+        window.addToast("Xóa người dùng thành công!", "success");
+    } catch (err) {
+      console.error("Xóa người dùng thất bại:", err);
+      if (window.addToast) window.addToast("Xóa người dùng thất bại!", "error");
+    } finally {
+      setConfirmState({ open: false, userId: null, loading: false });
     }
   };
 
@@ -300,15 +330,31 @@ const UserManagement = () => {
                   </span>
                 </td>
                 <td>
-                  <span className="user-mgmt-action" title="Edit">
+                  <button
+                    type="button"
+                    className="user-mgmt-action"
+                    title="Chỉnh sửa"
+                    aria-label="Chỉnh sửa"
+                  >
                     <i className="bi bi-pen"></i>
-                  </span>
-                  <span className="user-mgmt-action" title="Delete">
+                  </button>
+                  <button
+                    type="button"
+                    className="user-mgmt-action"
+                    title="Xóa"
+                    aria-label="Xóa người dùng"
+                    onClick={() => handleDeleteUser(user.userId)}
+                  >
                     <i className="bi bi-trash"></i>
-                  </span>
-                  <span className="user-mgmt-action" title="Lock">
+                  </button>
+                  <button
+                    type="button"
+                    className="user-mgmt-action"
+                    title="Khóa"
+                    aria-label="Khóa"
+                  >
                     <i className="bi bi-lock"></i>
-                  </span>
+                  </button>
                 </td>
               </tr>
             ))}
@@ -319,8 +365,7 @@ const UserManagement = () => {
       {/* Footer */}
       <div className="table-footer">
         <div className="entries-info">
-          Hiển thị 1 đến {filteredUsers.length} trên {users.length}
-          bản ghi
+          Hiển thị 1 đến {filteredUsers.length} trên {users.length} bản ghi
         </div>
         <div className="pagination">
           <button className="pagination-btn prev-btn" disabled>
@@ -338,6 +383,20 @@ const UserManagement = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddUser={handleAddUser}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa người dùng này?"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        onConfirm={confirmDelete}
+        onCancel={() =>
+          setConfirmState({ open: false, userId: null, loading: false })
+        }
+        loading={confirmState.loading}
       />
 
       {/* Toast Container */}

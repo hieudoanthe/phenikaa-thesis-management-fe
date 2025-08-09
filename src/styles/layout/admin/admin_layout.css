@@ -61,15 +61,15 @@
 }
 
 /* Page Title Section */
-.page-title-section {
+.admin-page-title-section {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   padding: 0 !important;
-  animation: titleFadeIn 0.3s ease;
+  animation: adminTitleFadeIn 0.3s ease;
 }
 
-.page-title {
+.admin-page-title {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
@@ -78,7 +78,7 @@
   transition: all var(--transition-slow);
 }
 
-.page-subtitle {
+.admin-page-subtitle {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin: 0;
@@ -87,7 +87,7 @@
 }
 
 /* Animation cho thay đổi tiêu đề */
-@keyframes titleFadeIn {
+@keyframes adminTitleFadeIn {
   from {
     opacity: 0;
     transform: translateY(-10px);
@@ -485,11 +485,11 @@
     padding: 0 1rem;
   }
 
-  .page-title {
+  .admin-page-title {
     font-size: var(--font-size-xl);
   }
 
-  .page-subtitle {
+  .admin-page-subtitle {
     font-size: var(--font-size-xs);
   }
 
