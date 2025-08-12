@@ -4,9 +4,16 @@ import Select from "react-select";
 import academicYearService from "../../services/academic-year.service";
 import topicService from "../../services/topic.service";
 
-const AddTopicModal = ({ open, onClose, onSubmit }) => {
+const AddTopicModal = ({
+  open,
+  onClose,
+  onSubmit,
+  topicData,
+  isViewMode = false,
+}) => {
   // Form ban đầu
   const initialForm = {
+    topicId: null, // Thêm topicId để phân biệt tạo mới/cập nhật
     topicCode: "",
     title: "",
     description: "",
@@ -37,6 +44,24 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
       loadAcademicYearList();
     }
   }, [open]);
+
+  // Load dữ liệu topic vào form khi ở chế độ xem
+  useEffect(() => {
+    if (open && isViewMode && topicData) {
+      setForm({
+        topicId: topicData.topicId || null,
+        topicCode: topicData.topicCode || "",
+        title: topicData.title || "",
+        description: topicData.description || "",
+        objectives: topicData.objectives || "",
+        methodology: topicData.methodology || "",
+        expectedOutcome: topicData.expectedOutcome || "",
+        academicYearId: topicData.academicYearId || "",
+        maxStudents: topicData.maxStudents || "",
+        difficultyLevel: topicData.difficultyLevel || "MEDIUM",
+      });
+    }
+  }, [open, isViewMode, topicData]);
 
   const loadAcademicYearList = async () => {
     setLoading(true);
@@ -161,22 +186,44 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
       }
 
       console.log("Dữ liệu sẽ gửi lên server:", submitData);
+      console.log("isViewMode:", isViewMode);
+      console.log("form.topicId:", form.topicId);
 
-      // Gọi API tạo topic
-      const result = await topicService.createTopic(submitData);
+      let result;
 
-      if (result.success) {
-        console.log("Tạo topic thành công:", result.data);
-        // Reset form về trạng thái ban đầu
-        setForm(initialForm);
-        // Gọi callback để thông báo thành công
-        onSubmit?.(result);
-        // Đóng modal
-        onClose();
+      // Phân biệt giữa tạo mới và cập nhật
+      if (isViewMode && form.topicId) {
+        console.log("Chế độ cập nhật - gọi updateTopic");
+        // Chế độ cập nhật - gọi API updateTopic
+        result = await topicService.updateTopic(form.topicId, submitData);
+        if (result.success) {
+          console.log("Cập nhật topic thành công:", result.data);
+          alert("Cập nhật đề tài thành công!");
+        } else {
+          console.error("Lỗi cập nhật topic:", result.message);
+          alert(`Lỗi cập nhật: ${result.message}`);
+          return;
+        }
       } else {
-        console.error("Lỗi tạo topic:", result.message);
-        alert(`Lỗi: ${result.message}`);
+        console.log("Chế độ tạo mới - gọi createTopic");
+        // Chế độ tạo mới - gọi API createTopic
+        result = await topicService.createTopic(submitData);
+        if (result.success) {
+          console.log("Tạo topic thành công:", result.data);
+          alert("Tạo đề tài thành công!");
+        } else {
+          console.error("Lỗi tạo topic:", result.message);
+          alert(`Lỗi tạo mới: ${result.message}`);
+          return;
+        }
       }
+
+      // Reset form về trạng thái ban đầu
+      setForm(initialForm);
+      // Gọi callback để thông báo thành công
+      onSubmit?.(result);
+      // Đóng modal
+      onClose();
     } catch (error) {
       console.error("Lỗi không mong muốn:", error);
       alert("Có lỗi xảy ra khi tạo đề tài");
@@ -230,7 +277,7 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
             color: "#2d3748",
           }}
         >
-          Tạo đề tài
+          {isViewMode ? "Xem chi tiết đề tài" : "Tạo đề tài"}
         </h2>
       </div>
 
@@ -619,7 +666,13 @@ const AddTopicModal = ({ open, onClose, onSubmit }) => {
                 width: "auto",
               }}
             >
-              {submitting ? "Đang tạo..." : "Tạo Đề Tài"}
+              {submitting
+                ? isViewMode
+                  ? "Đang cập nhật..."
+                  : "Đang tạo..."
+                : isViewMode
+                ? "Cập Nhật Đề Tài"
+                : "Tạo Đề Tài"}
             </button>
           </div>
         </form>
@@ -632,6 +685,8 @@ AddTopicModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSubmit: PropTypes.func,
+  topicData: PropTypes.object,
+  isViewMode: PropTypes.bool,
 };
 
 export default AddTopicModal;

@@ -7,7 +7,7 @@
 
 /* Sidebar */
 .admin-sidebar {
-  width: 280px;
+  width: var(--sidebar-width);
   background: linear-gradient(
     135deg,
     var(--color-secondary) 0%,
@@ -22,13 +22,13 @@
 }
 
 .admin-sidebar.collapsed {
-  width: 70px;
+  width: var(--sidebar-width-collapsed);
 }
 
 /* Main Content Area */
 .admin-main-content {
   flex: 1;
-  margin-left: 280px;
+  margin-left: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -37,14 +37,14 @@
 }
 
 .admin-sidebar.collapsed + .admin-main-content {
-  margin-left: 70px;
+  margin-left: var(--sidebar-width-collapsed);
 }
 
 /* Header */
 .admin-header {
   background: var(--color-bg-primary);
   padding: 0 2rem;
-  height: 70px;
+  height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -464,7 +464,7 @@
 
 .content-wrapper {
   padding: 0 26px;
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - var(--header-height));
 }
 
 /* Mobile Responsive */

@@ -1,0 +1,103 @@
+/* ========================================
+   RESPONSIVE UTILITIES - GLOBAL
+   Sử dụng biến breakpoint từ design tokens
+   ======================================== */
+
+/* Container responsive */
+.container-responsive {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    max-width: var(--container-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: var(--container-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: var(--container-lg);
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: var(--container-xl);
+  }
+}
+
+/* Ẩn/hiện theo breakpoint */
+.hidden-xs {
+  display: none;
+}
+@media (min-width: 376px) {
+  .hidden-xs {
+    display: initial;
+  }
+}
+
+.hidden-sm {
+  display: none;
+}
+@media (min-width: 481px) {
+  .hidden-sm {
+    display: initial;
+  }
+}
+
+.hidden-md {
+  display: none;
+}
+@media (min-width: 769px) {
+  .hidden-md {
+    display: initial;
+  }
+}
+
+.hidden-lg {
+  display: none;
+}
+@media (min-width: 1025px) {
+  .hidden-lg {
+    display: initial;
+  }
+}
+
+/* Grid responsive tiện ích */
+.grid-auto-fit-250 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.grid-auto-fit-300 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-6);
+}
+
+/* Sidebar helpers dùng biến token */
+.with-sidebar {
+  margin-left: var(--sidebar-width);
+}
+
+.with-sidebar-collapsed {
+  margin-left: var(--sidebar-width-collapsed);
+}
+
+@media (max-width: 768px) {
+  .with-sidebar,
+  .with-sidebar-collapsed {
+    margin-left: 0;
+  }
+}

@@ -1,6 +1,7 @@
 // Import design tokens
 import "./design-tokens.css";
 import "./placeholder.css";
+import "./responsive.css";
 
 // Export for potential JavaScript usage
 export const designTokens = {

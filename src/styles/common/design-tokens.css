@@ -190,11 +190,28 @@
   --container-padding: 1rem;
 
   /* Sidebar */
-  --sidebar-width: 250px;
-  --sidebar-width-collapsed: 64px;
+  --sidebar-width: 280px;
+  --sidebar-width-collapsed: 70px;
 
   /* Header */
-  --header-height: 64px;
+  --header-height: 70px;
+
+  /* ========================================
+     BREAKPOINTS
+     ======================================== */
+
+  /* Common viewport breakpoints */
+  --bp-xs: 375px;
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+
+  /* Container max-widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
 
   /* ========================================
      COMPONENT SPECIFIC

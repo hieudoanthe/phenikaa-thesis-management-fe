@@ -1,9 +1,8 @@
-Placeholder Page Styles
-.placeholder-page {
+Placeholder Page Styles .placeholder-page {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - var(--header-height));
   background-color: #1a1a1a;
   color: #e5e7eb;
 }
@@ -49,21 +48,21 @@ Placeholder Page Styles
   .placeholder-content {
     padding: 1.5rem;
   }
-  
+
   .placeholder-icon {
     font-size: 4rem;
     margin-bottom: 1.5rem;
   }
-  
+
   .placeholder-icon svg {
     width: 80px;
     height: 80px;
   }
-  
+
   .placeholder-title {
     font-size: 2rem;
   }
-  
+
   .placeholder-description {
     font-size: 1rem;
   }
@@ -73,21 +72,21 @@ Placeholder Page Styles
   .placeholder-content {
     padding: 1rem;
   }
-  
+
   .placeholder-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
   }
-  
+
   .placeholder-icon svg {
     width: 60px;
     height: 60px;
   }
-  
+
   .placeholder-title {
     font-size: 1.75rem;
   }
-  
+
   .placeholder-description {
     font-size: 0.875rem;
   }
@@ -124,11 +123,11 @@ Placeholder Page Styles
   .placeholder-page {
     background-color: #111827;
   }
-  
+
   .placeholder-title {
     color: #f9fafb;
   }
-  
+
   .placeholder-description {
     color: #d1d5db;
   }
@@ -140,11 +139,11 @@ Placeholder Page Styles
     color: #ffffff;
     opacity: 1;
   }
-  
+
   .placeholder-title {
     color: #ffffff;
   }
-  
+
   .placeholder-description {
     color: #ffffff;
   }
@@ -155,12 +154,12 @@ Placeholder Page Styles
   .placeholder-content {
     animation: none;
   }
-  
+
   .placeholder-icon {
     transition: none;
   }
-  
+
   .placeholder-page:hover .placeholder-icon {
     transform: none;
   }
-} 
+}

@@ -183,11 +183,11 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .student-sidebar {
-    width: 280px;
+    width: var(--sidebar-width);
   }
 
   .student-sidebar.collapsed {
-    width: 280px;
+    width: var(--sidebar-width);
   }
 
   .student-sidebar.collapsed .sidebar-title,

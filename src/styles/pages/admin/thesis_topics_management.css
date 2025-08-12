@@ -1,9 +1,20 @@
+/* CSS Reset cho html và body */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Container chính */
 .thesis-topics-management {
   display: flex;
   height: 100vh;
   background-color: var(--color-bg-secondary);
   font-family: var(--font-family-primary);
+  overflow: hidden;
+  position: relative;
 }
 
 /* Cột trái - Danh sách đề tài */
@@ -14,6 +25,7 @@
   display: flex;
   flex-direction: column;
   padding: var(--spacing-5);
+  overflow: hidden;
 }
 
 /* Search container */
@@ -60,6 +72,7 @@
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-card);
+  min-width: 0;
 }
 
 .table-header {
@@ -74,9 +87,19 @@
   font-size: var(--font-size-sm);
 }
 
+.header-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
 .table-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .table-row {
@@ -87,6 +110,7 @@
   border-bottom: 1px solid var(--color-border-secondary);
   cursor: pointer;
   transition: background-color var(--transition-normal);
+  min-height: 60px;
 }
 
 .table-row:last-child {
@@ -107,6 +131,10 @@
   color: var(--color-text-primary);
   display: flex;
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-topic-title {
@@ -132,6 +160,8 @@
   letter-spacing: var(--letter-spacing-wide);
   min-width: 80px;
   text-align: center;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .status-pending {
@@ -154,8 +184,7 @@
   flex: 1;
   background-color: var(--color-bg-primary);
   padding: var(--spacing-8);
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 /* Tiêu đề đề tài */
@@ -510,11 +539,13 @@
 @media (max-width: 768px) {
   .thesis-topics-management {
     flex-direction: column;
+    overflow: hidden;
   }
 
   .topics-list-column,
   .topic-details-column {
     flex: none;
+    overflow: hidden;
   }
 
   .topics-list-column {

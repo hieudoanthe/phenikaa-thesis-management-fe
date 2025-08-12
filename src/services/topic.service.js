@@ -131,6 +131,50 @@ class TopicService {
       };
     }
   }
+
+  /**
+   * Duyệt đề tài
+   * @param {number} topicId - ID đề tài
+   * @returns {Promise<any>} - Kết quả thay đổi trạng thái
+   */
+  async approveTopic(topicId) {
+    try {
+      const response = await apiPost(
+        `${API_ENDPOINTS.APPROVE_TOPIC}?topicId=${topicId}`
+      );
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi duyệt đề tài:", error);
+
+      return {
+        success: false,
+        error: error.message,
+        message: "Duyệt đề tài thất bại",
+      };
+    }
+  }
+
+  /**
+   * Duyệt đề tài
+   * @param {number} topicId - ID đề tài
+   * @returns {Promise<any>} - Kết quả thay đổi trạng thái
+   */
+  async rejectTopic(topicId) {
+    try {
+      const response = await apiPost(
+        `${API_ENDPOINTS.REJECT_TOPIC}?topicId=${topicId}`
+      );
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi từ chối đề tài:", error);
+
+      return {
+        success: false,
+        error: error.message,
+        message: "Từ chối đề tài thất bại",
+      };
+    }
+  }
 }
 
 export default new TopicService();

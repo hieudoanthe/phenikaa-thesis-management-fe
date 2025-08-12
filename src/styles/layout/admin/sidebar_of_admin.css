@@ -191,11 +191,11 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .admin-sidebar {
-    width: 280px;
+    width: var(--sidebar-width);
   }
 
   .admin-sidebar.collapsed {
-    width: 280px;
+    width: var(--sidebar-width);
   }
 
   .admin-sidebar.collapsed .sidebar-title,

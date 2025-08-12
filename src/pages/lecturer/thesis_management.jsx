@@ -9,8 +9,7 @@ const ThesisManagement = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedYear, setSelectedYear] = useState("All");
-  const [selectedDepartment, setSelectedDepartment] =
-    useState("All Departments");
+  const [selectedApprovalStatus, setSelectedApprovalStatus] = useState("All");
 
   // States cho API
   const [topics, setTopics] = useState([]);
@@ -21,6 +20,9 @@ const ThesisManagement = () => {
   // States cho chỉnh sửa trực tiếp
   const [editingTopicId, setEditingTopicId] = useState(null);
   const [editRowData, setEditRowData] = useState({});
+
+  // State cho xem chi tiết topic
+  const [selectedTopicForView, setSelectedTopicForView] = useState(null);
 
   // States cho phân trang
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,13 +79,13 @@ const ThesisManagement = () => {
     }
   };
 
-  // Hàm xử lý khi tạo topic thành công từ modal
+  // Hàm xử lý khi tạo topic hoặc cập nhật topic thành công từ modal
   const handleTopicCreated = async (result) => {
     try {
-      // Reload danh sách topics để hiển thị topic mới
+      // Reload danh sách topics để hiển thị thay đổi
       await loadTopics();
-      // Hiển thị thông báo thành công
-      alert("Tạo đề tài thành công!");
+      // Không cần hiển thị thông báo ở đây vì modal đã hiển thị rồi
+      // Chỉ reload danh sách để cập nhật UI
     } catch (error) {
       console.error("Lỗi khi reload danh sách topics:", error);
     }
@@ -128,14 +130,14 @@ const ThesisManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
-      // Gọi API cập nhật đề tài
       const updateData = {
         ...editRowData,
-        topicStatus: editRowData.status,
+        status: editRowData.status || "available",
         academicYearId: parseInt(editRowData.academicYearId),
         maxStudents: parseInt(editRowData.maxStudents),
       };
-      delete updateData.status;
+      console.log("Dữ liệu cập nhật:", updateData);
+
       const response = await topicService.editTopic(updateData);
       if (response.success) {
         alert("Cập nhật đề tài thành công!");
@@ -161,7 +163,8 @@ const ThesisManagement = () => {
     if (topic) {
       // Mở modal AddTopicModal với dữ liệu topic để xem
       setIsFormOpen(true);
-      // Note: AddTopicModal sẽ nhận dữ liệu topic thông qua props topicData
+      // Truyền dữ liệu topic vào modal để hiển thị và cập nhật
+      setSelectedTopicForView(topic);
     }
   };
 
@@ -188,7 +191,7 @@ const ThesisManagement = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedYear("All");
-    setSelectedDepartment("All Departments");
+    setSelectedApprovalStatus("All");
   };
 
   const filteredTopics = topics.filter((topic) => {
@@ -207,7 +210,13 @@ const ThesisManagement = () => {
       selectedYear === "All" ||
       selectedYear === (topic.academicYearId?.toString() || "");
 
-    return matchesSearch && matchesYear;
+    // Nếu selectedApprovalStatus là "All" hoặc rỗng, hiển thị tất cả
+    const matchesApprovalStatus =
+      !selectedApprovalStatus ||
+      selectedApprovalStatus === "All" ||
+      selectedApprovalStatus === (topic.approvalStatus || topic.status || "");
+
+    return matchesSearch && matchesYear && matchesApprovalStatus;
   });
 
   const getStatusBadgeClass = (status) => {
@@ -269,6 +278,7 @@ const ThesisManagement = () => {
     topicsLength: topics.length,
     academicYearsLength: academicYears.length,
     selectedYear,
+    selectedApprovalStatus,
   });
 
   // Hiển thị loading
@@ -315,14 +325,25 @@ const ThesisManagement = () => {
       {/* Add Topic Modal */}
       <AddTopicModal
         open={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedTopicForView(null); // Reset topic khi đóng modal
+        }}
         onSubmit={handleTopicCreated}
+        topicData={selectedTopicForView} // Truyền dữ liệu topic để xem
+        isViewMode={!!selectedTopicForView} // Xác định chế độ xem
       />
 
       {/* Show Form Button (when form is hidden) */}
       {!isFormOpen && (
         <div className="show-form-section">
-          <button className="show-form-btn" onClick={() => setIsFormOpen(true)}>
+          <button
+            className="show-form-btn"
+            onClick={() => {
+              setIsFormOpen(true);
+              setSelectedTopicForView(null); // Reset để tạo mới
+            }}
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
             </svg>
@@ -340,67 +361,72 @@ const ThesisManagement = () => {
 
           {/* Filters and Search */}
           <div className="filters-section">
-            <div className="filters-left">
-              <div className="filter-group" style={{ minWidth: 260 }}>
-                <label>Năm học:</label>
-                {(() => {
-                  const yearOptions = [
-                    { value: "All", label: "Tất cả năm học" },
-                    ...academicYears.map((y) => ({
-                      value: String(y.id),
-                      label: y.name,
-                    })),
-                  ];
-                  const yearValue = yearOptions.find(
-                    (o) => o.value === String(selectedYear)
-                  );
-                  return (
-                    <Select
-                      classNamePrefix="select"
-                      options={yearOptions}
-                      value={yearValue}
-                      onChange={(opt) =>
-                        setSelectedYear(opt ? String(opt.value) : "All")
-                      }
-                      isClearable
-                      placeholder="Chọn năm học"
-                    />
-                  );
-                })()}
-              </div>
-              <div className="filter-group" style={{ minWidth: 260 }}>
-                <label>Khoa:</label>
-                {(() => {
-                  const departmentOptions = [
-                    { value: "All Departments", label: "Tất cả khoa" },
-                    {
-                      value: "Computer Science",
-                      label: "Khoa Công nghệ Thông tin",
-                    },
-                    { value: "Engineering", label: "Khoa Kỹ thuật" },
-                    { value: "Business", label: "Khoa Kinh tế" },
-                  ];
-                  const deptValue = departmentOptions.find(
-                    (o) => o.value === selectedDepartment
-                  );
-                  return (
-                    <Select
-                      classNamePrefix="select"
-                      options={departmentOptions}
-                      value={deptValue}
-                      onChange={(opt) =>
-                        setSelectedDepartment(
-                          opt ? String(opt.value) : "All Departments"
-                        )
-                      }
-                      isClearable
-                      placeholder="Chọn khoa"
-                    />
-                  );
-                })()}
-              </div>
+            <div className="filter-group" style={{ minWidth: 260 }}>
+              <label>Năm học:</label>
+              {(() => {
+                const yearOptions = [
+                  { value: "All", label: "Tất cả năm học" },
+                  ...academicYears.map((y) => ({
+                    value: String(y.id),
+                    label: y.name,
+                  })),
+                ];
+                const yearValue = yearOptions.find(
+                  (o) => o.value === String(selectedYear)
+                );
+                return (
+                  <Select
+                    classNamePrefix="select"
+                    options={yearOptions}
+                    value={yearValue}
+                    onChange={(opt) =>
+                      setSelectedYear(opt ? String(opt.value) : "All")
+                    }
+                    isClearable
+                    placeholder="Chọn năm học"
+                  />
+                );
+              })()}
             </div>
-
+            <div className="filter-group" style={{ minWidth: 200 }}>
+              <label>Trạng thái duyệt:</label>
+              <Select
+                classNamePrefix="select"
+                options={[
+                  { value: "All", label: "Tất cả trạng thái" },
+                  { value: "pending", label: "Chờ duyệt" },
+                  { value: "approved", label: "Đã duyệt" },
+                  { value: "rejected", label: "Bị từ chối" },
+                  { value: "available", label: "Còn trống" },
+                  { value: "active", label: "Hoạt động" },
+                  { value: "inactive", label: "Ngừng hoạt động" },
+                ]}
+                value={{
+                  value: selectedApprovalStatus,
+                  label:
+                    selectedApprovalStatus === "All"
+                      ? "Tất cả trạng thái"
+                      : selectedApprovalStatus === "pending"
+                      ? "Chờ duyệt"
+                      : selectedApprovalStatus === "approved"
+                      ? "Đã duyệt"
+                      : selectedApprovalStatus === "rejected"
+                      ? "Bị từ chối"
+                      : selectedApprovalStatus === "available"
+                      ? "Còn trống"
+                      : selectedApprovalStatus === "active"
+                      ? "Hoạt động"
+                      : selectedApprovalStatus === "inactive"
+                      ? "Ngừng hoạt động"
+                      : "Tất cả trạng thái",
+                }}
+                onChange={(opt) =>
+                  setSelectedApprovalStatus(opt ? String(opt.value) : "All")
+                }
+                isClearable
+                placeholder="Chọn trạng thái"
+              />
+            </div>
             <div className="search-section">
               <div className="search-box">
                 <svg
@@ -432,20 +458,21 @@ const ThesisManagement = () => {
             <table className="topics-table">
               <thead>
                 <tr>
-                  <th>Mã Đề Tài</th>
-                  <th>Tiêu Đề</th>
-                  <th>Năm Học</th>
-                  <th>Số Lượng SV</th>
-                  <th>Trạng Thái Duyệt</th>
-                  <th>Trạng Thái Đề Tài</th>
-                  <th>Phê Duyệt</th>
-                  <th>Hành Động</th>
+                  <th>Mã đề tài</th>
+                  <th>Tiêu đề</th>
+                  <th>Sinh viên đăng kí</th>
+                  <th>Năm học</th>
+                  <th>Số lượng</th>
+                  <th>Trạng thái duyệt</th>
+                  <th>Trạng thái đề tài</th>
+                  <th>Phê duyệt</th>
+                  <th>Hành động</th>
                 </tr>
               </thead>
               <tbody>
                 {currentRecords.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="empty-state">
+                    <td colSpan="9" className="empty-state">
                       <div className="empty-message">
                         <p>Không tìm thấy đề tài nào</p>
                         <span>
@@ -473,6 +500,14 @@ const ThesisManagement = () => {
                               type="text"
                               name="title"
                               value={editRowData.title || ""}
+                              onChange={handleEditInputChange}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              name="registerId"
+                              value={editRowData.registerId || ""}
                               onChange={handleEditInputChange}
                             />
                           </td>
@@ -506,7 +541,7 @@ const ThesisManagement = () => {
                               onChange={handleEditInputChange}
                             >
                               <option value="PENDING">Chờ duyệt</option>
-                              <option value="AVAILABLE">Có sẵn</option>
+                              <option value="AVAILABLE">Còn trống</option>
                               <option value="APPROVED">Đã duyệt</option>
                               <option value="REJECTED">Bị từ chối</option>
                             </select>
@@ -563,6 +598,9 @@ const ThesisManagement = () => {
                                 : topic.title
                               : "Chưa có tiêu đề"}
                           </td>
+                          <td className="register-id">
+                            {topic.registerId || "Chưa có"}
+                          </td>
                           <td>{getAcademicYearName(topic.academicYearId)}</td>
                           <td>
                             {topic.currentStudents || 0}/
@@ -588,7 +626,7 @@ const ThesisManagement = () => {
                                   case "rejected":
                                     return "Bị từ chối";
                                   case "available":
-                                    return "Có sẵn";
+                                    return "Còn trống";
                                   case "active":
                                     return "Hoạt động";
                                   case "inactive":
@@ -619,7 +657,7 @@ const ThesisManagement = () => {
                                   case "deleted":
                                     return "Đã xóa";
                                   case "available":
-                                    return "Có sẵn";
+                                    return "Còn trống";
                                   case "pending":
                                     return "Chờ duyệt";
                                   default:
@@ -700,7 +738,7 @@ const ThesisManagement = () => {
                               ) {
                                 return (
                                   <span className="accept-status-text">
-                                    Có sẵn
+                                    Còn trống
                                   </span>
                                 );
                               }

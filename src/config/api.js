@@ -30,17 +30,20 @@ export const API_ENDPOINTS = {
   UPDATE_USER: "/api/admin/updateUser",
   CHANGE_STATUS_USER: "/api/admin/changeStatusUser",
 
-  // Teacher Topic Management
-  CREATE_TOPIC: "/api/lecturer/thesis/createTopic",
-  GET_TOPIC_LIST: "/api/lecturer/thesis/getListTopic",
-  EDIT_TOPIC: "/api/lecturer/thesis/editTopic",
-  UPDATE_TOPIC: "/api/lecturer/thesis/updateTopic",
-  DELETE_TOPIC: "/api/lecturer/thesis/deleteTopic",
+  // Teacher Permission
+  // Topic Management
+  CREATE_TOPIC: "/api/thesis-service/teacher/createTopic",
+  GET_TOPIC_LIST: "/api/thesis-service/teacher/getListTopic",
+  EDIT_TOPIC: "/api/thesis-service/teacher/editTopic",
+  UPDATE_TOPIC: "/api/thesis-service/teacher/updateTopic",
+  DELETE_TOPIC: "/api/thesis-service/teacher/deleteTopic",
+  APPROVE_TOPIC: "/api/thesis-service/teacher/approveTopic",
+  REJECT_TOPIC: "/api/thesis-service/teacher/rejectTopic",
 
   // Student Topic Registration
-  GET_AVAILABLE_TOPIC_LIST: "/api/lecturer/thesis/available-topics",
-  REGISTER_TOPIC: "/api/lecturer/thesis/register-topic",
+  GET_AVAILABLE_TOPIC_LIST: "/api/thesis-service/student/available-topics",
+  REGISTER_TOPIC: "/api/thesis-service/student/register-topic",
 
   // Student Suggest
-  STUDENT_SUGGEST_TOPIC: "/api/lecturer/thesis/suggest-topic",
+  STUDENT_SUGGEST_TOPIC: "/api/thesis-service/student/suggest-topic",
 };

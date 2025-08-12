@@ -183,11 +183,11 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .lecturer-sidebar {
-    width: 280px;
+    width: var(--sidebar-width);
   }
 
   .lecturer-sidebar.collapsed {
-    width: 280px;
+    width: var(--sidebar-width);
   }
 
   .lecturer-sidebar.collapsed .sidebar-title,
