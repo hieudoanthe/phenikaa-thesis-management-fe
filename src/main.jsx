@@ -1,31 +1,31 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
-import Dashboard from "./pages/admin/dashboard.jsx";
-import UserManagement from "./pages/admin/user_management.jsx";
-import LecturerHome from "./pages/lecturer/home.jsx";
-import LecturerDashboard from "./pages/lecturer/dasboard.jsx";
-import ThesisManagement from "./pages/lecturer/thesis_management.jsx";
-import AssignmentManagement from "./pages/lecturer/assignment_management.jsx";
-import LecturerLayout from "./components/layout/lecturer/lecturer_layout.jsx";
+import Dashboard from "./pages/admin/Dashboard.jsx";
+import UserManagement from "./pages/admin/UserManagement.jsx";
+import LecturerHome from "./pages/lecturer/Home.jsx";
+import LecturerDashboard from "./pages/lecturer/Dashboard.jsx";
+import ThesisManagement from "./pages/lecturer/ThesisManagement.jsx";
+import AssignmentManagement from "./pages/lecturer/AssignmentManagement.jsx";
+import LecturerLayout from "./components/layout/lecturer/LecturerLayout.jsx";
 import LecturerRoute from "./routers/LecturerRoute.jsx";
 import StudentRoute from "./routers/StudentRoute.jsx";
-import StudentLayout from "./components/layout/student/student_layout.jsx";
+import StudentLayout from "./components/layout/student/StudentLayout.jsx";
 import PlaceholderPage from "./components/common/PlaceholderPage.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import SessionManager from "./components/common/SessionManager";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ThesisRegister from "./pages/student/thesis_register.jsx";
-import TopicRegistration from "./pages/student/topic_registration.jsx";
-import StudentHome from "./pages/student/home.jsx";
+import ThesisRegister from "./pages/student/ThesisRegister.jsx";
+import TopicRegistration from "./pages/student/TopicRegistration.jsx";
+import StudentHome from "./pages/student/Home.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
-import AdminLayout from "./components/layout/admin/admin_layout.jsx";
-import ThesisTopicsManagement from "./pages/admin/thesis_topics_management.jsx";
-import AcademicYearManagement from "./pages/admin/academic_year_management.jsx";
-import DefenseSessionsSchedule from "./pages/admin/defense_sessions_schedule.jsx";
+import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
+import ThesisTopicsManagement from "./pages/admin/ThesisTopicsManagement.jsx";
+import AcademicYearManagement from "./pages/admin/AcademicYearManagement.jsx";
+import DefenseSessionsSchedule from "./pages/admin/DefenseSessionsSchedule.jsx";
 // Import CSS
-import "./styles/common/index.js";
+import "./index.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

@@ -93,7 +93,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
 
   return (
     <div
-      className="admin-modal-overlay"
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
       onClick={onClose}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
@@ -104,94 +104,122 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
       tabIndex={0}
     >
       <div
-        className="admin-modal-box admin-add-user-modal"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="admin-modal-title">Thêm người dùng mới</h2>
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h2 className="text-xl font-semibold text-gray-900 m-0">
+            Thêm người dùng mới
+          </h2>
+        </div>
 
-        <form className="admin-modal-form" onSubmit={handleSubmit}>
-          <div className="admin-form-row">
+        {/* Form */}
+        <form className="p-6 space-y-6" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left Column */}
-            <div className="admin-form-column">
-              <div className="admin-form-group">
-                <div className="admin-floating-input-group">
-                  <input
-                    id="fullName"
-                    type="text"
-                    className="admin-modal-input"
-                    placeholder=" "
-                    value={formData.fullName}
-                    onChange={(e) =>
-                      handleInputChange("fullName", e.target.value)
-                    }
-                    required
-                  />
-                  <label htmlFor="fullName" className="admin-floating-label">
-                    Họ và tên
-                  </label>
-                </div>
+            <div className="space-y-5">
+              <div className="relative">
+                <input
+                  id="fullName"
+                  type="text"
+                  placeholder=" "
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    handleInputChange("fullName", e.target.value)
+                  }
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
+                />
+                <label
+                  htmlFor="fullName"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Họ và tên
+                </label>
               </div>
 
-              <div className="admin-form-group">
-                <div className="admin-floating-input-group">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    className="admin-modal-input"
-                    placeholder=" "
-                    value={formData.password}
-                    onChange={(e) =>
-                      handleInputChange("password", e.target.value)
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder=" "
+                  value={formData.password}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer pr-12"
+                />
+                <label
+                  htmlFor="password"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Mật khẩu
+                </label>
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 text-gray-500 hover:text-gray-700 transition-colors duration-200 rounded-lg hover:bg-gray-100"
+                  onClick={() => setShowPassword(!showPassword)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setShowPassword(!showPassword);
                     }
-                    required
-                  />
-                  <label htmlFor="password" className="admin-floating-label">
-                    Mật khẩu
-                  </label>
-                  <button
-                    type="button"
-                    className="admin-password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setShowPassword(!showPassword);
-                      }
-                    }}
-                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  }}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="transition-all duration-200"
                   >
-                    <i
-                      className={`bi bi-eye${showPassword ? "-slash" : ""}`}
-                    ></i>
-                  </button>
-                </div>
+                    {showPassword ? (
+                      <>
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </>
+                    ) : (
+                      <>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </>
+                    )}
+                  </svg>
+                </button>
               </div>
             </div>
 
             {/* Right Column */}
-            <div className="admin-form-column">
-              <div className="admin-form-group">
-                <div className="admin-floating-input-group">
-                  <input
-                    id="username"
-                    type="text"
-                    className="admin-modal-input"
-                    placeholder=" "
-                    value={formData.username}
-                    onChange={(e) =>
-                      handleInputChange("username", e.target.value)
-                    }
-                    required
-                  />
-                  <label htmlFor="username" className="admin-floating-label">
-                    Tên đăng nhập
-                  </label>
-                </div>
+            <div className="space-y-5">
+              <div className="relative">
+                <input
+                  id="username"
+                  type="text"
+                  placeholder=" "
+                  value={formData.username}
+                  onChange={(e) =>
+                    handleInputChange("username", e.target.value)
+                  }
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
+                />
+                <label
+                  htmlFor="username"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Tên đăng nhập
+                </label>
               </div>
 
-              <div className="admin-form-group">
+              <div className="relative">
                 <Select
-                  classNamePrefix="admin-role-select"
                   value={formData.roles}
                   onChange={(selectedOptions) =>
                     handleInputChange("roles", selectedOptions || [])
@@ -208,47 +236,63 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   menuShouldScrollIntoView={false}
                   maxMenuHeight={160}
                   isClearable
+                  className="custom-select"
                   styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+                    control: (base, state) => ({
+                      ...base,
+                      minHeight: "44px",
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: state.isFocused
+                        ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
+                        : "none",
+                      borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
+                      "&:hover": {
+                        borderColor: state.isFocused ? "#ff6600" : "#cbd5e0",
+                      },
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? "#ff6600"
+                        : state.isFocused
+                        ? "#fff5f0"
+                        : "#fff",
+                      color: state.isSelected ? "#fff" : "#4a5568",
+                      fontWeight: state.isSelected ? 500 : 400,
+                      "&:hover": {
+                        backgroundColor: state.isSelected
+                          ? "#ff6600"
+                          : "#fff5f0",
+                        color: state.isSelected ? "#fff" : "#4a5568",
+                      },
+                    }),
                     menu: (base) => ({
                       ...base,
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                       zIndex: 2000,
-                      marginTop: 6,
-                      maxHeight: 160,
                     }),
-                    menuList: (base) => ({
-                      ...base,
-                      paddingTop: 4,
-                      paddingBottom: 4,
-                    }),
-                    option: (base) => ({
-                      ...base,
-                      padding: "6px 10px",
-                      fontSize: "0.9rem",
-                    }),
-                    control: (base) => ({
-                      ...base,
-                      minHeight: 44,
-                      height: "auto",
-                    }),
+                    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
                   }}
                 />
               </div>
             </div>
           </div>
 
-          <div className="admin-modal-btn-row">
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              className="admin-modal-btn cancel"
               onClick={handleCancel}
+              className="px-6 py-2.5 text-base font-medium text-gray-600 bg-gray-100 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-700 min-w-[100px]"
             >
               Hủy
             </button>
             <button
-              type="button"
-              className="admin-modal-btn create"
-              onClick={handleSubmit}
+              type="submit"
+              className="px-6 py-2.5 text-base font-medium text-white bg-secondary rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-secondary-hover min-w-[120px]"
             >
               Thêm người dùng
             </button>

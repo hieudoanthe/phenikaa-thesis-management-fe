@@ -29,7 +29,7 @@ class UserService {
     }
   }
 
-  async getUsers({ page = 0, size = 8 } = {}) {
+  async getUsers({ page = 0, size = 1000 } = {}) {
     try {
       const response = await apiGet(API_ENDPOINTS.GET_USERS_PAGED, {
         params: { page, size },

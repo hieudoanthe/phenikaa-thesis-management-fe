@@ -13,7 +13,7 @@ const AddTopicModal = ({
 }) => {
   // Form ban đầu
   const initialForm = {
-    topicId: null, // Thêm topicId để phân biệt tạo mới/cập nhật
+    topicId: null,
     topicCode: "",
     title: "",
     description: "",
@@ -233,50 +233,13 @@ const AddTopicModal = ({
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "70px", // Chiều cao navbar
-        left: "280px", // Chiều rộng sidebar
-        right: 0,
-        bottom: 0,
-        background: "#fff",
-        zIndex: 1000,
-        display: "flex",
-        flexDirection: "column",
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-      }}
-    >
+    <div className="fixed top-[70px] left-64 right-0 bottom-0 bg-white z-[1000] flex flex-col scrollbar-hide">
       {/* Header cố định - click để đóng */}
       <div
         onClick={onClose}
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "24px 32px",
-          borderBottom: "1px solid #e0e6ed",
-          background: "#fff",
-          flexShrink: 0,
-          cursor: "pointer",
-          transition: "background-color 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.backgroundColor = "#f8fafc";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.backgroundColor = "#fff";
-        }}
+        className="flex justify-center items-center p-6 border-b border-gray-200 bg-white flex-shrink-0 cursor-pointer transition-colors duration-200 hover:bg-gray-50"
       >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "1.5rem",
-            fontWeight: 600,
-            color: "#2d3748",
-          }}
-        >
+        <h2 className="m-0 text-2xl font-semibold text-gray-800">
           {isViewMode ? "Xem chi tiết đề tài" : "Tạo đề tài"}
         </h2>
       </div>
@@ -284,159 +247,136 @@ const AddTopicModal = ({
       {/* Form có thể cuộn */}
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "24px 32px",
-          background: "#f8fafc",
-        }}
+        className="flex-1 overflow-y-auto p-6 bg-gray-50"
       >
-        <style>{`.admin-modal-form::-webkit-scrollbar { display: none; }`}</style>
         <form
-          className="admin-modal-form"
           onSubmit={handleSubmit}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 20,
-            maxWidth: "1000px",
-            margin: "0 auto",
-          }}
+          className="flex flex-col gap-5 max-w-4xl mx-auto"
         >
           {/* Dòng 1: Mã đề tài + Tiêu đề đề tài */}
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
-          >
-            <div className="admin-floating-input-group">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="relative">
               <input
                 id="topicCode"
-                className="admin-modal-input"
                 name="topicCode"
                 value={form.topicCode}
                 onChange={handleChange}
                 placeholder=" "
                 autoComplete="off"
-                style={{ width: "100%" }}
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
               />
-              <label htmlFor="topicCode" className="admin-floating-label">
+              <label
+                htmlFor="topicCode"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
                 Mã đề tài *
               </label>
             </div>
 
-            <div className="admin-floating-input-group">
+            <div className="relative">
               <input
                 id="title"
-                className="admin-modal-input"
                 name="title"
                 value={form.title}
                 onChange={handleChange}
                 placeholder=" "
                 required
-                style={{ width: "100%" }}
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
               />
-              <label htmlFor="title" className="admin-floating-label">
+              <label
+                htmlFor="title"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
                 Tiêu đề đề tài *
               </label>
             </div>
           </div>
 
           {/* Mô tả chi tiết - full width */}
-          <div className="admin-floating-input-group">
+          <div className="relative">
             <textarea
               id="description"
-              className="admin-modal-input"
               name="description"
               value={form.description}
               onChange={handleChange}
               placeholder=" "
               rows={3}
               required
-              style={{ width: "100%", resize: "none" }}
+              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
             />
-            <label htmlFor="description" className="admin-floating-label">
+            <label
+              htmlFor="description"
+              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+            >
               Mô tả chi tiết *
             </label>
           </div>
 
           {/* Dòng 2: Mục tiêu + Phương pháp */}
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}
-          >
-            <div className="admin-floating-input-group">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="relative">
               <textarea
                 id="objectives"
-                className="admin-modal-input"
                 name="objectives"
                 value={form.objectives}
                 onChange={handleChange}
                 placeholder=" "
                 rows={3}
                 required
-                style={{ width: "100%", resize: "none" }}
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
               />
-              <label htmlFor="objectives" className="admin-floating-label">
+              <label
+                htmlFor="objectives"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
                 Mục tiêu *
               </label>
             </div>
 
-            <div className="admin-floating-input-group">
+            <div className="relative">
               <textarea
                 id="methodology"
-                className="admin-modal-input"
                 name="methodology"
                 value={form.methodology}
                 onChange={handleChange}
                 placeholder=" "
                 rows={3}
                 required
-                style={{ width: "100%", resize: "none" }}
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
               />
-              <label htmlFor="methodology" className="admin-floating-label">
+              <label
+                htmlFor="methodology"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
                 Phương pháp *
               </label>
             </div>
           </div>
 
           {/* Kết quả mong đợi - full width */}
-          <div className="admin-floating-input-group">
+          <div className="relative">
             <textarea
               id="expectedOutcome"
-              className="admin-modal-input"
               name="expectedOutcome"
               value={form.expectedOutcome}
               onChange={handleChange}
               placeholder=" "
               rows={3}
               required
-              style={{ width: "100%", resize: "none" }}
+              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
             />
-            <label htmlFor="expectedOutcome" className="admin-floating-label">
+            <label
+              htmlFor="expectedOutcome"
+              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+            >
               Kết quả mong đợi *
             </label>
           </div>
 
           {/* Dòng 3: Năm học + Số sinh viên + Mức độ khó */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 20,
-            }}
-          >
-            <div style={{ position: "relative" }}>
-              <label
-                style={{
-                  position: "absolute",
-                  top: "-8px",
-                  left: "12px",
-                  background: "#f8fafc",
-                  padding: "0 6px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#ff6600",
-                  zIndex: 1,
-                }}
-              >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="relative">
+              <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
                 Năm học *
               </label>
               <Select
@@ -508,10 +448,9 @@ const AddTopicModal = ({
               />
             </div>
 
-            <div className="admin-floating-input-group">
+            <div className="relative">
               <input
                 id="maxStudents"
-                className="admin-modal-input"
                 name="maxStudents"
                 value={form.maxStudents}
                 onChange={handleChange}
@@ -519,32 +458,18 @@ const AddTopicModal = ({
                 type="number"
                 min={1}
                 required
-                style={{
-                  width: "100%",
-                  height: "50px",
-                  padding: "0 18px",
-                  fontSize: "16px",
-                }}
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
               />
-              <label htmlFor="maxStudents" className="admin-floating-label">
+              <label
+                htmlFor="maxStudents"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
                 Số sinh viên tối đa *
               </label>
             </div>
 
-            <div style={{ position: "relative" }}>
-              <label
-                style={{
-                  position: "absolute",
-                  top: "-8px",
-                  left: "12px",
-                  background: "#f8fafc",
-                  padding: "0 6px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#ff6600",
-                  zIndex: 1,
-                }}
-              >
+            <div className="relative">
+              <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
                 Mức Độ Khó *
               </label>
               <Select
@@ -616,55 +541,22 @@ const AddTopicModal = ({
               />
             </div>
           </div>
-          <div
-            className="admin-modal-btn-row"
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 8,
-              marginTop: 18,
-            }}
-          >
+          {/* Buttons */}
+          <div className="flex justify-end gap-2 mt-5">
             <button
               type="button"
-              className="admin-modal-btn cancel"
               onClick={() => {
                 resetForm();
                 onClose();
               }}
-              style={{
-                background: "#f6f8fb",
-                color: "#6b7a90",
-                borderRadius: 8,
-                fontSize: "1rem",
-                fontWeight: 500,
-                padding: "9px 22px",
-                border: "none",
-                cursor: "pointer",
-                transition: "background 0.18s, color 0.18s",
-                minWidth: 100,
-                width: "auto",
-              }}
+              className="px-6 py-2.5 text-base font-medium text-gray-600 bg-gray-100 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-700 min-w-[100px]"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="admin-modal-btn create"
               disabled={submitting}
-              style={{
-                background: submitting ? "#ccc" : "#ff6600",
-                color: "#fff",
-                borderRadius: 8,
-                fontSize: "1rem",
-                fontWeight: 500,
-                padding: "9px 22px",
-                border: "none",
-                cursor: submitting ? "not-allowed" : "pointer",
-                transition: "background 0.18s, color 0.18s",
-                minWidth: 120,
-                width: "auto",
-              }}
+              className="px-6 py-2.5 text-base font-medium text-white bg-secondary rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-secondary-hover disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[120px]"
             >
               {submitting
                 ? isViewMode

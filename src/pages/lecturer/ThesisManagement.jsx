@@ -3,7 +3,7 @@ import "../../styles/pages/lecturer/thesis_management.css";
 import Select from "react-select";
 import topicService from "../../services/topic.service";
 import academicYearService from "../../services/academic-year.service";
-import AddTopicModal from "../../components/modals/add_topic_modal";
+import AddTopicModal from "../../components/modals/AddTopicModal.jsx";
 
 const ThesisManagement = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);

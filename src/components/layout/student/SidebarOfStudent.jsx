@@ -1,6 +1,5 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import "../../../styles/layout/student/sidebar_of_student.css";
 import PropTypes from "prop-types";
 
 const SidebarOfStudent = ({
@@ -91,12 +90,33 @@ const SidebarOfStudent = ({
   ];
 
   return (
-    <div className={`student-sidebar ${isCollapsed ? "collapsed" : ""}`}>
+    <div
+      className={`h-full bg-gradient-to-br from-secondary to-secondary-light text-white transition-all duration-500 ease-in-out overflow-hidden ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
       {/* Sidebar Header */}
-      <div className="sidebar-header">
-        <h1 className="sidebar-title">THESIS MANAGER</h1>
+      <div
+        className={`flex items-center justify-between border-b border-white/20 transition-all duration-500 ease-in-out ${
+          isCollapsed ? "p-2" : "p-4"
+        }`}
+      >
+        <h1
+          className={`font-bold text-lg transition-all duration-500 ease-in-out transform ${
+            isCollapsed
+              ? "opacity-0 translate-x-2 scale-95 w-0 overflow-hidden"
+              : "opacity-100 translate-x-0 scale-100"
+          }`}
+          style={{
+            transitionDelay: isCollapsed ? "0ms" : "100ms",
+          }}
+        >
+          THESIS MANAGER
+        </h1>
         <button
-          className="collapse-btn"
+          className={`rounded-lg hover:bg-white/10 transition-all duration-500 ease-in-out ${
+            isCollapsed ? "p-1.5" : "p-2"
+          }`}
           onClick={onToggleCollapse}
           aria-label={isCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
         >
@@ -107,24 +127,48 @@ const SidebarOfStudent = ({
       </div>
 
       {/* Navigation Menu */}
-      <nav className="sidebar-nav">
-        <ul className="menu-list">
+      <nav
+        className={`transition-all duration-500 ease-in-out mt-4 transform ${
+          isCollapsed ? "px-2" : "px-4"
+        }`}
+        style={{
+          transitionDelay: isCollapsed ? "0ms" : "50ms",
+        }}
+      >
+        <ul
+          className={`transition-all duration-500 ease-in-out ${
+            isCollapsed ? "space-y-1" : "space-y-2"
+          }`}
+        >
           {menuItems.map((item, index) => (
-            <li
-              key={item.path}
-              className={`menu-item ${
-                location.pathname === item.path ? "active" : ""
-              }`}
-              data-tooltip={item.tooltip}
-            >
+            <li key={item.path}>
               <NavLink
                 to={item.path}
-                className="menu-link"
+                className={`flex items-center rounded-lg transition-all duration-500 ease-in-out hover:bg-white/10 ${
+                  isCollapsed
+                    ? "px-2 py-3 justify-center h-12"
+                    : "px-3 py-3 gap-3 h-12"
+                } ${
+                  location.pathname === item.path
+                    ? "bg-white/20 text-white font-semibold"
+                    : "text-white/80 hover:text-white"
+                }`}
                 onClick={handleMenuClick}
                 title={item.tooltip}
               >
-                <span className="menu-icon">{item.icon}</span>
-                <span className="menu-text">{item.text}</span>
+                <span className="flex-shrink-0">{item.icon}</span>
+                <span
+                  className={`transition-all duration-500 ease-in-out transform ${
+                    isCollapsed
+                      ? "opacity-0 translate-x-2 scale-95 w-0 overflow-hidden"
+                      : "opacity-100 translate-x-0 scale-100"
+                  }`}
+                  style={{
+                    transitionDelay: isCollapsed ? "0ms" : `${index * 50}ms`,
+                  }}
+                >
+                  {item.text}
+                </span>
               </NavLink>
             </li>
           ))}

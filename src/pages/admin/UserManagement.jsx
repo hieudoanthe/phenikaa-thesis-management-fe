@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
-import AddUserModal from "../../components/modals/add_user_modal";
-import ConfirmModal from "../../components/modals/confirm_modal";
+import AddUserModal from "../../components/modals/AddUserModal.jsx";
+import ConfirmModal from "../../components/modals/ConfirmModal.jsx";
 import { ToastContainer } from "../../components/common";
 import { userService } from "../../services";
-import "../../styles/pages/admin/user_management.css";
+
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 // Mapping roleIds sang tên hiển thị
@@ -49,7 +49,7 @@ const UserManagement = () => {
   const [statusLoadingId, setStatusLoadingId] = useState(null);
   // Phân trang phía server
   const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = 8;
+  const pageSize = 6;
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -58,9 +58,11 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
+
+        // Luôn fetch tất cả users (không filter theo role vì API không hỗ trợ)
         const response = await userService.getUsers({
-          page: currentPage,
-          size: pageSize,
+          page: 0,
+          size: 1000, // Lấy tất cả users
         });
         const content = response?.content || [];
 
@@ -77,19 +79,15 @@ const UserManagement = () => {
         }));
 
         setUsers(transformedUsers);
+
+        // Cập nhật totalElements từ API response
         if (typeof response?.totalElements === "number") {
           setTotalElements(response.totalElements);
-        } else {
-          setTotalElements(currentPage * pageSize + transformedUsers.length);
         }
+
+        // Cập nhật totalPages từ API response
         if (typeof response?.totalPages === "number") {
           setTotalPages(response.totalPages);
-        } else {
-          setTotalPages(
-            transformedUsers.length < pageSize
-              ? currentPage + 1
-              : currentPage + 2
-          );
         }
       } catch (error) {
         console.error("Lỗi khi lấy danh sách users:", error);
@@ -115,6 +113,16 @@ const UserManagement = () => {
     return roleNames.join(", ");
   };
 
+  // Hàm helper để lấy role display dạng list (mỗi role một dòng)
+  const getRoleDisplayList = (roleIds) => {
+    if (!roleIds || roleIds.length === 0) return "Chưa phân quyền";
+
+    const roleNames = roleIds
+      .map((roleId) => roleMapping[roleId])
+      .filter(Boolean);
+    return roleNames;
+  };
+
   // Hàm helper để kiểm tra user có role tương ứng không
   const hasRole = (userRoleIds, selectedRoleValue) => {
     if (selectedRoleValue === "all") return true;
@@ -133,6 +141,36 @@ const UserManagement = () => {
     const matchesRole = hasRole(user.roleIds, selectedRole.value);
     return matchesSearch && matchesRole;
   });
+
+  // Áp dụng phân trang client-side
+  const paginatedUsers = filteredUsers.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize
+  );
+
+  // Debug filteredUsers và paginatedUsers
+  useEffect(() => {
+    console.log("🔍 Users Debug:", {
+      totalUsers: users.length,
+      filteredCount: filteredUsers.length,
+      paginatedCount: paginatedUsers.length,
+      currentPage,
+      pageSize,
+      selectedRole: selectedRole.value,
+      searchTerm,
+    });
+  }, [
+    filteredUsers.length,
+    paginatedUsers.length,
+    currentPage,
+    selectedRole.value,
+    searchTerm,
+  ]);
+
+  // Reset về trang đầu tiên khi filter thay đổi
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [selectedRole.value]);
 
   // Hàm helper cho status
   const getStatusLabel = (status) => {
@@ -318,10 +356,10 @@ const UserManagement = () => {
 
   if (loading) {
     return (
-      <div className="user-management-container">
-        <div style={{ textAlign: "center", padding: "50px" }}>
-          <div className="loading-spinner"></div>
-          <p>Đang tải danh sách người dùng...</p>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
+          <p className="mt-4 text-gray-600">Đang tải danh sách người dùng...</p>
         </div>
       </div>
     );
@@ -329,273 +367,342 @@ const UserManagement = () => {
 
   if (error) {
     return (
-      <div className="user-management-container">
-        <div style={{ textAlign: "center", padding: "50px" }}>
-          <p style={{ color: "red" }}>{error}</p>
-          <button onClick={() => window.location.reload()}>Thử lại</button>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="text-center py-12">
+          <p className="text-error-500 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-hover transition-colors duration-200"
+          >
+            Thử lại
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="user-management-container">
+    <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
       {/* Toolbar */}
-      <div className="user-management-toolbar">
-        <div className="toolbar-left">
-          <button className="add-user-btn" onClick={() => setIsModalOpen(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-            </svg>
-            Thêm người dùng
-          </button>
-          <div style={{ width: 140 }}>
-            <Select
-              classNamePrefix="role-select"
-              value={selectedRole}
-              onChange={setSelectedRole}
-              options={roleOptions}
-              isSearchable={false}
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  borderRadius: 8,
-                  minHeight: 40,
-                  fontSize: "0.95rem",
-                  borderColor: "#d1d5db",
-                  boxShadow: "none",
-                  paddingLeft: 0,
-                  width: 140,
-                  minWidth: 0,
-                  maxWidth: 140,
-                }),
-                option: (base, state) => ({
-                  ...base,
-                  fontSize: "0.95rem",
-                  backgroundColor: getOptionBackgroundColor(state),
-                  color: state.isSelected ? "#fff" : "#111827",
-                  cursor: "pointer",
-                }),
-                singleValue: (base) => ({
-                  ...base,
-                  color: "#374151",
-                }),
-                menu: (base) => ({
-                  ...base,
-                  borderRadius: 8,
-                  zIndex: 20,
-                  width: 140,
-                  minWidth: 0,
-                  maxWidth: 140,
-                }),
-              }}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Left side - Add button and role filter */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-secondary text-white font-medium rounded-lg hover:bg-secondary-hover transition-colors duration-200 shadow-sm"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              </svg>
+              <span className="hidden sm:inline">Thêm người dùng</span>
+              <span className="sm:hidden">Thêm</span>
+            </button>
+
+            <div className="w-full sm:w-40">
+              <Select
+                value={selectedRole}
+                onChange={setSelectedRole}
+                options={roleOptions}
+                isSearchable={false}
+                className="custom-select"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderRadius: "8px",
+                    minHeight: "40px",
+                    fontSize: "0.95rem",
+                    borderColor: "#d1d5db",
+                    boxShadow: "none",
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    fontSize: "0.95rem",
+                    backgroundColor: getOptionBackgroundColor(state),
+                    color: state.isSelected ? "#fff" : "#111827",
+                    cursor: "pointer",
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: "#374151",
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    borderRadius: "8px",
+                    zIndex: 20,
+                  }),
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Right side - Search */}
+          <div className="relative flex-1 lg:flex-none lg:w-80">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Tìm kiếm người dùng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors duration-200"
             />
           </div>
-        </div>
-        <div className="search-container">
-          <i
-            className="bi bi-search"
-            style={{ color: "#6b7280", fontSize: "1rem" }}
-          ></i>
-          <input
-            type="text"
-            placeholder="Tìm kiếm người dùng..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
         </div>
       </div>
 
       {/* User Table */}
-      <div className="user-table-container">
-        <table className="user-mgmt-table">
-          <thead>
-            <tr>
-              <th>Họ và tên</th>
-              <th>Vai trò</th>
-              <th>Email</th>
-              <th>Trạng thái</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((user) => (
-              <tr key={user.userId}>
-                <td>
-                  {editingUserId !== user.userId && (
-                    <span className="user-mgmt-avatar-wrap">
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="user-mgmt-avatar-sm"
-                      />
-                    </span>
-                  )}
-                  {editingUserId === user.userId ? (
-                    <input
-                      className="inline-input"
-                      value={editDraft.fullName}
-                      onChange={(e) =>
-                        setEditDraft((d) => ({
-                          ...d,
-                          fullName: e.target.value,
-                        }))
-                      }
-                    />
-                  ) : (
-                    <span className="user-mgmt-name">{user.name}</span>
-                  )}
-                </td>
-                <td>
-                  {editingUserId === user.userId ? (
-                    <Select
-                      classNamePrefix="inline-role-select"
-                      value={editDraft.roleIds.map((id) => ({
-                        value: id,
-                        label: roleMapping[id],
-                      }))}
-                      onChange={(opts) =>
-                        setEditDraft((d) => ({
-                          ...d,
-                          roleIds: (opts || []).map((o) => o.value),
-                        }))
-                      }
-                      options={[1, 2, 3].map((id) => ({
-                        value: id,
-                        label: roleMapping[id],
-                      }))}
-                      isMulti
-                      isSearchable={false}
-                      menuPortalTarget={document.body}
-                      menuPosition="fixed"
-                      menuPlacement="auto"
-                      menuShouldScrollIntoView={false}
-                      styles={{
-                        menu: (b) => ({ ...b, zIndex: 3000 }),
-                        menuPortal: (b) => ({ ...b, zIndex: 3000 }),
-                      }}
-                    />
-                  ) : (
-                    getRoleDisplay(user.roleIds)
-                  )}
-                </td>
-                <td>
-                  {editingUserId === user.userId ? (
-                    <input
-                      className="inline-input"
-                      value={editDraft.username}
-                      onChange={(e) =>
-                        setEditDraft((d) => ({
-                          ...d,
-                          username: e.target.value,
-                        }))
-                      }
-                    />
-                  ) : (
-                    user.email
-                  )}
-                </td>
-                <td>
-                  <span
-                    className={`user-status ${getStatusClass(user.status)}`}
-                  >
-                    <span className="user-status-dot"></span>
-                    {getStatusLabel(user.status)}
-                  </span>
-                </td>
-                <td>
-                  {editingUserId === user.userId ? (
-                    <span className="inline-actions">
-                      <button
-                        type="button"
-                        className="user-mgmt-action inline-save"
-                        title="Lưu"
-                        aria-label="Lưu"
-                        onClick={() => saveEdit(user)}
-                      >
-                        <i className="bi bi-check2"></i>
-                      </button>
-                      <button
-                        type="button"
-                        className="user-mgmt-action inline-cancel"
-                        title="Hủy"
-                        aria-label="Hủy"
-                        onClick={cancelEdit}
-                      >
-                        <i className="bi bi-x"></i>
-                      </button>
-                    </span>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="user-mgmt-action"
-                        title="Chỉnh sửa"
-                        aria-label="Chỉnh sửa"
-                        onClick={() => startEdit(user)}
-                      >
-                        <i className="bi bi-pen"></i>
-                      </button>
-                      <button
-                        type="button"
-                        className="user-mgmt-action"
-                        title="Xóa"
-                        aria-label="Xóa người dùng"
-                        onClick={() => handleDeleteUser(user.userId)}
-                      >
-                        <i className="bi bi-trash"></i>
-                      </button>
-                      <button
-                        type="button"
-                        className={`user-mgmt-action ${
-                          user.status === 2 ? "is-blocked-lock" : ""
-                        }`}
-                        title="Khóa"
-                        aria-label="Khóa"
-                        onClick={() => handleToggleLock(user)}
-                      >
-                        {statusLoadingId === user.userId ? (
-                          <i className="bi bi-arrow-repeat spin"></i>
-                        ) : (
-                          <i className="bi bi-lock"></i>
-                        )}
-                      </button>
-                    </>
-                  )}
-                </td>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                  Họ và tên
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                  Vai trò
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] hidden sm:table-cell">
+                  Email
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px] hidden sm:table-cell">
+                  Trạng thái
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                  Hành động
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedUsers.map((user) => (
+                <tr
+                  key={user.userId}
+                  className="hover:bg-gray-50 transition-colors duration-150"
+                >
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {editingUserId !== user.userId && (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="hidden sm:block h-8 w-8 sm:h-10 sm:w-10 rounded-full mr-2 sm:mr-3"
+                        />
+                      )}
+                      {editingUserId === user.userId ? (
+                        <input
+                          className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors duration-200 text-sm"
+                          value={editDraft.fullName}
+                          onChange={(e) =>
+                            setEditDraft((d) => ({
+                              ...d,
+                              fullName: e.target.value,
+                            }))
+                          }
+                        />
+                      ) : (
+                        <span className="text-sm font-medium text-gray-900">
+                          {user.name}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    {editingUserId === user.userId ? (
+                      <Select
+                        value={editDraft.roleIds.map((id) => ({
+                          value: id,
+                          label: roleMapping[id],
+                        }))}
+                        onChange={(opts) =>
+                          setEditDraft((d) => ({
+                            ...d,
+                            roleIds: (opts || []).map((o) => o.value),
+                          }))
+                        }
+                        options={[1, 2, 3].map((id) => ({
+                          value: id,
+                          label: roleMapping[id],
+                        }))}
+                        isMulti
+                        isSearchable={false}
+                        className="custom-select min-w-[150px] sm:min-w-[200px]"
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        menuPlacement="auto"
+                        menuShouldScrollIntoView={false}
+                        styles={{
+                          menu: (b) => ({ ...b, zIndex: 3000 }),
+                          menuPortal: (b) => ({ ...b, zIndex: 3000 }),
+                        }}
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-900">
+                        {getRoleDisplayList(user.roleIds).map((role, index) => (
+                          <div key={index} className="leading-tight">
+                            {role}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                    {editingUserId === user.userId ? (
+                      <input
+                        className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors duration-200 text-sm"
+                        value={editDraft.username}
+                        onChange={(e) =>
+                          setEditDraft((d) => ({
+                            ...d,
+                            username: e.target.value,
+                          }))
+                        }
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-900">{user.email}</div>
+                    )}
+                  </td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                    <span
+                      className={`inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium border-none ${
+                        user.status === 1
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-red-50 text-red-700 border-red-200"
+                      }`}
+                    >
+                      {getStatusLabel(user.status)}
+                    </span>
+                  </td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {editingUserId === user.userId ? (
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <button
+                          type="button"
+                          className="p-1.5 sm:p-2 text-success-600 hover:bg-success-50 rounded-lg transition-colors duration-200"
+                          title="Lưu"
+                          aria-label="Lưu"
+                          onClick={() => saveEdit(user)}
+                        >
+                          <i className="bi bi-check2 text-base sm:text-lg"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors duration-200"
+                          title="Hủy"
+                          aria-label="Hủy"
+                          onClick={cancelEdit}
+                        >
+                          <i className="bi bi-x text-base sm:text-lg"></i>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <button
+                          type="button"
+                          className="p-1.5 sm:p-2 text-info-500 hover:bg-info-50 rounded-lg transition-colors duration-200"
+                          title="Chỉnh sửa"
+                          aria-label="Chỉnh sửa"
+                          onClick={() => startEdit(user)}
+                        >
+                          <i className="bi bi-pen text-base sm:text-lg"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1.5 sm:p-2 text-error-500 hover:bg-error-50 rounded-lg transition-colors duration-200"
+                          title="Xóa"
+                          aria-label="Xóa người dùng"
+                          onClick={() => handleDeleteUser(user.userId)}
+                        >
+                          <i className="bi bi-trash text-base sm:text-lg"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className={`p-1.5 sm:p-2 rounded-lg transition-colors duration-200 ${
+                            user.status === 2
+                              ? "text-warning-500 hover:bg-warning-50"
+                              : "text-gray-500 hover:bg-gray-50"
+                          }`}
+                          title={user.status === 2 ? "Mở khóa" : "Khóa"}
+                          aria-label={user.status === 2 ? "Mở khóa" : "Khóa"}
+                          onClick={() => handleToggleLock(user)}
+                        >
+                          {statusLoadingId === user.userId ? (
+                            <i className="bi bi-arrow-repeat spin text-base sm:text-lg"></i>
+                          ) : (
+                            <i className="bi bi-lock text-base sm:text-lg"></i>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="table-footer">
-        <div className="entries-info">
-          Hiển thị {users.length ? currentPage * pageSize + 1 : 0} đến{" "}
-          {currentPage * pageSize + users.length} trên {totalElements} bản ghi —
-          Trang {currentPage + 1}/{totalPages}
-        </div>
-        <div className="pagination">
-          <button
-            className="pagination-btn prev-btn"
-            disabled={currentPage === 0}
-            onClick={() => currentPage > 0 && setCurrentPage(currentPage - 1)}
-          >
-            <i className="bi bi-chevron-left"></i>
-          </button>
-          <button className="pagination-btn active">{currentPage + 1}</button>
-          <span style={{ margin: "0 8px", color: "#6b7280" }}>
-            / {totalPages}
-          </span>
-          <button
-            className="pagination-btn next-btn"
-            disabled={currentPage + 1 >= totalPages || users.length < pageSize}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            <i className="bi bi-chevron-right"></i>
-          </button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mt-6 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-sm text-gray-700">
+            Hiển thị {filteredUsers.length > 0 ? currentPage * pageSize + 1 : 0}{" "}
+            đến {Math.min(currentPage * pageSize + pageSize, totalElements)}{" "}
+            trên {totalElements} bản ghi — Trang {currentPage + 1}/
+            {Math.ceil(totalElements / pageSize)}
+          </div>
+
+          {/* Pagination - Hiển thị khi có nhiều hơn 1 trang */}
+          {Math.ceil(totalElements / pageSize) > 1 ? (
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button
+                className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                disabled={currentPage === 0}
+                onClick={() =>
+                  currentPage > 0 && setCurrentPage(currentPage - 1)
+                }
+              >
+                <i className="bi bi-chevron-left text-sm sm:text-base"></i>
+              </button>
+              <button className="px-2 sm:px-3 py-1.5 sm:py-2 text-sm font-medium text-gray-900 bg-secondary text-white rounded-lg">
+                {currentPage + 1}
+              </button>
+              <span className="px-1 sm:px-2 text-sm text-gray-500">
+                / {Math.ceil(totalElements / pageSize)}
+              </span>
+              <button
+                className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                disabled={
+                  currentPage + 1 >= Math.ceil(totalElements / pageSize)
+                }
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                <i className="bi bi-chevron-right text-sm sm:text-base"></i>
+              </button>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500">
+              Không có phân trang (chỉ có {filteredUsers.length} bản ghi)
+            </div>
+          )}
         </div>
       </div>
 

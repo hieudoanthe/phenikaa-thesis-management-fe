@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import SidebarOfAdmin from "./sidebar_of_admin";
+import SidebarOfAdmin from "./SidebarOfAdmin.jsx";
 import { logout, getRefreshToken } from "../../../auth/authUtils";
-import "../../../styles/layout/admin/admin_layout.css";
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -86,12 +85,15 @@ const AdminLayout = () => {
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
 
-      // Tự động đóng sidebar trên mobile
-      if (mobile && isSidebarOpen) {
+      // Chỉ tự động đóng sidebar khi chuyển từ desktop sang mobile
+      // Không tự động đóng khi đang ở mobile
+      if (mobile && !isMobile && isSidebarOpen) {
+        console.log("🔄 Auto-closing sidebar when switching to mobile");
         setIsSidebarOpen(false);
       }
+
+      setIsMobile(mobile);
     };
 
     // Kiểm tra lần đầu
@@ -102,7 +104,7 @@ const AdminLayout = () => {
 
     // Cleanup
     return () => window.removeEventListener("resize", checkScreenSize);
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, isMobile]);
 
   // Đóng dropdown khi click outside
   useEffect(() => {
@@ -165,15 +167,12 @@ const AdminLayout = () => {
 
   // Hàm xử lý logout
   const handleLogout = async () => {
-    console.log("🔘 Nút logout được click");
     try {
       const refreshToken = getRefreshToken();
-      console.log("🔑 RefreshToken lấy được:", refreshToken);
       await logout(refreshToken);
-      console.log("✅ Logout hoàn thành, chuyển về login");
       navigate("/login"); // Chuyển về trang đăng nhập
     } catch (error) {
-      console.error("❌ Lỗi khi đăng xuất:", error);
+      console.error("Lỗi khi đăng xuất:", error);
     }
   };
 
@@ -203,12 +202,21 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="admin-layout">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <div
-        className={`admin-sidebar ${isSidebarOpen ? "open" : "closed"} ${
-          isCollapsed ? "collapsed" : ""
+        className={`fixed h-screen z-50 transition-all duration-500 ease-in-out ${
+          isCollapsed ? "w-16" : "w-64"
+        } ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
+        style={{
+          transform: isSidebarOpen
+            ? "translateX(0)"
+            : isMobile
+            ? "translateX(-100%)"
+            : "translateX(0)",
+        }}
       >
         <SidebarOfAdmin
           isCollapsed={isCollapsed}
@@ -219,172 +227,233 @@ const AdminLayout = () => {
 
       {/* Overlay cho mobile */}
       {isMobile && isSidebarOpen && (
-        <div className="sidebar-overlay" onClick={handleOverlayClick} />
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden transition-opacity duration-300"
+          onClick={handleOverlayClick}
+          style={{ display: isMobile && isSidebarOpen ? "block" : "none" }}
+        />
       )}
 
       {/* Main content area */}
-      <div className="admin-main-content">
+      <div
+        className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${
+          isCollapsed ? "md:ml-16" : "md:ml-64"
+        }`}
+      >
         {/* Header */}
-        <header className="admin-header">
-          <div className="header-left">
-            <div className="admin-page-title-section">
-              <h1 className="admin-page-title">{currentPage.title}</h1>
-              <p className="admin-page-subtitle">{currentPage.subtitle}</p>
-            </div>
-          </div>
-
-          <div className="header-right">
-            {/* Notification Dropdown */}
-            <div className="header-notifications" ref={notificationRef}>
-              <div
-                className="notification-icon"
-                onClick={handleToggleNotification}
+        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center flex-1">
+              {/* Hamburger Menu Button - Chỉ hiện trên mobile */}
+              <button
+                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-4 text-gray-600"
+                onClick={handleToggleSidebar}
+                aria-label="Mở/đóng menu"
               >
                 <svg
-                  width="20"
-                  height="20"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
-                  fill="currentColor"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
                 </svg>
-                <span className="notification-badge">3</span>
-              </div>
+              </button>
 
-              {/* Notification Dropdown Menu */}
-              {isNotificationOpen && (
-                <div className="notification-dropdown">
-                  <div className="dropdown-header">
-                    <h3>Thông báo</h3>
-                    <button className="mark-all-read">
-                      Đánh dấu tất cả đã đọc
-                    </button>
-                  </div>
-                  <div className="notification-list">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`notification-item ${
-                          !notification.isRead ? "unread" : ""
-                        }`}
-                      >
-                        <div className="notification-content">
-                          <h4>{notification.title}</h4>
-                          <p>{notification.message}</p>
-                          <span className="notification-time">
-                            {notification.time}
-                          </span>
-                        </div>
-                        {!notification.isRead && (
-                          <div className="unread-dot"></div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="dropdown-footer">
-                    <button className="view-all">Xem tất cả thông báo</button>
-                  </div>
-                </div>
-              )}
+              <div className="animate-fade-in-up">
+                <h1 className="text-2xl font-bold text-gray-900 m-0 leading-tight">
+                  {currentPage.title}
+                </h1>
+                <p className="text-sm text-gray-600 m-0 leading-relaxed mt-1">
+                  {currentPage.subtitle}
+                </p>
+              </div>
             </div>
 
-            {/* User Dropdown */}
-            <div className="header-user" ref={userDropdownRef}>
-              <div
-                className="user-info-container"
-                onClick={handleToggleUserDropdown}
-              >
-                <div className="user-avatar">
-                  <span>AD</span>
-                </div>
-                <div className="user-info">
-                  <div className="user-name">Admin System</div>
-                  <div className="user-role">Quản trị viên</div>
-                </div>
-                <div className="user-dropdown">
+            <div className="flex items-center gap-6">
+              {/* Notification Dropdown */}
+              <div className="relative" ref={notificationRef}>
+                <div
+                  className="relative cursor-pointer p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                  onClick={handleToggleNotification}
+                >
                   <svg
-                    width="16"
-                    height="16"
+                    width="20"
+                    height="20"
                     viewBox="0 0 24 24"
                     fill="currentColor"
+                    className="text-gray-600"
                   >
-                    <path d="M7 10l5 5 5-5z" />
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                   </svg>
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    3
+                  </span>
                 </div>
+
+                {/* Notification Dropdown Menu */}
+                {isNotificationOpen && (
+                  <div className="absolute top-full right-0 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
+                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                      <h3 className="text-base font-semibold text-gray-900 m-0">
+                        Thông báo
+                      </h3>
+                      <button className="text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100">
+                        Đánh dấu tất cả đã đọc
+                      </button>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-4 border-b border-gray-100 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
+                            !notification.isRead ? "bg-yellow-50" : ""
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-gray-900 m-0 mb-1">
+                              {notification.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 m-0 mb-2 leading-relaxed">
+                              {notification.message}
+                            </p>
+                            <span className="text-xs text-gray-500">
+                              {notification.time}
+                            </span>
+                          </div>
+                          {!notification.isRead && (
+                            <div className="w-2 h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-4 border-t border-gray-100 text-center">
+                      <button className="text-info text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
+                        Xem tất cả thông báo
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* User Dropdown Menu */}
-              {isUserDropdownOpen && (
-                <div className="user-dropdown-menu">
-                  <div className="dropdown-user-info">
-                    <div className="dropdown-avatar">
-                      <span>AD</span>
+              {/* User Dropdown */}
+              <div className="relative" ref={userDropdownRef}>
+                <div
+                  className="flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                  onClick={handleToggleUserDropdown}
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    AD
+                  </div>
+                  <div className="hidden md:block">
+                    <div className="text-sm font-semibold text-gray-900 leading-tight">
+                      Admin System
                     </div>
-                    <div className="dropdown-user-details">
-                      <h4>Admin System</h4>
-                      <p>Quản trị viên</p>
-                      <span>admin@phenikaa.edu.vn</span>
+                    <div className="text-xs text-gray-600 leading-tight">
+                      Quản trị viên
                     </div>
                   </div>
-                  <div className="dropdown-menu-items">
-                    <button className="dropdown-item">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                      </svg>
-                      Hồ sơ cá nhân
-                    </button>
-                    <button className="dropdown-item">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
-                      </svg>
-                      Cài đặt
-                    </button>
-                    <button className="dropdown-item">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                      </svg>
-                      Trợ giúp
-                    </button>
-                    <div className="dropdown-divider"></div>
-                    <button
-                      className="dropdown-item logout"
-                      onClick={handleLogout}
+                  <div className="text-gray-600 transition-transform duration-200">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-                      </svg>
-                      Đăng xuất
-                    </button>
+                      <path d="M7 10l5 5 5-5z" />
+                    </svg>
                   </div>
                 </div>
-              )}
+
+                {/* User Dropdown Menu */}
+                {isUserDropdownOpen && (
+                  <div className="absolute top-full right-0 w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
+                    <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-base">
+                        AD
+                      </div>
+                      <div>
+                        <h4 className="text-base font-semibold text-gray-900 m-0 mb-1">
+                          Admin System
+                        </h4>
+                        <p className="text-sm text-gray-600 m-0 mb-1">
+                          Quản trị viên
+                        </p>
+                        <span className="text-xs text-gray-500">
+                          admin@phenikaa.edu.vn
+                        </span>
+                      </div>
+                    </div>
+                    <div className="py-2">
+                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="text-gray-600"
+                        >
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                        </svg>
+                        Hồ sơ cá nhân
+                      </button>
+                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="text-gray-600"
+                        >
+                          <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                        </svg>
+                        Cài đặt
+                      </button>
+                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="text-gray-600"
+                        >
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                        </svg>
+                        Trợ giúp
+                      </button>
+                      <div className="h-px bg-gray-200 my-2"></div>
+                      <button
+                        className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-error text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left"
+                        onClick={handleLogout}
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="text-error"
+                        >
+                          <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                        </svg>
+                        Đăng xuất
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
 
         {/* Main content */}
-        <main className="admin-content">
-          <div className="content-wrapper">
+        <main className="flex-1 bg-gray-50 text-secondary overflow-y-auto">
+          <div className="px-6 py-6 h-full">
             <Outlet />
           </div>
         </main>
