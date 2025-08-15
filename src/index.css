@@ -39,7 +39,7 @@
   }
 
   .custom-select .select__control {
-    @apply border-2 border-gray-300 rounded-lg min-h-[44px] font-semibold text-base transition-all duration-200;
+    @apply border-2 border-gray-300 rounded-lg min-h-[36px] xs:min-h-[40px] sm:min-h-[44px] font-semibold text-xs xs:text-sm sm:text-base transition-all duration-200;
   }
 
   .custom-select .select__control--is-focused {
@@ -47,7 +47,7 @@
   }
 
   .custom-select .select__option {
-    @apply px-3 py-3 font-medium;
+    @apply px-2 xs:px-3 py-2 xs:py-3 font-medium text-xs xs:text-sm;
   }
 
   .custom-select .select__option--is-selected {

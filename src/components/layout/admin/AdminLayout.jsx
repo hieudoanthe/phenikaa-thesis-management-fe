@@ -210,13 +210,6 @@ const AdminLayout = () => {
         } ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
-        style={{
-          transform: isSidebarOpen
-            ? "translateX(0)"
-            : isMobile
-            ? "translateX(-100%)"
-            : "translateX(0)",
-        }}
       >
         <SidebarOfAdmin
           isCollapsed={isCollapsed}
@@ -228,31 +221,31 @@ const AdminLayout = () => {
       {/* Overlay cho mobile */}
       {isMobile && isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={handleOverlayClick}
-          style={{ display: isMobile && isSidebarOpen ? "block" : "none" }}
         />
       )}
 
       {/* Main content area */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${
+        className={`flex-1 flex flex-col h-screen transition-all duration-500 ease-in-out ${
           isCollapsed ? "md:ml-16" : "md:ml-64"
         }`}
       >
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 sticky top-0 z-30 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center flex-1">
+            <div className="flex items-center flex-1 min-w-0">
               {/* Hamburger Menu Button - Chỉ hiện trên mobile */}
               <button
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-4 text-gray-600"
+                className="md:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-2 sm:mr-3 md:mr-4 text-gray-600"
                 onClick={handleToggleSidebar}
                 aria-label="Mở/đóng menu"
               >
                 <svg
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
+                  className="sm:w-6 sm:h-6 md:w-6 md:h-6"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -266,45 +259,45 @@ const AdminLayout = () => {
                 </svg>
               </button>
 
-              <div className="animate-fade-in-up">
-                <h1 className="text-2xl font-bold text-gray-900 m-0 leading-tight">
+              <div className="animate-fade-in-up min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 m-0 leading-tight truncate">
                   {currentPage.title}
                 </h1>
-                <p className="text-sm text-gray-600 m-0 leading-relaxed mt-1">
+                <p className="text-xs sm:text-sm text-gray-600 m-0 leading-relaxed mt-0.5 sm:mt-1 truncate">
                   {currentPage.subtitle}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-shrink-0">
               {/* Notification Dropdown */}
               <div className="relative" ref={notificationRef}>
                 <div
-                  className="relative cursor-pointer p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                  className="relative cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
                   onClick={handleToggleNotification}
                 >
                   <svg
-                    width="20"
-                    height="20"
+                    width="18"
+                    height="18"
+                    className="sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-600"
                     viewBox="0 0 24 24"
                     fill="currentColor"
-                    className="text-gray-600"
                   >
                     <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                   </svg>
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1 sm:px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
                     3
                   </span>
                 </div>
 
                 {/* Notification Dropdown Menu */}
                 {isNotificationOpen && (
-                  <div className="absolute top-full right-0 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
-                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                      <h3 className="text-base font-semibold text-gray-900 m-0">
+                  <div className="absolute top-full right-0 w-80 sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
+                    <div className="p-3 sm:p-4 border-b border-gray-100 flex justify-between items-center">
+                      <h3 className="text-sm sm:text-base font-semibold text-gray-900 m-0">
                         Thông báo
                       </h3>
-                      <button className="text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100">
+                      <button className="text-info text-xs sm:text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100">
                         Đánh dấu tất cả đã đọc
                       </button>
                     </div>
@@ -312,29 +305,29 @@ const AdminLayout = () => {
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-4 border-b border-gray-100 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
+                          className={`p-3 sm:p-4 border-b border-gray-100 flex items-start gap-2 sm:gap-3 transition-colors duration-200 hover:bg-gray-50 ${
                             !notification.isRead ? "bg-yellow-50" : ""
                           }`}
                         >
                           <div className="flex-1">
-                            <h4 className="text-sm font-semibold text-gray-900 m-0 mb-1">
+                            <h4 className="text-xs sm:text-sm font-semibold text-gray-900 m-0 mb-1">
                               {notification.title}
                             </h4>
-                            <p className="text-sm text-gray-600 m-0 mb-2 leading-relaxed">
+                            <p className="text-xs sm:text-sm text-gray-600 m-0 mb-2 leading-relaxed">
                               {notification.message}
                             </p>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-[10px] sm:text-xs text-gray-500">
                               {notification.time}
                             </span>
                           </div>
                           {!notification.isRead && (
-                            <div className="w-2 h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
+                            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
                           )}
                         </div>
                       ))}
                     </div>
-                    <div className="p-4 border-t border-gray-100 text-center">
-                      <button className="text-info text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
+                    <div className="p-3 sm:p-4 border-t border-gray-100 text-center">
+                      <button className="text-info text-xs sm:text-sm cursor-pointer px-3 sm:px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
                         Xem tất cả thông báo
                       </button>
                     </div>
@@ -345,24 +338,25 @@ const AdminLayout = () => {
               {/* User Dropdown */}
               <div className="relative" ref={userDropdownRef}>
                 <div
-                  className="flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                  className="flex items-center gap-2 sm:gap-3 cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
                   onClick={handleToggleUserDropdown}
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
                     AD
                   </div>
-                  <div className="hidden md:block">
-                    <div className="text-sm font-semibold text-gray-900 leading-tight">
+                  <div className="hidden sm:block">
+                    <div className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">
                       Admin System
                     </div>
-                    <div className="text-xs text-gray-600 leading-tight">
+                    <div className="text-[10px] sm:text-xs text-gray-600 leading-tight">
                       Quản trị viên
                     </div>
                   </div>
                   <div className="text-gray-600 transition-transform duration-200">
                     <svg
-                      width="16"
-                      height="16"
+                      width="14"
+                      height="14"
+                      className="sm:w-4 sm:h-4 md:w-4 md:h-4"
                       viewBox="0 0 24 24"
                       fill="currentColor"
                     >
@@ -373,55 +367,55 @@ const AdminLayout = () => {
 
                 {/* User Dropdown Menu */}
                 {isUserDropdownOpen && (
-                  <div className="absolute top-full right-0 w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
-                    <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-base">
+                  <div className="absolute top-full right-0 w-64 sm:w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
+                    <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center gap-2 sm:gap-3">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-sm md:text-base">
                         AD
                       </div>
                       <div>
-                        <h4 className="text-base font-semibold text-gray-900 m-0 mb-1">
+                        <h4 className="text-sm sm:text-sm md:text-base font-semibold text-gray-900 m-0 mb-1">
                           Admin System
                         </h4>
-                        <p className="text-sm text-gray-600 m-0 mb-1">
+                        <p className="text-xs sm:text-sm text-gray-600 m-0 mb-1">
                           Quản trị viên
                         </p>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-[10px] sm:text-xs text-gray-500">
                           admin@phenikaa.edu.vn
                         </span>
                       </div>
                     </div>
                     <div className="py-2">
-                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                      <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-gray-700 text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
                         <svg
-                          width="16"
-                          height="16"
+                          width="14"
+                          height="14"
+                          className="sm:w-4 sm:h-4 md:w-4 md:h-4 text-gray-600"
                           viewBox="0 0 24 24"
                           fill="currentColor"
-                          className="text-gray-600"
                         >
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                         </svg>
                         Hồ sơ cá nhân
                       </button>
-                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                      <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-gray-700 text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
                         <svg
-                          width="16"
-                          height="16"
+                          width="14"
+                          height="14"
+                          className="sm:w-4 sm:h-4 md:w-4 md:h-4 text-gray-600"
                           viewBox="0 0 24 24"
                           fill="currentColor"
-                          className="text-gray-600"
                         >
                           <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
                         </svg>
                         Cài đặt
                       </button>
-                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                      <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-gray-700 text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
                         <svg
-                          width="16"
-                          height="16"
+                          width="14"
+                          height="14"
+                          className="sm:w-4 sm:h-4 md:w-4 md:h-4 text-gray-600"
                           viewBox="0 0 24 24"
                           fill="currentColor"
-                          className="text-gray-600"
                         >
                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                         </svg>
@@ -429,15 +423,15 @@ const AdminLayout = () => {
                       </button>
                       <div className="h-px bg-gray-200 my-2"></div>
                       <button
-                        className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-error text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left"
+                        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-error text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left"
                         onClick={handleLogout}
                       >
                         <svg
-                          width="16"
-                          height="16"
+                          width="14"
+                          height="14"
+                          className="sm:w-4 sm:h-4 md:w-4 md:h-4 text-error"
                           viewBox="0 0 24 24"
                           fill="currentColor"
-                          className="text-error"
                         >
                           <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
                         </svg>
@@ -453,7 +447,7 @@ const AdminLayout = () => {
 
         {/* Main content */}
         <main className="flex-1 bg-gray-50 text-secondary overflow-y-auto">
-          <div className="px-6 py-6 h-full">
+          <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
             <Outlet />
           </div>
         </main>

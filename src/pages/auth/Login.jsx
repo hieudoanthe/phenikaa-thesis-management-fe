@@ -293,45 +293,48 @@ const PhenikaaLogin = () => {
   };
 
   return (
-    <main className="flex h-screen w-screen overflow-hidden">
-      {/* Left Side - Introduction */}
+    <main className="flex flex-col lg:flex-row h-screen w-screen overflow-hidden">
+      {/* Left Side - Introduction (chỉ hiển thị trên desktop) */}
       <section
-        className="flex-1 bg-secondary text-white flex flex-col justify-center items-center text-center px-0 min-w-[380px] relative"
+        className="hidden lg:flex flex-1 bg-secondary text-white flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12 lg:py-16 min-h-screen lg:min-w-[380px] relative order-2 lg:order-1"
         aria-label="Introduction and illustration"
       >
-        <h2 className="m-0 font-bold text-4xl leading-12 tracking-wide max-w-none mb-12 outline-none">
+        <h2 className="m-0 font-bold text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl leading-tight sm:leading-tight md:leading-tight lg:leading-tight xl:leading-tight tracking-wide max-w-none mb-6 sm:mb-8 lg:mb-12 outline-none px-2">
           Hệ thống quản lý đồ án tốt nghiệp
         </h2>
         <img
           src="./students.svg"
           alt="Illustration of four students standing inside a school hallway near lockers, carrying books and backpacks, having a casual discussion"
-          className="w-full max-w-[520px] h-auto outline-none pointer-events-none"
+          className="w-full max-w-[280px] sm:max-w-[350px] md:max-w-[420px] lg:max-w-[480px] xl:max-w-[520px] h-auto outline-none pointer-events-none"
           onError={handleImageError}
         />
       </section>
 
-      {/* Right Side - Login Form */}
+      {/* Right Side - Login Form (full width trên mobile, half width trên desktop) */}
       <section
-        className="flex-1 bg-gray-50 flex justify-center items-center p-16 px-6 min-w-[380px]"
+        className="flex-1 bg-gray-50 flex justify-center items-center p-4 sm:p-6 md:p-8 lg:p-12 xl:p-16 min-h-screen order-1 lg:order-2"
         aria-label="Login form"
       >
         <div
-          className="bg-white rounded-2xl shadow-card w-full max-w-[450px] p-10 px-8 pb-12 flex flex-col items-center fade-in"
+          className="bg-white rounded-xl sm:rounded-2xl shadow-card w-full max-w-[320px] sm:max-w-[380px] md:max-w-[420px] lg:max-w-[450px] p-6 sm:p-8 md:p-10 lg:p-10 xl:p-12 pb-8 sm:pb-10 lg:pb-12 flex flex-col items-center fade-in"
           style={{ animationDelay: "0.05s" }}
         >
           {/* Logo */}
-          <div className="mb-6 fade-in" style={{ animationDelay: "0.1s" }}>
+          <div
+            className="mb-4 sm:mb-6 fade-in"
+            style={{ animationDelay: "0.1s" }}
+          >
             <img
               src="./logo.png"
               alt="Phenikaa University logo in blue and orange"
-              className="w-[200px] h-auto pointer-events-none outline-none"
+              className="w-[140px] sm:w-[160px] md:w-[180px] lg:w-[200px] h-auto pointer-events-none outline-none"
               onError={handleImageError}
             />
           </div>
 
           {/* Title */}
           <h1
-            className="font-bold text-lg mb-1 outline-none text-gray-900 fade-in"
+            className="font-bold text-base sm:text-lg md:text-xl lg:text-lg xl:text-xl mb-1 outline-none text-gray-900 fade-in text-center"
             id="loginTitle"
             style={{ animationDelay: "0.15s" }}
           >
@@ -340,7 +343,7 @@ const PhenikaaLogin = () => {
 
           {/* Info Text */}
           <p
-            className="text-sm text-error italic text-center mb-6 outline-none fade-in"
+            className="text-xs sm:text-sm text-error italic text-center mb-4 sm:mb-6 outline-none fade-in px-2"
             aria-live="polite"
             aria-atomic="true"
             style={{ animationDelay: "0.2s" }}
@@ -358,7 +361,7 @@ const PhenikaaLogin = () => {
           >
             {/* Role Selection */}
             <div
-              className="relative mb-5 fade-in"
+              className="relative mb-4 sm:mb-5 fade-in"
               style={{ animationDelay: "0.25s" }}
             >
               <Select
@@ -369,11 +372,23 @@ const PhenikaaLogin = () => {
                 onChange={(option) => setRole(option.value)}
                 placeholder="Chọn vai trò của bạn"
                 menuPortalTarget={document.body}
-                styles={selectStyles}
+                styles={{
+                  ...selectStyles,
+                  control: (base, state) => ({
+                    ...base,
+                    borderColor: state.isFocused ? "#1e3286" : "#d1d5db",
+                    boxShadow: state.isFocused ? "0 0 0 2px #1e328633" : "",
+                    borderRadius: 8,
+                    minHeight: "44px",
+                    height: "44px",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                  }),
+                }}
               />
               <label
                 htmlFor="roleSelect"
-                className="absolute -top-2 text-xs text-secondary font-semibold bg-white px-1"
+                className="absolute -top-2 text-xs sm:text-sm text-gray-600 font-semibold bg-white px-1"
               >
                 Chọn vai trò của bạn
               </label>
@@ -381,7 +396,7 @@ const PhenikaaLogin = () => {
 
             {/* Username Input */}
             <div
-              className="relative mb-5 fade-in"
+              className="relative mb-4 sm:mb-5 fade-in"
               style={{ animationDelay: "0.3s" }}
             >
               <input
@@ -394,11 +409,11 @@ const PhenikaaLogin = () => {
                 autoComplete="username"
                 spellCheck="false"
                 placeholder=" "
-                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-white peer"
+                className="w-full h-11 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-white peer"
               />
               <label
                 htmlFor="usernameInput"
-                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:-top-2 peer-focus:text-xs peer-focus:text-secondary peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-secondary peer-[:not(:placeholder-shown)]:font-semibold"
+                className="absolute top-2.5 sm:top-3 left-3 sm:left-4 text-sm sm:text-base text-gray-600 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:-top-2 peer-focus:text-xs peer-focus:text-gray-600 peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-gray-600 peer-[:not(:placeholder-shown)]:font-semibold"
               >
                 Tên đăng nhập *
               </label>
@@ -406,7 +421,7 @@ const PhenikaaLogin = () => {
 
             {/* Password Input */}
             <div
-              className="relative mb-5 fade-in"
+              className="relative mb-4 sm:mb-5 fade-in"
               style={{ animationDelay: "0.35s" }}
             >
               <div className="relative w-full">
@@ -421,11 +436,11 @@ const PhenikaaLogin = () => {
                   spellCheck="false"
                   aria-describedby="passwordToggleDesc"
                   placeholder=" "
-                  className="w-full px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-white peer"
+                  className="w-full h-11 px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 text-sm sm:text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-white peer"
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-2.5 bg-transparent border-none cursor-pointer text-base text-gray-500 outline-none"
+                  className="absolute right-2 top-2 sm:top-2.5 bg-transparent border-none cursor-pointer text-sm sm:text-base text-gray-500 outline-none"
                   aria-pressed={showPassword}
                   aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                   onClick={toggleShowPassword}
@@ -434,8 +449,9 @@ const PhenikaaLogin = () => {
                   {showPassword ? (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
+                      width="16"
+                      height="16"
+                      className="sm:w-[18px] sm:h-[18px] md:w-[20px] md:h-[20px]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -451,8 +467,9 @@ const PhenikaaLogin = () => {
                   ) : (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
+                      width="16"
+                      height="16"
+                      className="sm:w-[18px] sm:h-[18px] md:w-[20px] md:h-[20px]"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -468,7 +485,7 @@ const PhenikaaLogin = () => {
                 </button>
                 <label
                   htmlFor="passwordInput"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:-top-2 peer-focus:text-xs peer-focus:text-info peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-info peer-[:not(:placeholder-shown)]:font-semibold"
+                  className="absolute top-2.5 sm:top-3 left-3 sm:left-4 text-sm sm:text-base text-gray-600 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:-top-2 peer-focus:text-xs peer-focus:text-gray-600 peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-gray-600 peer-[:not(:placeholder-shown)]:font-semibold"
                 >
                   Mật khẩu *
                 </label>
@@ -476,21 +493,27 @@ const PhenikaaLogin = () => {
             </div>
 
             {/* Error Message */}
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {error && (
+              <p className="text-red-500 text-xs sm:text-sm mb-3 sm:mb-4 text-center">
+                {error}
+              </p>
+            )}
 
             {/* Remember Me */}
             <div
-              className="w-full mb-4 flex justify-start fade-in"
+              className="w-full mb-3 sm:mb-4 flex justify-start fade-in"
               style={{ animationDelay: "0.35s" }}
             >
-              <label className="flex items-center cursor-pointer text-sm text-gray-500 select-none">
+              <label className="flex items-center cursor-pointer text-xs sm:text-sm text-gray-500 select-none">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="mr-2 w-4 h-4 accent-primary cursor-pointer"
+                  className="mr-2 w-3 h-3 sm:w-4 sm:h-4 accent-primary cursor-pointer"
                 />
-                <span className="text-sm text-gray-500">Ghi nhớ đăng nhập</span>
+                <span className="text-xs sm:text-sm text-gray-500">
+                  Ghi nhớ đăng nhập
+                </span>
               </label>
             </div>
 
@@ -498,26 +521,26 @@ const PhenikaaLogin = () => {
             <button
               type="submit"
               aria-label="Đăng nhập"
-              className="w-full bg-secondary hover:bg-secondary-hover text-white font-bold py-3 rounded-lg cursor-pointer transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed fade-in relative"
+              className="w-full bg-secondary hover:bg-secondary-hover text-white font-bold py-2.5 sm:py-3 text-sm sm:text-base rounded-lg cursor-pointer transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed fade-in relative"
               style={{ animationDelay: "0.4s" }}
               disabled={loading}
             >
               {loading ? "Đang xử lý..." : "Đăng nhập"}
               {loading && (
-                <span className="inline-block w-[18px] h-[18px] border-2 border-gray-100 border-t-white border-r-white rounded-full animate-spin ml-5 align-middle"></span>
+                <span className="inline-block w-[14px] h-[14px] sm:w-[16px] sm:h-[16px] md:w-[18px] md:h-[18px] border-2 border-gray-100 border-t-white border-r-white rounded-full animate-spin ml-3 sm:ml-4 md:ml-5 align-middle"></span>
               )}
             </button>
           </form>
 
           {/* Additional Links */}
           <nav
-            className="flex justify-between gap-8 mt-6 text-base text-info w-full px-5 fade-in"
+            className="flex flex-col sm:flex-row justify-center sm:justify-between gap-3 sm:gap-4 md:gap-6 lg:gap-8 mt-4 sm:mt-6 text-sm sm:text-base text-info w-full px-2 sm:px-5 fade-in"
             aria-label="Additional options"
             style={{ animationDelay: "0.45s" }}
           >
             <button
               type="button"
-              className="bg-none border-none cursor-pointer text-base p-0 m-0 transition-colors duration-200 hover:text-secondary"
+              className="bg-none border-none cursor-pointer text-xs sm:text-sm md:text-base p-0 m-0 transition-colors duration-200 hover:text-secondary text-center sm:text-left"
               onClick={handleChangePassword}
               onKeyDown={(e) => handleKeyDown(e, handleChangePassword)}
               tabIndex={0}
@@ -526,7 +549,7 @@ const PhenikaaLogin = () => {
             </button>
             <button
               type="button"
-              className="bg-none border-none cursor-pointer text-base p-0 m-0 transition-colors duration-200 hover:text-secondary"
+              className="bg-none border-none cursor-pointer text-xs sm:text-sm md:text-base p-0 m-0 transition-colors duration-200 hover:text-secondary text-center sm:text-left"
               onClick={handleForgotPassword}
               onKeyDown={(e) => handleKeyDown(e, handleForgotPassword)}
               tabIndex={0}
@@ -537,7 +560,7 @@ const PhenikaaLogin = () => {
 
           {/* Footer */}
           <p
-            className="text-xs text-gray-500 mt-8 text-center fade-in"
+            className="text-[10px] sm:text-xs text-gray-500 mt-6 sm:mt-8 text-center fade-in px-2"
             aria-live="polite"
             aria-atomic="true"
             style={{ animationDelay: "0.5s" }}
@@ -546,7 +569,7 @@ const PhenikaaLogin = () => {
             HieuDoanThe
           </p>
           <address
-            className="text-xs mt-1 text-gray-700 text-center not-italic fade-in"
+            className="text-[10px] sm:text-xs mt-1 text-gray-700 text-center not-italic fade-in px-2"
             style={{ animationDelay: "0.55s" }}
           >
             Trường CNTT Phenikaa - Địa chỉ: Tầng 15, Tòa nhà A9, Đại học
@@ -555,12 +578,12 @@ const PhenikaaLogin = () => {
 
           {/* Social Icons */}
           <div
-            className="mt-7 flex justify-center gap-7 fade-in"
+            className="mt-5 sm:mt-7 flex justify-center gap-5 sm:gap-7 fade-in"
             aria-label="Contact methods"
             style={{ animationDelay: "0.6s" }}
           >
             <svg
-              className="w-6 h-6 cursor-pointer fill-gray-700 transition-colors duration-300 hover:fill-secondary select-none"
+              className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer fill-gray-700 transition-colors duration-300 hover:fill-secondary select-none"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               tabIndex={0}
@@ -569,7 +592,7 @@ const PhenikaaLogin = () => {
               <path d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.45 12.45 0 00.7 2.81 2 2 0 01-.45 2.11L9.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.45 12.45 0 002.81.7 2 2 0 011.72 2z"></path>
             </svg>
             <svg
-              className="w-6 h-6 cursor-pointer fill-gray-700 transition-colors duration-300 hover:fill-secondary select-none"
+              className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer fill-gray-700 transition-colors duration-300 hover:fill-secondary select-none"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               tabIndex={0}
@@ -578,7 +601,7 @@ const PhenikaaLogin = () => {
               <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path>
             </svg>
             <svg
-              className="w-6 h-6 cursor-pointer fill-gray-700 transition-colors duration-300 hover:fill-secondary select-none"
+              className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer fill-gray-700 transition-colors duration-300 hover:fill-secondary select-none"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               tabIndex={0}
@@ -592,14 +615,14 @@ const PhenikaaLogin = () => {
       </section>
 
       {/* Toast Notifications */}
-      <div className="fixed right-5 bottom-8 z-[9999] flex flex-col-reverse gap-4 max-w-[550px]">
+      <div className="fixed right-2 sm:right-3 md:right-5 bottom-4 sm:bottom-6 md:bottom-8 z-[9999] flex flex-col-reverse gap-2 sm:gap-3 md:gap-4 max-w-[280px] sm:max-w-[350px] md:max-w-[450px] lg:max-w-[550px]">
         {toasts
           .slice()
           .reverse()
           .map((toast) => (
             <div
               key={toast.id}
-              className={`rounded-lg p-4 px-6 flex items-center font-medium text-base shadow-toast min-w-80 mt-2 animate-fade-in-up ${
+              className={`rounded-lg p-3 sm:p-4 md:p-4 px-4 sm:px-6 flex items-center font-medium text-sm sm:text-base shadow-toast min-w-64 sm:min-w-72 md:min-w-80 mt-2 animate-fade-in-up ${
                 toast.message.includes("thành công")
                   ? "bg-success-500 text-white"
                   : "bg-error-500 text-white"
@@ -607,9 +630,7 @@ const PhenikaaLogin = () => {
             >
               {toast.message.includes("thành công") ? (
                 <svg
-                  className="mr-3"
-                  width="22"
-                  height="22"
+                  className="mr-2 sm:mr-3 flex-shrink-0 w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] md:w-[22px] md:h-[22px]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="white"
@@ -620,9 +641,7 @@ const PhenikaaLogin = () => {
                 </svg>
               ) : (
                 <svg
-                  className="mr-3"
-                  width="22"
-                  height="22"
+                  className="mr-2 sm:mr-3 flex-shrink-0 w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] md:w-[22px] md:h-[22px]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="white"
@@ -647,7 +666,9 @@ const PhenikaaLogin = () => {
                   />
                 </svg>
               )}
-              {toast.message}
+              <span className="text-xs sm:text-sm md:text-base">
+                {toast.message}
+              </span>
             </div>
           ))}
       </div>
