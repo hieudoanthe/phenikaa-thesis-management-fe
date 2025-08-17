@@ -5,7 +5,7 @@ import LoadingSpinner from "../components/common/LoadingSpinner";
 import PropTypes from "prop-types";
 
 /**
- * Component bảo vệ route chỉ cho USER (sinh viên)
+ * Component bảo vệ route chỉ cho STUDENT (sinh viên)
  * @param {Object} props
  * @param {React.ReactNode} props.children - Component con
  */
@@ -34,11 +34,11 @@ const StudentRoute = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  // Kiểm tra role - chỉ cho phép USER (sinh viên)
+  // Kiểm tra role - chỉ cho phép STUDENT (sinh viên)
   const userRole = user?.role;
   console.log("StudentRoute - Checking user role:", userRole);
 
-  if (userRole !== "USER") {
+  if (userRole !== "STUDENT") {
     console.log(
       "StudentRoute - User không có quyền truy cập student layout:",
       userRole

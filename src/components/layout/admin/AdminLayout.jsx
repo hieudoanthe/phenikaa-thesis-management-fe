@@ -272,9 +272,11 @@ const AdminLayout = () => {
             <div className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-shrink-0">
               {/* Notification Dropdown */}
               <div className="relative" ref={notificationRef}>
-                <div
-                  className="relative cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                <button
+                  type="button"
+                  className="relative cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100 border-none bg-transparent"
                   onClick={handleToggleNotification}
+                  aria-label="Thông báo"
                 >
                   <svg
                     width="18"
@@ -288,7 +290,7 @@ const AdminLayout = () => {
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1 sm:px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
                     3
                   </span>
-                </div>
+                </button>
 
                 {/* Notification Dropdown Menu */}
                 {isNotificationOpen && (
@@ -337,9 +339,11 @@ const AdminLayout = () => {
 
               {/* User Dropdown */}
               <div className="relative" ref={userDropdownRef}>
-                <div
-                  className="flex items-center gap-2 sm:gap-3 cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                <button
+                  type="button"
+                  className="flex items-center gap-2 sm:gap-3 cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100 border-none bg-transparent"
                   onClick={handleToggleUserDropdown}
+                  aria-label="Menu người dùng"
                 >
                   <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
                     AD
@@ -363,7 +367,7 @@ const AdminLayout = () => {
                       <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </div>
-                </div>
+                </button>
 
                 {/* User Dropdown Menu */}
                 {isUserDropdownOpen && (

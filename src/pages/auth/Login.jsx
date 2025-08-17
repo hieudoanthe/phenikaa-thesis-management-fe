@@ -7,7 +7,7 @@ import Select from "react-select";
 const PhenikaaLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuthHook();
-  const [role, setRole] = useState("USER");
+  const [role, setRole] = useState("STUDENT");
   const [username, setUsername] = useState("21012067@st.phenikaa-uni.edu.vn");
   const [password, setPassword] = useState("123456");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +21,7 @@ const PhenikaaLogin = () => {
   // Helper function để chuyển đổi role thành tên hiển thị
   const getRoleDisplayName = (role) => {
     switch (role) {
-      case "USER":
+      case "STUDENT":
         return "Sinh viên";
       case "TEACHER":
         return "Giảng viên";
@@ -106,7 +106,7 @@ const PhenikaaLogin = () => {
         } else if (userRole === "TEACHER") {
           console.log("Chuyển hướng đến /lecturer/home");
           navigate("/lecturer/home");
-        } else if (userRole === "USER") {
+        } else if (userRole === "STUDENT") {
           console.log("Chuyển hướng đến /student/home");
           navigate("/student/home");
         } else {
@@ -204,7 +204,7 @@ const PhenikaaLogin = () => {
   }, [toasts]);
 
   const roleOptions = [
-    { value: "USER", label: "Sinh viên" },
+    { value: "STUDENT", label: "Sinh viên" },
     { value: "TEACHER", label: "Giảng viên" },
     { value: "ADMIN", label: "Phòng ban" },
   ];

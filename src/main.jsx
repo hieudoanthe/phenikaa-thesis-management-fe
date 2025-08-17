@@ -7,18 +7,22 @@ import LecturerHome from "./pages/lecturer/Home.jsx";
 import LecturerDashboard from "./pages/lecturer/Dashboard.jsx";
 import ThesisManagement from "./pages/lecturer/ThesisManagement.jsx";
 import AssignmentManagement from "./pages/lecturer/AssignmentManagement.jsx";
+import TeacherProfile from "./pages/lecturer/TeacherProfile.jsx";
 import LecturerLayout from "./components/layout/lecturer/LecturerLayout.jsx";
 import LecturerRoute from "./routers/LecturerRoute.jsx";
 import StudentRoute from "./routers/StudentRoute.jsx";
 import StudentLayout from "./components/layout/student/StudentLayout.jsx";
 import PlaceholderPage from "./components/common/PlaceholderPage.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProfileStudentProvider } from "./contexts/ProfileStudentContext";
+import { ProfileTeacherProvider } from "./contexts/ProfileTeacherContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import SessionManager from "./components/common/SessionManager";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ThesisRegister from "./pages/student/ThesisRegister.jsx";
 import TopicRegistration from "./pages/student/TopicRegistration.jsx";
 import StudentHome from "./pages/student/Home.jsx";
+import StudentProfile from "./pages/student/StudentProfile.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
 import ThesisTopicsManagement from "./pages/admin/ThesisTopicsManagement.jsx";
@@ -43,7 +47,15 @@ createRoot(document.getElementById("root")).render(
                 path="/lecturer"
                 element={
                   <LecturerRoute>
-                    <LecturerLayout />
+                    {console.log(
+                      "🔧 main.jsx đang render ProfileTeacherProvider"
+                    )}
+                    <ProfileTeacherProvider>
+                      {console.log(
+                        "🔧 main.jsx ProfileTeacherProvider được render"
+                      )}
+                      <LecturerLayout />
+                    </ProfileTeacherProvider>
                   </LecturerRoute>
                 }
               >
@@ -51,6 +63,7 @@ createRoot(document.getElementById("root")).render(
                 <Route path="dashboard" element={<LecturerDashboard />} />
                 <Route path="thesis" element={<ThesisManagement />} />
                 <Route path="assignments" element={<AssignmentManagement />} />
+                <Route path="profile" element={<TeacherProfile />} />
                 <Route
                   path="topics"
                   element={
@@ -121,7 +134,9 @@ createRoot(document.getElementById("root")).render(
                 path="/student"
                 element={
                   <StudentRoute>
-                    <StudentLayout />
+                    <ProfileStudentProvider>
+                      <StudentLayout />
+                    </ProfileStudentProvider>
                   </StudentRoute>
                 }
               >
@@ -131,6 +146,7 @@ createRoot(document.getElementById("root")).render(
                   path="topic-registration"
                   element={<TopicRegistration />}
                 />
+                <Route path="profile" element={<StudentProfile />} />
                 {/* Có thể thêm các route con khác cho student ở đây */}
               </Route>
 

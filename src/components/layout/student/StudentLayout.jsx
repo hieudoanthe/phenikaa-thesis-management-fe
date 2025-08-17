@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import SidebarOfStudent from "./SidebarOfStudent.jsx";
-import { logout, getRefreshToken } from "../../../auth/authUtils";
+import { logout, getRefreshToken, getToken } from "../../../auth/authUtils";
+import { useProfileStudent } from "../../../contexts/ProfileStudentContext";
 
 const StudentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -9,11 +10,30 @@ const StudentLayout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [avatarKey, setAvatarKey] = useState(0);
+
+  // Sử dụng ProfileStudentContext
+  const { profileData, fetchProfileData } = useProfileStudent();
 
   const notificationRef = useRef(null);
   const userDropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Lấy userId từ access token
+  const getUserIdFromToken = () => {
+    try {
+      const token = getToken();
+      if (!token) return null;
+
+      // Decode JWT token để lấy userId
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.userId || payload.sub || null;
+    } catch (error) {
+      console.error("Lỗi khi decode token:", error);
+      return null;
+    }
+  };
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
@@ -56,6 +76,11 @@ const StudentLayout = () => {
           title: "Cài đặt",
           subtitle: "Cấu hình tài khoản cá nhân",
         };
+      case "/student/profile":
+        return {
+          title: "Hồ sơ cá nhân",
+          subtitle: "Quản lý thông tin cá nhân và tài khoản",
+        };
       default:
         return {
           title: "Trang chủ",
@@ -70,16 +95,8 @@ const StudentLayout = () => {
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth <= 768;
-      console.log("📱 Screen size check:", {
-        width: window.innerWidth,
-        mobile,
-        wasMobile: isMobile,
-      });
 
-      // Chỉ tự động đóng sidebar khi chuyển từ desktop sang mobile
-      // Không tự động đóng khi đang ở mobile
       if (mobile && !isMobile && isSidebarOpen) {
-        console.log("🔄 Auto-closing sidebar when switching to mobile");
         setIsSidebarOpen(false);
       }
 
@@ -119,6 +136,18 @@ const StudentLayout = () => {
     };
   }, []);
 
+  // Không cần force re-render avatar nữa vì header đã hoạt động tốt
+  // useEffect(() => {
+  //   setAvatarKey((prev) => prev + 1);
+  // }, [profileData.avt]);
+
+  // Chỉ fetch profile data khi dropdown mở, không force refresh avatar
+  useEffect(() => {
+    if (isUserDropdownOpen) {
+      fetchProfileData();
+    }
+  }, [isUserDropdownOpen, fetchProfileData]);
+
   // Toggle sidebar collapse
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -126,26 +155,17 @@ const StudentLayout = () => {
 
   // Toggle sidebar (cho mobile)
   const handleToggleSidebar = () => {
-    console.log("🍔 Hamburger clicked, current state:", isSidebarOpen);
     setIsSidebarOpen(!isSidebarOpen);
-    console.log("🍔 New sidebar state:", !isSidebarOpen);
   };
 
   // Toggle notification dropdown
   const handleToggleNotification = () => {
     setIsNotificationOpen(!isNotificationOpen);
-    setIsUserDropdownOpen(false); // Đóng user dropdown nếu đang mở
-  };
-
-  // Toggle user dropdown
-  const handleToggleUserDropdown = () => {
-    setIsUserDropdownOpen(!isUserDropdownOpen);
-    setIsNotificationOpen(false); // Đóng notification dropdown nếu đang mở
+    setIsUserDropdownOpen(false);
   };
 
   // Đóng sidebar khi click outside (chỉ trên mobile)
   const handleOverlayClick = () => {
-    console.log("🖱️ Overlay clicked, closing sidebar");
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
     }
@@ -153,7 +173,6 @@ const StudentLayout = () => {
 
   // Đóng sidebar khi click vào menu item (chỉ trên mobile)
   const handleMenuItemClick = () => {
-    console.log("📱 Menu item clicked, closing sidebar on mobile");
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
     }
@@ -168,6 +187,26 @@ const StudentLayout = () => {
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
     }
+  };
+
+  // Function để refresh profile data (không force refresh avatar)
+  const refreshProfileData = async () => {
+    try {
+      await fetchProfileData();
+    } catch (error) {
+      console.error("Lỗi khi refresh profile data:", error);
+    }
+  };
+
+  // Function để toggle dropdown (không force refresh avatar)
+  const handleToggleUserDropdown = () => {
+    if (!isUserDropdownOpen) {
+      // Chỉ fetch profile data, không force refresh avatar
+      fetchProfileData();
+    }
+
+    setIsUserDropdownOpen(!isUserDropdownOpen);
+    setIsNotificationOpen(false);
   };
 
   // Mock data cho notifications
@@ -196,7 +235,7 @@ const StudentLayout = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <div
         className={`fixed h-screen z-50 transition-all duration-500 ease-in-out ${
@@ -222,7 +261,7 @@ const StudentLayout = () => {
 
       {/* Main content area */}
       <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-500 ease-in-out ${
+        className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${
           isCollapsed ? "md:ml-16" : "md:ml-64"
         }`}
       >
@@ -334,15 +373,27 @@ const StudentLayout = () => {
                   className="flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
                   onClick={handleToggleUserDropdown}
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    SV
+                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                    <img
+                      key={`header-avatar-${avatarKey}`}
+                      src={
+                        profileData.avt ||
+                        "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg"
+                      }
+                      alt="User Avatar"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+                      }}
+                    />
                   </div>
                   <div className="hidden md:block">
                     <div className="text-sm font-semibold text-gray-900 leading-tight">
-                      Nguyễn Văn Sinh Viên
+                      {profileData.fullName || "Sinh viên"}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight">
-                      Sinh viên
+                      {profileData.major || "Sinh viên"}
                     </div>
                   </div>
                   <div className="text-gray-600 transition-transform duration-200">
@@ -361,23 +412,41 @@ const StudentLayout = () => {
                 {isUserDropdownOpen && (
                   <div className="absolute top-full right-0 w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
                     <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-base">
-                        SV
+                      <div className="w-12 h-12 rounded-full overflow-hidden">
+                        <img
+                          key={`dropdown-avatar-${avatarKey}`}
+                          src={
+                            profileData.avt ||
+                            "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg"
+                          }
+                          alt="User Avatar"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src =
+                              "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+                          }}
+                        />
                       </div>
                       <div>
                         <h4 className="text-base font-semibold text-gray-900 m-0 mb-1">
-                          Nguyễn Văn Sinh Viên
+                          {profileData.fullName || "Sinh viên"}
                         </h4>
                         <p className="text-sm text-gray-600 m-0 mb-1">
-                          Sinh viên
+                          {profileData.major || "Sinh viên"}
                         </p>
                         <span className="text-xs text-gray-500">
-                          sinhvien@phenikaa.edu.vn
+                          {profileData.email || "Chưa cập nhật email"}
                         </span>
                       </div>
                     </div>
                     <div className="py-2">
-                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                      <button
+                        className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left"
+                        onClick={() => {
+                          navigate("/student/profile");
+                          setIsUserDropdownOpen(false);
+                        }}
+                      >
                         <svg
                           width="16"
                           height="16"
@@ -438,8 +507,8 @@ const StudentLayout = () => {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 bg-gray-50 text-secondary">
-          <div className="px-6 py-6 min-h-[calc(100vh-80px)]">
+        <main className="flex-1 bg-gray-50 text-secondary overflow-auto">
+          <div className="px-6 py-6">
             <Outlet />
           </div>
         </main>

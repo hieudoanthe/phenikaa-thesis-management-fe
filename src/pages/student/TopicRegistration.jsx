@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
-import "../../styles/pages/student/topic_registration.css";
 import registrationService from "../../services/registration.service";
 
 const difficultyMap = {
-  ADVANCED: { label: "Khó", class: "advanced" },
-  INTERMEDIATE: { label: "Trung bình", class: "intermediate" },
-  BEGINNER: { label: "Dễ", class: "beginner" },
+  ADVANCED: {
+    label: "Khó",
+    class: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  },
+  INTERMEDIATE: {
+    label: "Trung bình",
+    class: "bg-blue-100 text-blue-800 border-blue-200",
+  },
+  BEGINNER: {
+    label: "Dễ",
+    class: "bg-green-100 text-green-800 border-green-200",
+  },
 };
 
 const TopicRegistration = () => {
@@ -57,9 +65,9 @@ const TopicRegistration = () => {
   };
 
   const getStatusColor = (status) => {
-    if (status === "Approved") return "approved";
-    if (status === "Pending") return "pending";
-    return "register";
+    if (status === "Approved") return "bg-green-600 hover:bg-green-700";
+    if (status === "Pending") return "bg-yellow-500 hover:bg-yellow-600";
+    return "bg-orange-500 hover:bg-orange-600";
   };
 
   const handleRegister = async (topicId) => {
@@ -119,13 +127,18 @@ const TopicRegistration = () => {
   const years = ["2024-2025", "2023-2024", "2022-2023"];
 
   return (
-    <div className="topic-registration-page">
-      <div className="filters-bar">
-        <div className="filter-group">
-          <label>Khoa</label>
+    <div className="max-w-full mx-auto p-3">
+      {/* Filters Bar */}
+      <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-200 mb-4 flex gap-3.5 items-end flex-wrap">
+        {/* Department Filter */}
+        <div className="flex flex-col gap-1.5 min-w-[130px]">
+          <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
+            Khoa
+          </label>
           <select
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
+            className="px-2.5 py-1.5 border border-gray-300 rounded-md text-sm min-w-[130px] focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-colors"
           >
             <option value="">Chọn khoa</option>
             {departments.map((dept) => (
@@ -136,11 +149,15 @@ const TopicRegistration = () => {
           </select>
         </div>
 
-        <div className="filter-group">
-          <label>Năm học</label>
+        {/* Year Filter */}
+        <div className="flex flex-col gap-1.5 min-w-[130px]">
+          <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
+            Năm học
+          </label>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
+            className="px-2.5 py-1.5 border border-gray-300 rounded-md text-sm min-w-[130px] focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-colors"
           >
             <option value="">Chọn năm học</option>
             {years.map((year) => (
@@ -151,11 +168,14 @@ const TopicRegistration = () => {
           </select>
         </div>
 
-        <div className="filter-group search-group">
-          <label>Tìm kiếm</label>
-          <div className="search-input-wrapper">
+        {/* Search Filter */}
+        <div className="flex flex-col gap-1.5 flex-1 min-w-[300px]">
+          <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
+            Tìm kiếm
+          </label>
+          <div className="relative">
             <svg
-              className="search-icon"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 z-10"
               width="16"
               height="16"
               viewBox="0 0 24 24"
@@ -168,54 +188,84 @@ const TopicRegistration = () => {
               placeholder="Tìm theo từ khóa hoặc giảng viên"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-2.5 py-1.5 pl-8 border border-gray-300 rounded-md text-sm min-w-[180px] focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-colors"
             />
           </div>
         </div>
 
-        <button className="clear-filters-btn" onClick={clearFilters}>
+        {/* Clear Filters Button */}
+        <button
+          className="px-3 py-1.5 bg-gray-500 text-white border-none rounded-md text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-gray-600 hover:-translate-y-0.5 whitespace-nowrap self-end"
+          onClick={clearFilters}
+        >
           Xóa bộ lọc
         </button>
       </div>
 
+      {/* Loading State */}
       {loading ? (
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
+        <div className="text-center py-15 px-5 text-gray-500">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p>Đang tải danh sách đề tài...</p>
         </div>
       ) : error ? (
-        <div className="error-state">
+        <div className="text-center py-10 px-5 text-red-600 bg-red-50 border border-red-200 rounded-lg my-5">
           <p>{error}</p>
         </div>
       ) : (
         <>
-          <div className="topics-grid">
+          {/* Topics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 mb-4">
             {currentTopics.map((topic) => (
-              <div className="topic-card" key={topic.topicId}>
-                <div className="topic-title">{topic.title}</div>
-                <div className="topic-description">{topic.description}</div>
-                <div className="topic-meta">
-                  <div className="meta-item">
-                    <span className="meta-label">Giảng viên:</span>
-                    <span className="meta-value supervisor">
+              <div
+                key={topic.topicId}
+                className="border border-gray-200 rounded-lg bg-white p-3.5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-orange-500 transition-all duration-200 flex flex-col gap-2.5 min-h-[180px]"
+              >
+                {/* Topic Title */}
+                <div className="text-sm font-semibold text-gray-900 leading-tight m-0">
+                  {topic.title}
+                </div>
+
+                {/* Topic Description */}
+                <div className="text-xs text-gray-500 leading-relaxed m-0 flex-grow">
+                  {topic.description}
+                </div>
+
+                {/* Topic Meta */}
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-2.5 flex flex-col gap-1.5">
+                  {/* Supervisor */}
+                  <div className="flex justify-between items-center gap-1.5">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[55px]">
+                      Giảng viên:
+                    </span>
+                    <span className="text-xs font-medium text-purple-600 font-semibold">
                       {topic.supervisorName || `Dr. ${topic.supervisorId}`}
                     </span>
                   </div>
-                  <div className="meta-item">
-                    <span className="meta-label">Số lượng:</span>
+
+                  {/* Slots */}
+                  <div className="flex justify-between items-center gap-1.5">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[55px]">
+                      Số lượng:
+                    </span>
                     <span
-                      className={`meta-value slots ${
+                      className={`text-xs font-medium font-semibold ${
                         topic.currentStudents >= topic.maxStudents
-                          ? "full"
-                          : "available"
+                          ? "text-red-600"
+                          : "text-green-600"
                       }`}
                     >
                       {topic.currentStudents}/{topic.maxStudents} chỗ trống
                     </span>
                   </div>
-                  <div className="meta-item">
-                    <span className="meta-label">Độ khó:</span>
+
+                  {/* Difficulty */}
+                  <div className="flex justify-between items-center gap-1.5">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[55px]">
+                      Độ khó:
+                    </span>
                     <span
-                      className={`meta-value difficulty-tag ${
+                      className={`inline-block px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${
                         difficultyMap[topic.difficultyLevel]?.class || ""
                       }`}
                     >
@@ -224,8 +274,23 @@ const TopicRegistration = () => {
                     </span>
                   </div>
                 </div>
+
+                {/* Register Button */}
                 <button
-                  className={`register-btn ${getStatusColor(topic.status)}`}
+                  className={`mt-auto py-2 px-0 rounded-md font-semibold text-xs uppercase tracking-wider cursor-pointer transition-all duration-200 shadow-sm ${
+                    topic.status === "Approved" ||
+                    topic.status === "Pending" ||
+                    registeringId === topic.topicId ||
+                    topic.currentStudents >= topic.maxStudents
+                      ? "opacity-60 cursor-not-allowed"
+                      : getStatusColor(topic.status)
+                  } ${
+                    topic.status === "Approved"
+                      ? "bg-green-600 text-white"
+                      : topic.status === "Pending"
+                      ? "bg-yellow-500 text-gray-900"
+                      : "text-white"
+                  }`}
                   disabled={
                     topic.status === "Approved" ||
                     topic.status === "Pending" ||
@@ -248,11 +313,11 @@ const TopicRegistration = () => {
             ))}
           </div>
 
-          {/* Phân trang */}
+          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="pagination-bar">
+            <div className="flex justify-center gap-1.5 my-4 items-center">
               <button
-                className="pagination-btn"
+                className="bg-white border border-gray-300 text-gray-600 rounded-md px-2.5 py-1.5 text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-blue-900 hover:text-white hover:border-blue-900 min-w-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
               >
@@ -263,8 +328,10 @@ const TopicRegistration = () => {
                 (page) => (
                   <button
                     key={page}
-                    className={`pagination-btn ${
-                      currentPage === page ? "active" : ""
+                    className={`border rounded-md px-2.5 py-1.5 text-xs font-medium cursor-pointer transition-all duration-200 min-w-[36px] ${
+                      currentPage === page
+                        ? "bg-blue-900 text-white border-blue-900"
+                        : "bg-white border-gray-300 text-gray-600 hover:bg-blue-900 hover:text-white hover:border-blue-900"
                     }`}
                     onClick={() => setCurrentPage(page)}
                   >
@@ -274,7 +341,7 @@ const TopicRegistration = () => {
               )}
 
               <button
-                className="pagination-btn"
+                className="bg-white border border-gray-300 text-gray-600 rounded-md px-2.5 py-1.5 text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-blue-900 hover:text-white hover:border-blue-900 min-w-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
@@ -285,10 +352,10 @@ const TopicRegistration = () => {
             </div>
           )}
 
-          {/* Thông tin phân trang */}
+          {/* Pagination Info */}
           {filteredTopics.length > 0 && (
-            <div className="pagination-info">
-              <p>
+            <div className="text-center mb-4 text-gray-500 text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-md">
+              <p className="m-0 p-3 bg-gray-50 rounded-md border border-gray-200">
                 Hiển thị {indexOfFirstTopic + 1} đến{" "}
                 {Math.min(indexOfLastTopic, filteredTopics.length)} trong tổng
                 số {filteredTopics.length} đề tài

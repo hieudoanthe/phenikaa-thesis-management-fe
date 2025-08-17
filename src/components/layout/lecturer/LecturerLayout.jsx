@@ -2,13 +2,44 @@ import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import SidebarOfLecturer from "./SidebarOfLecturer.jsx";
 import { logout, getRefreshToken } from "../../../auth/authUtils";
+import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
+
+console.log("🔧 LecturerLayout import useProfileTeacher:", useProfileTeacher);
 
 const LecturerLayout = () => {
+  console.log("🔧 LecturerLayout đang được render");
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  // Sử dụng ProfileTeacherContext
+  let contextData;
+  try {
+    contextData = useProfileTeacher();
+    console.log("🔧 LecturerLayout đã lấy được context:", contextData);
+    console.log("🔧 Profile data hiện tại:", contextData.profileData);
+    console.log("🔧 Has initial data:", contextData.hasInitialData);
+  } catch (error) {
+    console.error("🔧 Lỗi khi lấy context:", error);
+    return (
+      <div className="flex h-screen bg-gray-50 items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Lỗi khởi tạo
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Không thể khởi tạo profile context. Vui lòng thử lại sau.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const { profileData, fetchProfileData } = contextData;
 
   const notificationRef = useRef(null);
   const userDropdownRef = useRef(null);
@@ -55,6 +86,11 @@ const LecturerLayout = () => {
         return {
           title: "Cài đặt",
           subtitle: "Cấu hình tài khoản và hệ thống",
+        };
+      case "/lecturer/profile":
+        return {
+          title: "Hồ sơ cá nhân",
+          subtitle: "Quản lý thông tin cá nhân và cài đặt tài khoản",
         };
       default:
         return {
@@ -119,6 +155,13 @@ const LecturerLayout = () => {
     };
   }, []);
 
+  // Fetch profile data khi dropdown mở - chỉ fetch khi cần thiết
+  useEffect(() => {
+    if (isUserDropdownOpen && !profileData.fullName) {
+      fetchProfileData();
+    }
+  }, [isUserDropdownOpen, profileData.fullName, fetchProfileData]);
+
   // Toggle sidebar collapse
   const handleToggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -139,6 +182,12 @@ const LecturerLayout = () => {
 
   // Toggle user dropdown
   const handleToggleUserDropdown = () => {
+    if (!isUserDropdownOpen && !profileData.fullName) {
+      // Chỉ fetch profile data khi mở dropdown và chưa có dữ liệu
+      console.log("🔧 Fetching profile data khi mở dropdown lần đầu");
+      fetchProfileData();
+    }
+
     setIsUserDropdownOpen(!isUserDropdownOpen);
     setIsNotificationOpen(false); // Đóng notification dropdown nếu đang mở
   };
@@ -196,7 +245,7 @@ const LecturerLayout = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <div
         className={`fixed h-screen z-50 transition-all duration-500 ease-in-out ${
@@ -222,7 +271,7 @@ const LecturerLayout = () => {
 
       {/* Main content area */}
       <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-500 ease-in-out ${
+        className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${
           isCollapsed ? "md:ml-16" : "md:ml-64"
         }`}
       >
@@ -334,15 +383,31 @@ const LecturerLayout = () => {
                   className="flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
                   onClick={handleToggleUserDropdown}
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    DSW
+                  <div className="w-10 h-10 rounded-full overflow-hidden">
+                    {profileData.avt ? (
+                      <img
+                        src={profileData.avt}
+                        alt="User Avatar"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {profileData.fullName
+                          ? profileData.fullName.charAt(0).toUpperCase()
+                          : "G"}
+                      </div>
+                    )}
                   </div>
                   <div className="hidden md:block">
                     <div className="text-sm font-semibold text-gray-900 leading-tight">
-                      Dr. Hieu Doan The
+                      {profileData.fullName || "Giảng viên"}
                     </div>
                     <div className="text-xs text-gray-600 leading-tight">
-                      Senior Lecturer
+                      {profileData.academicRank || "Giảng viên"}
                     </div>
                   </div>
                   <div className="text-gray-600 transition-transform duration-200">
@@ -361,23 +426,45 @@ const LecturerLayout = () => {
                 {isUserDropdownOpen && (
                   <div className="absolute top-full right-0 w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
                     <div className="p-4 border-b border-gray-100 flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-base">
-                        DSW
+                      <div className="w-12 h-12 rounded-full overflow-hidden">
+                        {profileData.avt ? (
+                          <img
+                            src={profileData.avt}
+                            alt="User Avatar"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src =
+                                "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-base">
+                            {profileData.fullName
+                              ? profileData.fullName.charAt(0).toUpperCase()
+                              : "G"}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <h4 className="text-base font-semibold text-gray-900 m-0 mb-1">
-                          Dr. Hieu Doan The
+                          {profileData.fullName || "Giảng viên"}
                         </h4>
                         <p className="text-sm text-gray-600 m-0 mb-1">
-                          Senior Lecturer
+                          {profileData.academicRank || "Giảng viên"}
                         </p>
                         <span className="text-xs text-gray-500">
-                          hieu.doan@phenikaa.edu.vn
+                          {profileData.email || "Chưa cập nhật email"}
                         </span>
                       </div>
                     </div>
                     <div className="py-2">
-                      <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                      <button
+                        className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left"
+                        onClick={() => {
+                          navigate("/lecturer/profile");
+                          setIsUserDropdownOpen(false);
+                        }}
+                      >
                         <svg
                           width="16"
                           height="16"
@@ -438,8 +525,8 @@ const LecturerLayout = () => {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 bg-gray-50 text-secondary">
-          <div className="px-6 py-6 min-h-[calc(100vh-80px)]">
+        <main className="flex-1 bg-gray-50 text-secondary overflow-auto">
+          <div className="px-6 py-6">
             <Outlet />
           </div>
         </main>

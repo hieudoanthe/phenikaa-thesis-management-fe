@@ -74,6 +74,86 @@ class UserService {
       throw error;
     }
   }
+
+  /**
+   * Lấy thông tin profile sinh viên
+   * @param {number} userId - ID của sinh viên
+   * @returns {Promise<any>} - Thông tin profile sinh viên
+   */
+  async getStudentProfile(userId) {
+    try {
+      const response = await apiGet(
+        API_ENDPOINTS.GET_STUDENT_PROFILE.replace("{userId}", userId)
+      );
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi lấy profile sinh viên:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cập nhật profile sinh viên với avatar
+   * @param {FormData} formData - FormData chứa profile và avatar file
+   * @returns {Promise<any>} - Kết quả cập nhật
+   */
+  async updateStudentProfile(formData) {
+    try {
+      const response = await apiPut(
+        API_ENDPOINTS.UPDATE_STUDENT_PROFILE,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật profile:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy thông tin profile giảng viên
+   * @param {number} userId - ID của giảng viên
+   * @returns {Promise<any>} - Thông tin profile giảng viên
+   */
+  async getTeacherProfile(userId) {
+    try {
+      const response = await apiGet(
+        API_ENDPOINTS.GET_TEACHER_PROFILE.replace("{userId}", userId)
+      );
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi lấy profile giảng viên:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cập nhật profile giảng viên với avatar
+   * @param {FormData} formData - FormData chứa profile và avatar file
+   * @returns {Promise<any>} - Kết quả cập nhật
+   */
+  async updateTeacherProfile(formData) {
+    try {
+      const response = await apiPut(
+        API_ENDPOINTS.UPDATE_TEACHER_PROFILE,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật profile giảng viên:", error);
+      throw error;
+    }
+  }
 }
 
 export default new UserService();

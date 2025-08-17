@@ -7,25 +7,25 @@ import { userService } from "../../services";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-// Mapping roleIds sang tên hiển thị
+// Mapping roleIds sang tên hiển thị theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
 const roleMapping = {
   1: "Sinh viên",
-  2: "Giảng viên",
-  3: "Quản trị viên",
+  2: "Phòng ban",
+  3: "Giảng viên",
 };
 
 // Mapping roleIds sang role value cho filter
 const roleValueMapping = {
   1: "Student",
-  2: "Lecturer",
-  3: "Admin",
+  2: "Admin",
+  3: "Teacher",
 };
 
 const roleOptions = [
   { value: "all", label: "Tất cả vai trò" },
   { value: "Student", label: "Sinh viên" },
-  { value: "Lecturer", label: "Giảng viên" },
-  { value: "Admin", label: "Quản trị viên" },
+  { value: "Admin", label: "Phòng ban" },
+  { value: "Teacher", label: "Giảng viên" },
 ];
 
 const UserManagement = () => {
@@ -54,52 +54,52 @@ const UserManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   // Fetch users từ API (server-side paging)
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
 
-        // Luôn fetch tất cả users (không filter theo role vì API không hỗ trợ)
-        const response = await userService.getUsers({
-          page: 0,
-          size: 1000, // Lấy tất cả users
-        });
-        const content = response?.content || [];
+      // Luôn fetch tất cả users (không filter theo role vì API không hỗ trợ)
+      const response = await userService.getUsers({
+        page: 0,
+        size: 1000, // Lấy tất cả users
+      });
+      const content = response?.content || [];
 
-        const transformedUsers = content.map((user) => ({
-          userId: user.userId,
-          name: user.fullName,
-          username: user.username,
-          email: user.username,
-          roleIds: user.roleIds,
-          status: user.status,
-          avatar: `https://randomuser.me/api/portraits/${
-            Math.random() > 0.5 ? "men" : "women"
-          }/${Math.floor(Math.random() * 100)}.jpg`,
-        }));
+      const transformedUsers = content.map((user) => ({
+        userId: user.userId,
+        name: user.fullName,
+        username: user.username,
+        email: user.username,
+        roleIds: user.roleIds,
+        status: user.status,
+        avatar: `https://randomuser.me/api/portraits/${
+          Math.random() > 0.5 ? "men" : "women"
+        }/${Math.floor(Math.random() * 100)}.jpg`,
+      }));
 
-        setUsers(transformedUsers);
+      setUsers(transformedUsers);
 
-        // Cập nhật totalElements từ API response
-        if (typeof response?.totalElements === "number") {
-          setTotalElements(response.totalElements);
-        }
-
-        // Cập nhật totalPages từ API response
-        if (typeof response?.totalPages === "number") {
-          setTotalPages(response.totalPages);
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy danh sách users:", error);
-        setError("Không thể tải danh sách người dùng");
-        if (window.addToast) {
-          window.addToast("Lỗi khi tải danh sách người dùng!", "error");
-        }
-      } finally {
-        setLoading(false);
+      // Cập nhật totalElements từ API response
+      if (typeof response?.totalElements === "number") {
+        setTotalElements(response.totalElements);
       }
-    };
 
+      // Cập nhật totalPages từ API response
+      if (typeof response?.totalPages === "number") {
+        setTotalPages(response.totalPages);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách users:", error);
+      setError("Không thể tải danh sách người dùng");
+      if (window.addToast) {
+        window.addToast("Lỗi khi tải danh sách người dùng!", "error");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUsers();
   }, [currentPage]);
 
@@ -203,6 +203,11 @@ const UserManagement = () => {
     return "#fff";
   };
 
+  // Function để refresh dữ liệu (có thể gọi từ bên ngoài)
+  const refreshData = async () => {
+    await fetchUsers();
+  };
+
   const startEdit = (user) => {
     setEditingUserId(user.userId);
     setEditDraft({
@@ -226,18 +231,10 @@ const UserManagement = () => {
     };
     try {
       await userService.updateUser(payload);
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.userId === user.userId
-            ? {
-                ...u,
-                name: payload.fullName,
-                email: payload.username,
-                roleIds: payload.roleIds,
-              }
-            : u
-        )
-      );
+
+      // Refetch dữ liệu mới từ API để cập nhật giao diện
+      await fetchUsers();
+
       if (window.addToast)
         window.addToast("Cập nhật người dùng thành công!", "success");
       cancelEdit();
@@ -253,18 +250,10 @@ const UserManagement = () => {
     try {
       setStatusLoadingId(user.userId);
       const resp = await userService.changeStatusUser(user.userId);
-      const returnedStatus = resp?.status;
-      const nextStatus =
-        typeof returnedStatus === "number"
-          ? returnedStatus
-          : user.status === 2
-          ? 1
-          : 2;
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.userId === user.userId ? { ...u, status: nextStatus } : u
-        )
-      );
+
+      // Refetch dữ liệu mới từ API để cập nhật giao diện
+      await fetchUsers();
+
       if (window.addToast)
         window.addToast(
           "Cập nhật trạng thái người dùng thành công!",
@@ -279,6 +268,7 @@ const UserManagement = () => {
     }
   };
 
+  // Thêm người dùng mới - Real-time update
   const handleAddUser = async (userData) => {
     console.log("Thêm người dùng mới:", userData);
 
@@ -301,11 +291,10 @@ const UserManagement = () => {
       const response = await userService.createUser(userData);
       console.log("API response:", response);
 
-      // Refetch danh sách trang hiện tại để giữ đúng 8 bản ghi/trang
-      const prevPage = currentPage;
-      setCurrentPage(prevPage);
+      // 🔄 REFRESH: Refetch dữ liệu mới từ API để cập nhật giao diện ngay lập tức
+      await fetchUsers();
 
-      // Hiển thị thông báo thành công ngay lập tức
+      // Hiển thị thông báo thành công
       if (window.addToast) {
         window.addToast("Thêm người dùng thành công!", "success");
       }
@@ -338,12 +327,15 @@ const UserManagement = () => {
     try {
       setConfirmState((s) => ({ ...s, loading: true }));
       await userService.deleteUser(userId);
-      // Refetch; nếu trang hiện tại rỗng sau khi xóa, lùi 1 trang
+
+      // Refetch dữ liệu mới từ API để cập nhật giao diện
+      await fetchUsers();
+
+      // Nếu trang hiện tại rỗng sau khi xóa, lùi 1 trang
       if (users.length === 1 && currentPage > 0) {
         setCurrentPage((p) => p - 1);
-      } else {
-        setCurrentPage((p) => p);
       }
+
       if (window.addToast)
         window.addToast("Xóa người dùng thành công!", "success");
     } catch (err) {

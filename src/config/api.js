@@ -12,38 +12,54 @@ export const ACADEMIC_YEAR_API_CONFIG = {
 
 // API Endpoints
 export const API_ENDPOINTS = {
-  // Authentication
+  /**
+   * Authentication
+   */
   LOGIN: "/api/auth/login",
   LOGOUT: "/api/auth/logout",
   REFRESH: "/api/auth/refresh-token",
 
   // Academic Year Management
-  ACADEMIC_YEAR_LIST: "/academic-config/listAcademicYear",
-  ACADEMIC_YEAR_DETAIL: "/academic-config/getAcademicYear",
+  ACADEMIC_YEAR_LIST: "/academic-config/list-academic-year",
+  ACADEMIC_YEAR_DETAIL: "/academic-config/get-academic-year",
 
-  // Admin Permission
+  /**
+   * Admin Permission
+   */
   // User Management
-  SAVE_USER: "/api/admin/saveUser",
-  GET_USERS: "/api/admin/getUsers",
-  GET_USERS_PAGED: "/api/admin/getUsersPaged",
-  DELETE_USER: "/api/admin/deleteUser",
-  UPDATE_USER: "/api/admin/updateUser",
-  CHANGE_STATUS_USER: "/api/admin/changeStatusUser",
+  SAVE_USER: "/api/admin/save-user",
+  GET_USERS: "/api/admin/get-users",
+  GET_USERS_PAGED: "/api/admin/get-users-paged",
+  DELETE_USER: "/api/admin/delete-user",
+  UPDATE_USER: "/api/admin/update-user",
+  CHANGE_STATUS_USER: "/api/admin/change-status-user",
 
-  // Teacher Permission
+  /**
+   * Teacher Permission
+   */
   // Topic Management
-  CREATE_TOPIC: "/api/thesis-service/teacher/createTopic",
-  GET_TOPIC_LIST: "/api/thesis-service/teacher/getListTopic",
-  EDIT_TOPIC: "/api/thesis-service/teacher/editTopic",
-  UPDATE_TOPIC: "/api/thesis-service/teacher/updateTopic",
-  DELETE_TOPIC: "/api/thesis-service/teacher/deleteTopic",
-  APPROVE_TOPIC: "/api/thesis-service/teacher/approveTopic",
-  REJECT_TOPIC: "/api/thesis-service/teacher/rejectTopic",
+  CREATE_TOPIC: "/api/thesis-service/teacher/create-topic",
+  GET_TOPIC_LIST: "/api/thesis-service/teacher/get-list-topic",
+  EDIT_TOPIC: "/api/thesis-service/teacher/edit-topic",
+  UPDATE_TOPIC: "/api/thesis-service/teacher/update-topic",
+  DELETE_TOPIC: "/api/thesis-service/teacher/delete-topic",
+  APPROVE_TOPIC: "/api/thesis-service/teacher/approve-topic",
+  REJECT_TOPIC: "/api/thesis-service/teacher/reject-topic",
+
+  /**
+   * Student Permission
+   */
 
   // Student Topic Registration
   GET_AVAILABLE_TOPIC_LIST: "/api/thesis-service/student/available-topics",
   REGISTER_TOPIC: "/api/thesis-service/student/register-topic",
-
-  // Student Suggest
   STUDENT_SUGGEST_TOPIC: "/api/thesis-service/student/suggest-topic",
+
+  // Student Profile
+  GET_STUDENT_PROFILE: "/api/profile-service/student/get-profile/{userId}",
+  UPDATE_STUDENT_PROFILE: "/api/profile-service/student/update-profile-student",
+
+  // Teacher Profile
+  GET_TEACHER_PROFILE: "/api/profile-service/teacher/get-profile/{userId}",
+  UPDATE_TEACHER_PROFILE: "/api/profile-service/teacher/update-profile-teacher",
 };

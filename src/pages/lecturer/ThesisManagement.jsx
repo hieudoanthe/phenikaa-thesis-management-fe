@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "../../styles/pages/lecturer/thesis_management.css";
 import Select from "react-select";
 import topicService from "../../services/topic.service";
 import academicYearService from "../../services/academic-year.service";
@@ -220,46 +219,46 @@ const ThesisManagement = () => {
   });
 
   const getStatusBadgeClass = (status) => {
-    if (!status) return "status-badge active";
+    if (!status) return "bg-green-100 text-green-800";
 
     const statusLower = status.toLowerCase();
     switch (statusLower) {
       case "available":
-        return "status-badge available";
+        return "bg-blue-100 text-blue-800";
       case "active":
-        return "status-badge active";
+        return "bg-green-100 text-green-800";
       case "inactive":
-        return "status-badge inactive";
+        return "bg-gray-100 text-gray-800";
       case "approved":
-        return "status-badge approved";
+        return "bg-green-100 text-green-800";
       case "rejected":
-        return "status-badge rejected";
+        return "bg-red-100 text-red-800";
       case "pending":
-        return "status-badge pending";
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return "status-badge active";
+        return "bg-green-100 text-green-800";
     }
   };
 
   const getApprovalBadgeClass = (status) => {
-    if (!status) return "approval-badge pending";
+    if (!status) return "bg-yellow-100 text-yellow-800";
 
     const statusLower = status.toLowerCase();
     switch (statusLower) {
       case "available":
-        return "approval-badge available";
+        return "bg-blue-100 text-blue-800";
       case "approved":
-        return "approval-badge approved";
+        return "bg-green-100 text-green-800";
       case "rejected":
-        return "approval-badge rejected";
+        return "bg-red-100 text-red-800";
       case "pending":
-        return "approval-badge pending";
+        return "bg-yellow-100 text-yellow-800";
       case "active":
-        return "approval-badge active";
+        return "bg-green-100 text-green-800";
       case "inactive":
-        return "approval-badge inactive";
+        return "bg-gray-100 text-gray-800";
       default:
-        return "approval-badge pending";
+        return "bg-yellow-100 text-yellow-800";
     }
   };
 
@@ -284,10 +283,10 @@ const ThesisManagement = () => {
   // Hiển thị loading
   if (loading && topics.length === 0) {
     return (
-      <div className="thesis-management">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Đang tải danh sách đề tài...</p>
+      <div className="min-h-screen bg-white">
+        <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-500 text-sm">Đang tải danh sách đề tài...</p>
         </div>
       </div>
     );
@@ -296,10 +295,13 @@ const ThesisManagement = () => {
   // Hiển thị error
   if (error && topics.length === 0) {
     return (
-      <div className="thesis-management">
-        <div className="error-container">
-          <p className="error-message">{error}</p>
-          <button onClick={loadTopics} className="retry-btn">
+      <div className="min-h-screen bg-white">
+        <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
+          <p className="text-red-500 text-base mb-4 max-w-md">{error}</p>
+          <button
+            onClick={loadTopics}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
             Thử lại
           </button>
         </div>
@@ -321,7 +323,7 @@ const ThesisManagement = () => {
   const totalPages = Math.ceil(filteredTopics.length / recordsPerPage);
 
   return (
-    <div className="thesis-management">
+    <div className="min-h-screen bg-white">
       {/* Add Topic Modal */}
       <AddTopicModal
         open={isFormOpen}
@@ -336,9 +338,9 @@ const ThesisManagement = () => {
 
       {/* Show Form Button (when form is hidden) */}
       {!isFormOpen && (
-        <div className="show-form-section">
+        <div className="sticky top-[70px] left-0 right-0 z-50 p-4 lg:p-8 bg-white border-b border-gray-200 transition-all duration-300">
           <button
-            className="show-form-btn"
+            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors duration-200"
             onClick={() => {
               setIsFormOpen(true);
               setSelectedTopicForView(null); // Reset để tạo mới
@@ -354,128 +356,164 @@ const ThesisManagement = () => {
 
       {/* Topic List - chỉ hiển thị khi form ẩn */}
       {!isFormOpen && (
-        <div className="topic-list-section">
-          <div className="list-header">
-            <h2>Danh Sách Đề Tài</h2>
+        <div className="bg-white min-h-screen">
+          <div className="bg-gray-50 p-6 lg:p-8 border-b border-gray-200">
+            <h2 className="text-xl lg:text-2xl font-semibold text-gray-900 m-0">
+              Danh Sách Đề Tài
+            </h2>
           </div>
 
           {/* Filters and Search */}
-          <div className="filters-section">
-            <div className="filter-group" style={{ minWidth: 260 }}>
-              <label>Năm học:</label>
-              {(() => {
-                const yearOptions = [
-                  { value: "All", label: "Tất cả năm học" },
-                  ...academicYears.map((y) => ({
-                    value: String(y.id),
-                    label: y.name,
-                  })),
-                ];
-                const yearValue = yearOptions.find(
-                  (o) => o.value === String(selectedYear)
-                );
-                return (
+          <div className="sticky top-[140px] left-0 right-0 z-40 p-4 lg:p-8 bg-white border-b border-gray-200 transition-all duration-300">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6 flex-wrap">
+              <div className="flex flex-col sm:flex-row gap-4 lg:gap-6 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 min-w-[260px]">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Năm học:
+                  </label>
+                  {(() => {
+                    const yearOptions = [
+                      { value: "All", label: "Tất cả năm học" },
+                      ...academicYears.map((y) => ({
+                        value: String(y.id),
+                        label: y.name,
+                      })),
+                    ];
+                    const yearValue = yearOptions.find(
+                      (o) => o.value === String(selectedYear)
+                    );
+                    return (
+                      <Select
+                        classNamePrefix="select"
+                        options={yearOptions}
+                        value={yearValue}
+                        onChange={(opt) =>
+                          setSelectedYear(opt ? String(opt.value) : "All")
+                        }
+                        isClearable
+                        placeholder="Chọn năm học"
+                        className="w-full sm:w-auto"
+                      />
+                    );
+                  })()}
+                </div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 min-w-[200px]">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    Trạng thái duyệt:
+                  </label>
                   <Select
                     classNamePrefix="select"
-                    options={yearOptions}
-                    value={yearValue}
+                    options={[
+                      { value: "All", label: "Tất cả trạng thái" },
+                      { value: "pending", label: "Chờ duyệt" },
+                      { value: "approved", label: "Đã duyệt" },
+                      { value: "rejected", label: "Bị từ chối" },
+                      { value: "available", label: "Còn trống" },
+                      { value: "active", label: "Hoạt động" },
+                      { value: "inactive", label: "Ngừng hoạt động" },
+                    ]}
+                    value={{
+                      value: selectedApprovalStatus,
+                      label:
+                        selectedApprovalStatus === "All"
+                          ? "Tất cả trạng thái"
+                          : selectedApprovalStatus === "pending"
+                          ? "Chờ duyệt"
+                          : selectedApprovalStatus === "approved"
+                          ? "Đã duyệt"
+                          : selectedApprovalStatus === "rejected"
+                          ? "Bị từ chối"
+                          : selectedApprovalStatus === "available"
+                          ? "Còn trống"
+                          : selectedApprovalStatus === "active"
+                          ? "Hoạt động"
+                          : selectedApprovalStatus === "inactive"
+                          ? "Ngừng hoạt động"
+                          : "Tất cả trạng thái",
+                    }}
                     onChange={(opt) =>
-                      setSelectedYear(opt ? String(opt.value) : "All")
+                      setSelectedApprovalStatus(opt ? String(opt.value) : "All")
                     }
                     isClearable
-                    placeholder="Chọn năm học"
+                    placeholder="Chọn trạng thái"
+                    className="w-full sm:w-auto"
                   />
-                );
-              })()}
-            </div>
-            <div className="filter-group" style={{ minWidth: 200 }}>
-              <label>Trạng thái duyệt:</label>
-              <Select
-                classNamePrefix="select"
-                options={[
-                  { value: "All", label: "Tất cả trạng thái" },
-                  { value: "pending", label: "Chờ duyệt" },
-                  { value: "approved", label: "Đã duyệt" },
-                  { value: "rejected", label: "Bị từ chối" },
-                  { value: "available", label: "Còn trống" },
-                  { value: "active", label: "Hoạt động" },
-                  { value: "inactive", label: "Ngừng hoạt động" },
-                ]}
-                value={{
-                  value: selectedApprovalStatus,
-                  label:
-                    selectedApprovalStatus === "All"
-                      ? "Tất cả trạng thái"
-                      : selectedApprovalStatus === "pending"
-                      ? "Chờ duyệt"
-                      : selectedApprovalStatus === "approved"
-                      ? "Đã duyệt"
-                      : selectedApprovalStatus === "rejected"
-                      ? "Bị từ chối"
-                      : selectedApprovalStatus === "available"
-                      ? "Còn trống"
-                      : selectedApprovalStatus === "active"
-                      ? "Hoạt động"
-                      : selectedApprovalStatus === "inactive"
-                      ? "Ngừng hoạt động"
-                      : "Tất cả trạng thái",
-                }}
-                onChange={(opt) =>
-                  setSelectedApprovalStatus(opt ? String(opt.value) : "All")
-                }
-                isClearable
-                placeholder="Chọn trạng thái"
-              />
-            </div>
-            <div className="search-section">
-              <div className="search-box">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm đề tài..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                </div>
               </div>
-            </div>
 
-            <div className="filters-right">
-              <button className="clear-filters-btn" onClick={clearFilters}>
-                Xóa Bộ Lọc
-              </button>
+              <div className="flex-1 max-w-md w-full">
+                <div className="relative">
+                  <svg
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm đề tài..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <button
+                  className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200"
+                  onClick={clearFilters}
+                >
+                  Xóa Bộ Lọc
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Topics Table */}
-          <div className="table-container">
-            <table className="topics-table">
+          <div className="w-full overflow-x-auto pt-24 lg:pt-28">
+            <table className="w-full border-collapse bg-white min-w-[1200px]">
               <thead>
                 <tr>
-                  <th>Mã đề tài</th>
-                  <th>Tiêu đề</th>
-                  <th>Sinh viên đăng kí</th>
-                  <th>Năm học</th>
-                  <th>Số lượng</th>
-                  <th>Trạng thái duyệt</th>
-                  <th>Trạng thái đề tài</th>
-                  <th>Phê duyệt</th>
-                  <th>Hành động</th>
+                  <th className="bg-gray-50 p-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 w-[10%]">
+                    Mã đề tài
+                  </th>
+                  <th className="bg-gray-50 p-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 w-[20%]">
+                    Tiêu đề
+                  </th>
+                  <th className="bg-gray-50 p-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 w-[12%]">
+                    Sinh viên đăng kí
+                  </th>
+                  <th className="bg-gray-50 p-4 text-left text-sm font-semibold text-gray-700 border-b border-gray-200 w-[12%]">
+                    Năm học
+                  </th>
+                  <th className="bg-gray-50 p-4 text-center text-sm font-semibold text-gray-700 border-b border-gray-200 w-[10%]">
+                    Số lượng
+                  </th>
+                  <th className="bg-gray-50 p-4 text-center text-sm font-semibold text-gray-700 border-b border-gray-200 w-[13%]">
+                    Trạng thái duyệt
+                  </th>
+                  <th className="bg-gray-50 p-4 text-center text-sm font-semibold text-gray-700 border-b border-gray-200 w-[13%]">
+                    Trạng thái đề tài
+                  </th>
+                  <th className="bg-gray-50 p-4 text-center text-sm font-semibold text-gray-700 border-b border-gray-200 w-[10%]">
+                    Phê duyệt
+                  </th>
+                  <th className="bg-gray-50 p-4 text-center text-sm font-semibold text-gray-700 border-b border-gray-200 w-[10%] min-w-[140px]">
+                    Hành động
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {currentRecords.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="empty-state">
-                      <div className="empty-message">
-                        <p>Không tìm thấy đề tài nào</p>
-                        <span>
+                    <td colSpan="9" className="p-8 text-center">
+                      <div className="flex flex-col items-center">
+                        <p className="text-gray-500 text-base mb-2">
+                          Không tìm thấy đề tài nào
+                        </p>
+                        <span className="text-gray-400 text-sm">
                           Hãy thử điều chỉnh bộ lọc hoặc tạo đề tài mới
                         </span>
                       </div>
@@ -483,39 +521,46 @@ const ThesisManagement = () => {
                   </tr>
                 ) : (
                   currentRecords.map((topic) => (
-                    <tr key={topic.topicId}>
+                    <tr
+                      key={topic.topicId}
+                      className="hover:bg-gray-50 transition-colors duration-150"
+                    >
                       {editingTopicId === topic.topicId ? (
                         <>
                           {/* KHÔNG render topicId */}
-                          <td>
+                          <td className="p-4 border-b border-gray-100">
                             <input
                               type="text"
                               name="topicCode"
                               value={editRowData.topicCode || ""}
                               onChange={handleEditInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:border-blue-500 focus:outline-none"
                             />
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100">
                             <input
                               type="text"
                               name="title"
                               value={editRowData.title || ""}
                               onChange={handleEditInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:border-blue-500 focus:outline-none"
                             />
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100">
                             <input
                               type="text"
                               name="registerId"
                               value={editRowData.registerId || ""}
                               onChange={handleEditInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:border-blue-500 focus:outline-none"
                             />
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100">
                             <select
                               name="academicYearId"
                               value={editRowData.academicYearId || ""}
                               onChange={handleEditInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:border-blue-500 focus:outline-none"
                             >
                               {academicYears.map((year) => (
                                 <option key={year.id} value={year.id}>
@@ -524,7 +569,7 @@ const ThesisManagement = () => {
                               ))}
                             </select>
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100 text-center">
                             <input
                               type="number"
                               name="maxStudents"
@@ -532,13 +577,15 @@ const ThesisManagement = () => {
                               max="10"
                               value={editRowData.maxStudents || ""}
                               onChange={handleEditInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:border-blue-500 focus:outline-none"
                             />
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100 text-center">
                             <select
                               name="approvalStatus"
                               value={editRowData.approvalStatus || ""}
                               onChange={handleEditInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:border-blue-500 focus:outline-none"
                             >
                               <option value="PENDING">Chờ duyệt</option>
                               <option value="AVAILABLE">Còn trống</option>
@@ -546,11 +593,12 @@ const ThesisManagement = () => {
                               <option value="REJECTED">Bị từ chối</option>
                             </select>
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100 text-center">
                             <select
                               name="status"
                               value={editRowData.status || ""}
                               onChange={handleEditInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:border-blue-500 focus:outline-none"
                             >
                               <option value="ACTIVE">Hoạt động</option>
                               <option value="INACTIVE">Ngừng hoạt động</option>
@@ -558,23 +606,23 @@ const ThesisManagement = () => {
                               <option value="DELETED">Đã xóa</option>
                             </select>
                           </td>
-                          <td>
-                            <span className="accept-status-text">
+                          <td className="p-4 border-b border-gray-100 text-center">
+                            <span className="text-sm text-gray-600 italic">
                               {editRowData.approvalStatus ||
                                 editRowData.status ||
                                 "Available"}
                             </span>
                           </td>
-                          <td>
-                            <div className="inline-edit-actions">
+                          <td className="p-4 border-b border-gray-100 text-center">
+                            <div className="flex gap-2 items-center justify-start">
                               <button
-                                className="action-btn save-btn"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                                 onClick={handleSaveEdit}
                               >
                                 Lưu
                               </button>
                               <button
-                                className="action-btn cancel-btn"
+                                className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                                 onClick={handleCancelEdit}
                               >
                                 Hủy
@@ -585,32 +633,40 @@ const ThesisManagement = () => {
                       ) : (
                         <>
                           {/* KHÔNG render topicId */}
-                          <td className="topic-code">
-                            {topic.topicCode || "Chưa có"}
+                          <td className="p-4 border-b border-gray-100">
+                            <span className="font-semibold text-blue-600 font-mono text-sm">
+                              {topic.topicCode || "Chưa có"}
+                            </span>
                           </td>
-                          <td
-                            className="topic-title"
-                            title={topic.title || "Chưa có tiêu đề"}
-                          >
-                            {topic.title
-                              ? topic.title.length > 50
-                                ? topic.title.substring(0, 50) + "..."
-                                : topic.title
-                              : "Chưa có tiêu đề"}
+                          <td className="p-4 border-b border-gray-100">
+                            <span
+                              className="font-medium text-gray-900 max-w-[300px] block"
+                              title={topic.title || "Chưa có tiêu đề"}
+                            >
+                              {topic.title
+                                ? topic.title.length > 50
+                                  ? topic.title.substring(0, 50) + "..."
+                                  : topic.title
+                                : "Chưa có tiêu đề"}
+                            </span>
                           </td>
-                          <td className="register-id">
-                            {topic.registerId || "Chưa có"}
+                          <td className="p-4 border-b border-gray-100 text-center">
+                            <span className="font-medium text-gray-600 font-mono text-sm">
+                              {topic.registerId || "Chưa có"}
+                            </span>
                           </td>
-                          <td>{getAcademicYearName(topic.academicYearId)}</td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100">
+                            {getAcademicYearName(topic.academicYearId)}
+                          </td>
+                          <td className="p-4 border-b border-gray-100 text-center">
                             {topic.currentStudents || 0}/
                             {topic.maxStudents || 1}
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100 text-center">
                             <span
-                              className={getApprovalBadgeClass(
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getApprovalBadgeClass(
                                 topic.approvalStatus || topic.status
-                              )}
+                              )}`}
                             >
                               {(() => {
                                 const status =
@@ -637,12 +693,13 @@ const ThesisManagement = () => {
                               })()}
                             </span>
                           </td>
-                          <td>
+                          <td className="p-4 border-b border-gray-100 text-center">
                             <span
-                              className={`status-badge ${getStatusBadgeClass(
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(
                                 topic.status || topic.topicStatus || "Active"
                               )}`}
                             >
+                              <span className="w-1.5 h-1.5 rounded-full mr-1.5"></span>
                               {(() => {
                                 const status =
                                   topic.status || topic.topicStatus || "active";
@@ -666,7 +723,7 @@ const ThesisManagement = () => {
                               })()}
                             </span>
                           </td>
-                          <td className="accept-actions">
+                          <td className="p-4 border-b border-gray-100 text-center">
                             {(() => {
                               const approvalStatus =
                                 topic.approvalStatus || topic.status || "";
@@ -675,9 +732,9 @@ const ThesisManagement = () => {
                               // Hiển thị nút Duyệt/Từ chối cho trạng thái chờ duyệt
                               if (statusLower === "pending") {
                                 return (
-                                  <div className="accept-buttons">
+                                  <div className="flex flex-row gap-1 items-center justify-center">
                                     <button
-                                      className="accept-btn approve-btn"
+                                      className="flex items-center gap-1 px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded-lg text-xs font-medium transition-colors duration-200 shadow-sm"
                                       onClick={() =>
                                         handleApprove(topic.topicId || 0)
                                       }
@@ -694,7 +751,7 @@ const ThesisManagement = () => {
                                       Duyệt
                                     </button>
                                     <button
-                                      className="accept-btn reject-btn"
+                                      className="flex items-center gap-1 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-medium transition-colors duration-200 shadow-sm"
                                       onClick={() =>
                                         handleReject(topic.topicId || 0)
                                       }
@@ -717,7 +774,7 @@ const ThesisManagement = () => {
                               // Hiển thị trạng thái đã phê duyệt
                               if (statusLower === "approved") {
                                 return (
-                                  <span className="accept-status-text">
+                                  <span className="text-sm text-gray-600 italic">
                                     Đã duyệt
                                   </span>
                                 );
@@ -725,7 +782,7 @@ const ThesisManagement = () => {
 
                               if (statusLower === "rejected") {
                                 return (
-                                  <span className="accept-status-text">
+                                  <span className="text-sm text-gray-600 italic">
                                     Đã từ chối
                                   </span>
                                 );
@@ -737,7 +794,7 @@ const ThesisManagement = () => {
                                 statusLower === "active"
                               ) {
                                 return (
-                                  <span className="accept-status-text">
+                                  <span className="text-sm text-gray-600 italic">
                                     Còn trống
                                   </span>
                                 );
@@ -745,9 +802,9 @@ const ThesisManagement = () => {
 
                               // Fallback: hiển thị nút Duyệt/Từ chối nếu không xác định được trạng thái
                               return (
-                                <div className="accept-buttons">
+                                <div className="flex flex-row gap-1 items-center justify-center">
                                   <button
-                                    className="accept-btn approve-btn"
+                                    className="flex items-center gap-1 px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded-lg text-xs font-medium transition-colors duration-200 shadow-sm"
                                     onClick={() =>
                                       handleApprove(topic.topicId || 0)
                                     }
@@ -764,7 +821,7 @@ const ThesisManagement = () => {
                                     Duyệt
                                   </button>
                                   <button
-                                    className="accept-btn reject-btn"
+                                    className="flex items-center gap-1 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-medium transition-colors duration-200 shadow-sm"
                                     onClick={() =>
                                       handleReject(topic.topicId || 0)
                                     }
@@ -784,49 +841,51 @@ const ThesisManagement = () => {
                               );
                             })()}
                           </td>
-                          <td className="actions">
-                            <button
-                              className="action-btn view-btn"
-                              onClick={() => handleView(topic.topicId || 0)}
-                              title="Xem chi tiết"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
+                          <td className="p-4 border-b border-gray-100 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors duration-200"
+                                onClick={() => handleView(topic.topicId || 0)}
+                                title="Xem chi tiết"
                               >
-                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                              </svg>
-                            </button>
-                            <button
-                              className="action-btn edit-btn"
-                              onClick={() => handleEdit(topic.topicId)}
-                              title="Chỉnh sửa"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                >
+                                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                </svg>
+                              </button>
+                              <button
+                                className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors duration-200"
+                                onClick={() => handleEdit(topic.topicId)}
+                                title="Chỉnh sửa"
                               >
-                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                              </svg>
-                            </button>
-                            <button
-                              className="action-btn delete-btn"
-                              onClick={() => handleDelete(topic.topicId || 0)}
-                              title="Xóa"
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                >
+                                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                                </svg>
+                              </button>
+                              <button
+                                className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors duration-200"
+                                onClick={() => handleDelete(topic.topicId || 0)}
+                                title="Xóa"
                               >
-                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                              </svg>
-                            </button>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                >
+                                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                                </svg>
+                              </button>
+                            </div>
                           </td>
                         </>
                       )}
@@ -838,32 +897,36 @@ const ThesisManagement = () => {
           </div>
 
           {/* Pagination */}
-          <div className="pagination">
-            <div className="pagination-info">
-              Hiển thị {indexOfFirstRecord + 1} đến{" "}
-              {Math.min(indexOfLastRecord, filteredTopics.length)} của{" "}
-              {filteredTopics.length} kết quả
-            </div>
-            <div className="pagination-controls">
-              <button
-                className="pagination-btn"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1 || totalPages === 0}
-              >
-                Trước
-              </button>
-              <span>
-                Trang {currentPage} / {totalPages || 1}
-              </span>
-              <button
-                className="pagination-btn"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages || totalPages === 0}
-              >
-                Tiếp
-              </button>
+          <div className="p-6 lg:p-8 border-t border-gray-200 bg-gray-50">
+            <div className="flex flex-col lg:flex-row justify-between items-center gap-4 lg:gap-0">
+              <div className="text-sm text-gray-500 text-center lg:text-left">
+                Hiển thị {indexOfFirstRecord + 1} đến{" "}
+                {Math.min(indexOfLastRecord, filteredTopics.length)} của{" "}
+                {filteredTopics.length} kết quả
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1 || totalPages === 0}
+                >
+                  Trước
+                </button>
+                <span className="px-4 py-2 text-sm text-gray-700">
+                  Trang {currentPage} / {totalPages || 1}
+                </span>
+                <button
+                  className="bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages || totalPages === 0}
+                >
+                  Tiếp
+                </button>
+              </div>
             </div>
           </div>
         </div>

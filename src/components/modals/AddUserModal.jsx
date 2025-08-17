@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 
+// Mapping role theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
 const roleOptions = [
-  { value: 1, label: "Sinh viên", role: "USER" },
-  { value: 2, label: "Quản trị viên", role: "ADMIN" },
+  { value: 1, label: "Sinh viên", role: "STUDENT" },
+  { value: 2, label: "Phòng ban", role: "ADMIN" },
   { value: 3, label: "Giảng viên", role: "TEACHER" },
 ];
 
@@ -67,6 +68,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
         onClose();
       } catch (error) {
         // Nếu có lỗi, không đóng modal và hiển thị toast lỗi
+        console.error("Lỗi khi thêm người dùng:", error);
         if (window.addToast) {
           window.addToast("Có lỗi xảy ra khi thêm người dùng!", "error");
         }
