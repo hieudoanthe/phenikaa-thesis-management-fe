@@ -70,9 +70,7 @@ const StudentProfile = () => {
         throw new Error("Không thể lấy userId từ token");
       }
 
-      const response = await userService.getStudentProfile(userId);
-      const responseData = response?.data || response;
-
+      const responseData = await userService.getStudentProfile(userId);
       if (responseData) {
         const newProfileData = {
           fullName: responseData.fullName || "",
@@ -423,14 +421,6 @@ const StudentProfile = () => {
                 <h2 className="text-xl font-bold text-gray-900 mb-1">
                   {formData.fullName || "Chưa cập nhật"}
                 </h2>
-
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${getStatusColor(
-                    formData.status
-                  )}`}
-                >
-                  {getStatusText(formData.status)}
-                </span>
               </div>
 
               {/* Academic Details */}
@@ -605,19 +595,6 @@ const StudentProfile = () => {
                                   fontWeight: "400 !important",
                                 },
                               }),
-                              control: (provided, state) => ({
-                                ...provided,
-                                minHeight: "42px",
-                                borderColor: state.isFocused
-                                  ? "#3b82f6"
-                                  : "#d1d5db",
-                                boxShadow: state.isFocused
-                                  ? "0 0 0 2px rgba(59, 130, 246, 0.5)"
-                                  : "none",
-                                "&:hover": {
-                                  borderColor: "#3b82f6",
-                                },
-                              }),
                               option: (provided, state) => ({
                                 ...provided,
                                 backgroundColor: state.isSelected
@@ -626,6 +603,8 @@ const StudentProfile = () => {
                                   ? "#eff6ff"
                                   : "white",
                                 color: state.isSelected ? "white" : "#374151",
+                                fontWeight: "400",
+                                fontFamily: "inherit",
                                 "&:hover": {
                                   backgroundColor: state.isSelected
                                     ? "#3b82f6"
@@ -653,22 +632,6 @@ const StudentProfile = () => {
                                 ...provided,
                                 fontWeight: "400",
                                 fontFamily: "inherit",
-                              }),
-                              option: (provided, state) => ({
-                                ...provided,
-                                backgroundColor: state.isSelected
-                                  ? "#3b82f6"
-                                  : state.isFocused
-                                  ? "#eff6ff"
-                                  : "white",
-                                color: state.isSelected ? "white" : "#374151",
-                                fontWeight: "400",
-                                fontFamily: "inherit",
-                                "&:hover": {
-                                  backgroundColor: state.isSelected
-                                    ? "#3b82f6"
-                                    : "#eff6ff",
-                                },
                               }),
                             }}
                           />

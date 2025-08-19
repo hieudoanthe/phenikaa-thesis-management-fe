@@ -308,7 +308,6 @@ const AcademicYearManagement = () => {
           editingYear={editingYear}
           onSave={(yearData) => {
             // TODO: Xử lý lưu năm học
-            console.log("Lưu năm học:", yearData);
             setIsModalOpen(false);
             setEditingYear(null);
             loadAcademicYears();

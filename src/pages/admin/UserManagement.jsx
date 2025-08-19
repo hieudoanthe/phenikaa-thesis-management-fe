@@ -14,6 +14,10 @@ const roleMapping = {
   3: "Giảng viên",
 };
 
+// Ảnh đại diện mặc định khi không có avt từ backend
+const DEFAULT_AVATAR =
+  "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+
 // Mapping roleIds sang role value cho filter
 const roleValueMapping = {
   1: "Student",
@@ -65,16 +69,15 @@ const UserManagement = () => {
       });
       const content = response?.content || [];
 
+      // Map dữ liệu user và lấy ảnh đại diện đúng từ API (ưu tiên user.avt/user.avatar)
       const transformedUsers = content.map((user) => ({
         userId: user.userId,
         name: user.fullName,
         username: user.username,
-        email: user.username,
+        email: user.email || user.username,
         roleIds: user.roleIds,
         status: user.status,
-        avatar: `https://randomuser.me/api/portraits/${
-          Math.random() > 0.5 ? "men" : "women"
-        }/${Math.floor(Math.random() * 100)}.jpg`,
+        avatar: user.avt || user.avatar || DEFAULT_AVATAR,
       }));
 
       setUsers(transformedUsers);
@@ -150,15 +153,7 @@ const UserManagement = () => {
 
   // Debug filteredUsers và paginatedUsers
   useEffect(() => {
-    console.log("🔍 Users Debug:", {
-      totalUsers: users.length,
-      filteredCount: filteredUsers.length,
-      paginatedCount: paginatedUsers.length,
-      currentPage,
-      pageSize,
-      selectedRole: selectedRole.value,
-      searchTerm,
-    });
+    // removed debug logs
   }, [
     filteredUsers.length,
     paginatedUsers.length,
@@ -270,8 +265,6 @@ const UserManagement = () => {
 
   // Thêm người dùng mới - Real-time update
   const handleAddUser = async (userData) => {
-    console.log("Thêm người dùng mới:", userData);
-
     // Kiểm tra dữ liệu
     if (
       !userData.fullName ||
@@ -289,7 +282,6 @@ const UserManagement = () => {
     try {
       // Gọi API để tạo user
       const response = await userService.createUser(userData);
-      console.log("API response:", response);
 
       // 🔄 REFRESH: Refetch dữ liệu mới từ API để cập nhật giao diện ngay lập tức
       await fetchUsers();

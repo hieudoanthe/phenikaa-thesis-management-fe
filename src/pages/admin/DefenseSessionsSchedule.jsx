@@ -143,7 +143,6 @@ const DefenseSessionsSchedule = () => {
 
   const handleModalSubmit = (formData) => {
     // TODO: Gọi API để tạo lịch bảo vệ
-    console.log("Tạo lịch bảo vệ mới:", formData);
 
     // Thêm session mới vào danh sách (demo)
     const newSession = {
@@ -168,7 +167,6 @@ const DefenseSessionsSchedule = () => {
 
   const handleExport = () => {
     // TODO: Export dữ liệu
-    console.log("Export dữ liệu");
     if (window.addToast) {
       window.addToast("Chức năng export sẽ được phát triển!", "info");
     }

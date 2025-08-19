@@ -74,7 +74,6 @@ const TopicRegistration = () => {
     setRegisteringId(topicId);
     try {
       const res = await registrationService.registerTopic(topicId);
-      console.log("Kết quả đăng ký:", res);
 
       if (res.success) {
         // Cập nhật trạng thái đề tài thành "Pending" khi đăng ký thành công
@@ -84,16 +83,23 @@ const TopicRegistration = () => {
           )
         );
 
-        alert(
-          res.message ||
-            "Đăng ký đề tài thành công! Vui lòng chờ giảng viên duyệt."
-        );
+        if (window.addToast) {
+          window.addToast(
+            res.message ||
+              "Đăng ký đề tài thành công! Vui lòng chờ giảng viên duyệt.",
+            "success"
+          );
+        }
       } else {
-        alert(res.message || "Đăng ký đề tài thất bại");
+        if (window.addToast) {
+          window.addToast(res.message || "Đăng ký đề tài thất bại", "error");
+        }
       }
     } catch (err) {
       console.error("Lỗi khi đăng ký:", err);
-      alert("Đã xảy ra lỗi khi đăng ký đề tài");
+      if (window.addToast) {
+        window.addToast("Đã xảy ra lỗi khi đăng ký đề tài", "error");
+      }
     } finally {
       setRegisteringId(null);
     }

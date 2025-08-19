@@ -55,15 +55,15 @@ mainHttpClient.interceptors.response.use(
           return mainHttpClient(originalRequest);
         } else {
           // Refresh token thất bại, logout
-          const refreshToken = getRefreshToken();
-          await logout(refreshToken);
+          const refreshTokenValue = getRefreshToken();
+          await logout(refreshTokenValue);
           window.location.href = "/";
           return Promise.reject(error);
         }
       } catch (refreshError) {
         // Refresh token thất bại, logout
-        const refreshToken = getRefreshToken();
-        await logout(refreshToken);
+        const refreshTokenValue = getRefreshToken();
+        await logout(refreshTokenValue);
         window.location.href = "/";
         return Promise.reject(refreshError);
       }

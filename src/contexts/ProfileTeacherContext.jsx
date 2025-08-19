@@ -11,15 +11,11 @@ import { getToken } from "../auth/authUtils";
 // Tạo context cho Teacher Profile
 const ProfileTeacherContext = createContext();
 
-console.log("🔧 ProfileTeacherContext được tạo:", ProfileTeacherContext);
-
 // Hook để sử dụng context
 export const useProfileTeacher = () => {
-  console.log("🔧 useProfileTeacher hook được gọi");
   const context = useContext(ProfileTeacherContext);
-  console.log("🔧 useProfileTeacher context value:", context);
   if (!context) {
-    console.error("🔧 useProfileTeacher context không tồn tại!");
+    console.error("useProfileTeacher context không tồn tại!");
     throw new Error(
       "useProfileTeacher phải được sử dụng trong ProfileTeacherProvider"
     );
@@ -29,8 +25,6 @@ export const useProfileTeacher = () => {
 
 // Provider component
 export const ProfileTeacherProvider = ({ children }) => {
-  console.log("🔧 ProfileTeacherProvider đang được khởi tạo");
-
   const [profileData, setProfileData] = useState({
     fullName: "",
     email: "",
@@ -67,7 +61,6 @@ export const ProfileTeacherProvider = ({ children }) => {
       try {
         // Kiểm tra nếu đã có dữ liệu và không yêu cầu refresh
         if (hasInitialData && !forceRefresh) {
-          console.log("🔧 Profile data đã có sẵn, bỏ qua fetch");
           return;
         }
 
@@ -97,7 +90,7 @@ export const ProfileTeacherProvider = ({ children }) => {
 
           setProfileData(newProfileData);
           setHasInitialData(true);
-          console.log("🔧 Profile data đã được fetch thành công");
+          // fetched
         }
       } catch (error) {
         console.error("Lỗi khi fetch profile data:", error);
@@ -119,7 +112,6 @@ export const ProfileTeacherProvider = ({ children }) => {
 
   // Load profile data khi component mount - chỉ fetch một lần
   useEffect(() => {
-    console.log("🔧 ProfileTeacherProvider useEffect được gọi - fetch lần đầu");
     fetchProfileData(true); // Force fetch lần đầu
   }, [fetchProfileData]);
 
@@ -132,14 +124,8 @@ export const ProfileTeacherProvider = ({ children }) => {
     hasInitialData,
   };
 
-  console.log("🔧 ProfileTeacherProvider đang render với value:", value);
-
   return (
     <ProfileTeacherContext.Provider value={value}>
-      {console.log(
-        "🔧 ProfileTeacherContext.Provider được render với children:",
-        children
-      )}
       {children}
     </ProfileTeacherContext.Provider>
   );

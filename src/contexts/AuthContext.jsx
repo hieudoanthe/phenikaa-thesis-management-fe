@@ -38,15 +38,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     setIsLoading(true);
     const token = getToken();
-    console.log(
-      "AuthContext - Initializing with token:",
-      token ? "exists" : "not found"
-    );
 
     if (token) {
       setIsAuthenticated(true);
       const cachedUser = getCachedUserInfo();
-      console.log("AuthContext - Cached user info:", cachedUser);
       setUser(cachedUser);
     } else {
       setIsAuthenticated(false);
@@ -63,7 +58,6 @@ export const AuthProvider = ({ children }) => {
 
       // Chỉ xử lý nếu thay đổi liên quan đến session hiện tại
       if (e.key === sessionKey) {
-        console.log("AuthContext - Session storage changed:", e.key);
         try {
           const newUser = e.newValue ? JSON.parse(e.newValue) : null;
           setUser(newUser);
@@ -81,32 +75,19 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (token, userData, refreshToken, persistent = false) => {
-    console.log("AuthContext - Login called with:", {
-      token,
-      userData,
-      refreshToken,
-      persistent,
-    });
-
     // Sử dụng các hàm mới từ authUtils
     setToken(token, persistent);
     if (refreshToken) {
       setRefreshToken(refreshToken, persistent);
     }
     if (userData) {
-      console.log(
-        "AuthContext - Saving user data to session storage:",
-        userData
-      );
       // Lưu user info vào session storage và cookie nếu persistent
       setUserInfo(userData, persistent);
       setUser(userData);
     } else {
-      console.log("AuthContext - No user data provided, setting user to null");
       setUser(null);
     }
     setIsAuthenticated(true);
-    console.log("AuthContext - Login completed, user:", userData);
   };
 
   const handleLogout = () => {

@@ -62,11 +62,10 @@ export const ProfileStudentProvider = ({ children }) => {
         throw new Error("Không thể lấy userId từ token");
       }
 
-      const response = await userService.getStudentProfile(userId);
-      const responseData = response?.data || response;
+      const responseData = await userService.getStudentProfile(userId);
 
       if (responseData) {
-        const profileData = {
+        const normalized = {
           fullName: responseData.fullName || "",
           phoneNumber: responseData.phoneNumber || "",
           status: responseData.status || 1,
@@ -82,7 +81,7 @@ export const ProfileStudentProvider = ({ children }) => {
           totalCredits: responseData.totalCredits || 0,
         };
 
-        setProfileData(profileData);
+        setProfileData(normalized);
       }
     } catch (error) {
       console.error("Lỗi khi fetch profile data:", error);

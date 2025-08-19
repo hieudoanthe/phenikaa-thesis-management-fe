@@ -89,7 +89,6 @@ const AdminLayout = () => {
       // Chỉ tự động đóng sidebar khi chuyển từ desktop sang mobile
       // Không tự động đóng khi đang ở mobile
       if (mobile && !isMobile && isSidebarOpen) {
-        console.log("🔄 Auto-closing sidebar when switching to mobile");
         setIsSidebarOpen(false);
       }
 

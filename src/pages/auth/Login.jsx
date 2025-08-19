@@ -43,10 +43,6 @@ const PhenikaaLogin = () => {
         { username, password, role }
       );
 
-      console.log("Response từ server:", response.data);
-      console.log("Response có refreshToken:", !!response.data.refreshToken);
-      console.log("RefreshToken value:", response.data.refreshToken);
-
       // Xử lý linh hoạt response data từ server
       let accessToken, refreshToken, user;
 
@@ -75,42 +71,27 @@ const PhenikaaLogin = () => {
         };
       }
 
-      console.log("Dữ liệu được extract:", { accessToken, refreshToken, user });
-
-      console.log("Đăng nhập thành công:", { accessToken, user, role });
-
       const loginResult = await login(
         accessToken,
         user,
         refreshToken,
         rememberMe
       );
-      console.log("Kết quả login:", loginResult);
 
       addToast("Đăng nhập thành công!");
 
       // Chuyển hướng dựa trên role từ user data (ưu tiên) hoặc role từ form
       const userRole = user?.role || role;
-      console.log(
-        "Bắt đầu chuyển hướng với user role:",
-        userRole,
-        "form role:",
-        role
-      );
 
       // Thêm delay 1.5 giây trước khi chuyển hướng
       setTimeout(() => {
         if (userRole === "ADMIN") {
-          console.log("Chuyển hướng đến /admin/dashboard");
           navigate("/admin/dashboard");
         } else if (userRole === "TEACHER") {
-          console.log("Chuyển hướng đến /lecturer/home");
           navigate("/lecturer/home");
         } else if (userRole === "STUDENT") {
-          console.log("Chuyển hướng đến /student/home");
           navigate("/student/home");
         } else {
-          console.log("Chuyển hướng đến /home (default)");
           navigate("/home");
         }
       }, 1500);
@@ -118,18 +99,12 @@ const PhenikaaLogin = () => {
       let errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
 
       // Debug: Log thông tin lỗi để kiểm tra
-      console.log("Error response:", err.response);
-      console.log("Error data:", err.response?.data);
-      console.log("Error message:", err.response?.data?.message);
-      console.log("Error status:", err.response?.status);
 
       // Lấy message từ server (có thể là string hoặc object)
       const serverMessage =
         typeof err.response?.data === "string"
           ? err.response.data
           : err.response?.data?.message || err.response?.data?.error;
-
-      console.log("Server message:", serverMessage);
 
       if (serverMessage) {
         // Xử lý các trường hợp lỗi cụ thể dựa trên message từ server

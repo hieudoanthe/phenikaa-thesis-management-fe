@@ -31,7 +31,6 @@ const LecturerRoute = ({ children }) => {
   // Kiểm tra role - chỉ cho phép TEACHER
   const userRole = user?.role;
   if (userRole !== "TEACHER") {
-    console.log("User không có quyền truy cập lecturer layout:", userRole);
     // Redirect về trang tương ứng với role của user
     if (userRole === "ADMIN") {
       return <Navigate to="/admin/dashboard" replace />;

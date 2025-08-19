@@ -12,10 +12,7 @@ import PropTypes from "prop-types";
 const StudentRoute = ({ children }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
-  // Debug: Log thông tin user
-  console.log("StudentRoute - User info:", user);
-  console.log("StudentRoute - User role:", user?.role);
-  console.log("StudentRoute - Is authenticated:", isAuthenticated);
+  // Debug logs removed
 
   // Hiển thị loading khi đang kiểm tra authentication
   if (isLoading) {
@@ -30,33 +27,23 @@ const StudentRoute = ({ children }) => {
 
   // Redirect về trang đăng nhập nếu chưa đăng nhập
   if (!isAuthenticated) {
-    console.log("StudentRoute - User not authenticated, redirecting to /");
     return <Navigate to="/" replace />;
   }
 
   // Kiểm tra role - chỉ cho phép STUDENT (sinh viên)
   const userRole = user?.role;
-  console.log("StudentRoute - Checking user role:", userRole);
 
   if (userRole !== "STUDENT") {
-    console.log(
-      "StudentRoute - User không có quyền truy cập student layout:",
-      userRole
-    );
     // Redirect về trang tương ứng với role của user
     if (userRole === "ADMIN") {
-      console.log("StudentRoute - Redirecting ADMIN to /admin/dashboard");
       return <Navigate to="/admin/dashboard" replace />;
     } else if (userRole === "TEACHER") {
-      console.log("StudentRoute - Redirecting TEACHER to /lecturer/home");
       return <Navigate to="/lecturer/home" replace />;
     } else {
-      console.log("StudentRoute - Unknown role, redirecting to /");
       return <Navigate to="/" replace />;
     }
   }
 
-  console.log("StudentRoute - User has access to student layout");
   return children;
 };
 

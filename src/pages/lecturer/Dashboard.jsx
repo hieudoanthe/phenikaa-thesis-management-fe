@@ -112,7 +112,6 @@ const LecturerDashboard = () => {
   }
 
   const handleQuickAction = (action) => {
-    console.log(`Action: ${action}`);
     // TODO: Implement corresponding actions
   };
 

@@ -47,13 +47,7 @@ createRoot(document.getElementById("root")).render(
                 path="/lecturer"
                 element={
                   <LecturerRoute>
-                    {console.log(
-                      "🔧 main.jsx đang render ProfileTeacherProvider"
-                    )}
                     <ProfileTeacherProvider>
-                      {console.log(
-                        "🔧 main.jsx ProfileTeacherProvider được render"
-                      )}
                       <LecturerLayout />
                     </ProfileTeacherProvider>
                   </LecturerRoute>

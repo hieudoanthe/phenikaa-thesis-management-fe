@@ -40,6 +40,8 @@ export const API_ENDPOINTS = {
   // Topic Management
   CREATE_TOPIC: "/api/thesis-service/teacher/create-topic",
   GET_TOPIC_LIST: "/api/thesis-service/teacher/get-list-topic",
+  GET_TOPIC_LIST_PAGED:
+    "/api/thesis-service/teacher/get-topic-by-{teacherId}/paged",
   EDIT_TOPIC: "/api/thesis-service/teacher/edit-topic",
   UPDATE_TOPIC: "/api/thesis-service/teacher/update-topic",
   DELETE_TOPIC: "/api/thesis-service/teacher/delete-topic",
@@ -59,6 +61,12 @@ export const API_ENDPOINTS = {
   GET_STUDENT_PROFILE: "/api/profile-service/student/get-profile/{userId}",
   UPDATE_STUDENT_PROFILE: "/api/profile-service/student/update-profile-student",
 
+  // Teacher Profile
+  GET_ALL_TEACHERS: "/api/profile-service/student/get-all-teachers",
+
+  /**
+   * Teacher Permission
+   */
   // Teacher Profile
   GET_TEACHER_PROFILE: "/api/profile-service/teacher/get-profile/{userId}",
   UPDATE_TEACHER_PROFILE: "/api/profile-service/teacher/update-profile-teacher",

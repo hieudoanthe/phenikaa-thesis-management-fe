@@ -126,11 +126,11 @@ const AssignmentManagement = () => {
   };
 
   const handleEditAssignment = () => {
-    console.log("Edit assignment:", currentAssignment.id);
+    // edit assignment
   };
 
   const handleDeleteAssignment = () => {
-    console.log("Delete assignment:", currentAssignment.id);
+    // delete assignment
   };
 
   return (

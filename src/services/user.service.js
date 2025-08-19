@@ -82,12 +82,36 @@ class UserService {
    */
   async getStudentProfile(userId) {
     try {
-      const response = await apiGet(
+      const raw = await apiGet(
         API_ENDPOINTS.GET_STUDENT_PROFILE.replace("{userId}", userId)
       );
-      return response;
+      // Chuẩn hoá: nếu backend bọc trong { success, data, ... } thì trả về raw.data; nếu không, trả về raw
+      return raw?.data ?? raw;
     } catch (error) {
       console.error("Lỗi khi lấy profile sinh viên:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy thông tin profile sinh viên theo userId cụ thể
+   * @param {number} userId - ID của sinh viên
+   * @returns {Promise<any>} - Thông tin profile sinh viên
+   */
+  async getStudentProfileById(userId) {
+    try {
+      const apiUrl = API_ENDPOINTS.GET_STUDENT_PROFILE.replace(
+        "{userId}",
+        userId
+      );
+      const raw = await apiGet(apiUrl);
+      // Chuẩn hoá: nếu backend bọc trong { success, data, ... } thì trả về raw.data; nếu không, trả về raw
+      return raw?.data ?? raw;
+    } catch (error) {
+      console.error(
+        `UserService: Lỗi khi lấy profile sinh viên theo ID ${userId}:`,
+        error
+      );
       throw error;
     }
   }
@@ -151,6 +175,20 @@ class UserService {
       return response;
     } catch (error) {
       console.error("Lỗi khi cập nhật profile giảng viên:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách tất cả giảng viên
+   * @returns {Promise<any>} - Danh sách giảng viên
+   */
+  async getAllTeachers() {
+    try {
+      const response = await apiGet(API_ENDPOINTS.GET_ALL_TEACHERS);
+      return response;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách giảng viên:", error);
       throw error;
     }
   }

@@ -4,11 +4,7 @@ import SidebarOfLecturer from "./SidebarOfLecturer.jsx";
 import { logout, getRefreshToken } from "../../../auth/authUtils";
 import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
 
-console.log("🔧 LecturerLayout import useProfileTeacher:", useProfileTeacher);
-
 const LecturerLayout = () => {
-  console.log("🔧 LecturerLayout đang được render");
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -19,11 +15,8 @@ const LecturerLayout = () => {
   let contextData;
   try {
     contextData = useProfileTeacher();
-    console.log("🔧 LecturerLayout đã lấy được context:", contextData);
-    console.log("🔧 Profile data hiện tại:", contextData.profileData);
-    console.log("🔧 Has initial data:", contextData.hasInitialData);
   } catch (error) {
-    console.error("🔧 Lỗi khi lấy context:", error);
+    console.error("Lỗi khi lấy context:", error);
     return (
       <div className="flex h-screen bg-gray-50 items-center justify-center">
         <div className="text-center">
@@ -106,16 +99,10 @@ const LecturerLayout = () => {
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth <= 768;
-      console.log("📱 Screen size check:", {
-        width: window.innerWidth,
-        mobile,
-        wasMobile: isMobile,
-      });
 
       // Chỉ tự động đóng sidebar khi chuyển từ desktop sang mobile
       // Không tự động đóng khi đang ở mobile
       if (mobile && !isMobile && isSidebarOpen) {
-        console.log("🔄 Auto-closing sidebar when switching to mobile");
         setIsSidebarOpen(false);
       }
 
@@ -169,9 +156,7 @@ const LecturerLayout = () => {
 
   // Toggle sidebar (cho mobile)
   const handleToggleSidebar = () => {
-    console.log("🍔 Hamburger clicked, current state:", isSidebarOpen);
     setIsSidebarOpen(!isSidebarOpen);
-    console.log("🍔 New sidebar state:", !isSidebarOpen);
   };
 
   // Toggle notification dropdown
@@ -184,7 +169,6 @@ const LecturerLayout = () => {
   const handleToggleUserDropdown = () => {
     if (!isUserDropdownOpen && !profileData.fullName) {
       // Chỉ fetch profile data khi mở dropdown và chưa có dữ liệu
-      console.log("🔧 Fetching profile data khi mở dropdown lần đầu");
       fetchProfileData();
     }
 
@@ -194,7 +178,6 @@ const LecturerLayout = () => {
 
   // Đóng sidebar khi click outside (chỉ trên mobile)
   const handleOverlayClick = () => {
-    console.log("🖱️ Overlay clicked, closing sidebar");
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
     }
@@ -202,7 +185,6 @@ const LecturerLayout = () => {
 
   // Đóng sidebar khi click vào menu item (chỉ trên mobile)
   const handleMenuItemClick = () => {
-    console.log("📱 Menu item clicked, closing sidebar on mobile");
     if (isMobile && isSidebarOpen) {
       setIsSidebarOpen(false);
     }

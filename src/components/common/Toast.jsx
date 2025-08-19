@@ -15,7 +15,8 @@ const Toast = ({ message, type = "success", duration = 3500, onClose }) => {
         fontWeight: 500,
         fontSize: "1rem",
         boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
-        minWidth: 320,
+        width: "fit-content",
+        maxWidth: "400px",
         marginTop: 8,
         animation: "fadeInUp 0.3s",
       }}

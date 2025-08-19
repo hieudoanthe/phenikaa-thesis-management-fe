@@ -290,6 +290,37 @@ export const isTokenExpired = () => {
 };
 
 /**
+ * Lấy TeacherId từ JWT token
+ * @returns {string|null} - TeacherId hoặc null nếu không tìm thấy
+ */
+export const getTeacherIdFromToken = () => {
+  try {
+    const token = getToken();
+    if (!token) return null;
+
+    // Decode JWT token (chỉ phần payload)
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+    console.log("JWT Token payload:", payload);
+
+    // Ưu tiên userId trước vì trong token có userId: 109
+    const teacherId =
+      payload.userId ||
+      payload.user_id ||
+      payload.teacherId ||
+      payload.teacher_id ||
+      payload.sub;
+
+    console.log("TeacherId được tìm thấy:", teacherId);
+
+    return teacherId ? String(teacherId) : null;
+  } catch (error) {
+    console.error("Lỗi khi lấy TeacherId từ token:", error);
+    return null;
+  }
+};
+
+/**
  * Refresh token (nếu có)
  * @returns {Promise<string|null>}
  */
@@ -385,7 +416,7 @@ export const setUserInfo = (userData, persistent = false) => {
 
     // Nếu persistent thì lưu vào cookie
     if (persistent) {
-      setCookie("userInfo", JSON.stringify(userData), { expires: 7 }); 
+      setCookie("userInfo", JSON.stringify(userData), { expires: 7 });
     }
   }
 };

@@ -1,5 +1,6 @@
-import { apiPost, apiGet, apiPut, apiDelete } from "./mainHttpClient";
+import { apiPost, apiGet, apiPut, apiDelete, apiPatch } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
+import { getTeacherIdFromToken } from "../auth/authUtils";
 
 class TopicService {
   /**
@@ -33,7 +34,7 @@ class TopicService {
   }
 
   /**
-   * Lấy danh sách topic
+   * Lấy danh sách topic (API cũ - giữ lại để tương thích)
    * @param {Object} params - Tham số tìm kiếm
    * @returns {Promise<Object>} - Danh sách topic
    */
@@ -53,6 +54,56 @@ class TopicService {
         success: false,
         error: error.message,
         message: "Lấy danh sách đề tài thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách topic theo TeacherId từ JWT token
+   * @param {Object} params - Tham số tìm kiếm
+   * @returns {Promise<Object>} - Danh sách topic của teacher
+   */
+  async getTopicListByTeacher(params = {}) {
+    try {
+      // Lấy TeacherId từ JWT token
+      const teacherId = getTeacherIdFromToken();
+
+      if (!teacherId) {
+        console.error("Không thể lấy TeacherId từ token");
+        return {
+          success: false,
+          error: "Không thể lấy TeacherId từ token",
+          message: "Vui lòng đăng nhập lại để lấy danh sách đề tài",
+        };
+      }
+
+      // Tạo URL API với TeacherId
+      const apiUrl = API_ENDPOINTS.GET_TOPIC_LIST_PAGED.replace(
+        "{teacherId}",
+        teacherId
+      );
+
+      console.log("API URL gốc:", API_ENDPOINTS.GET_TOPIC_LIST_PAGED);
+      console.log("API URL sau khi thay thế:", apiUrl);
+      console.log("Params:", params);
+
+      // Sử dụng API mới với TeacherId
+      const response = await apiGet(apiUrl, params);
+
+      console.log("API getTopicListByTeacher response:", response);
+
+      return {
+        success: true,
+        data: response,
+        message: "Lấy danh sách đề tài của giáo viên thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách topic theo teacher:", error);
+
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy danh sách đề tài của giáo viên thất bại",
       };
     }
   }
@@ -139,10 +190,14 @@ class TopicService {
    */
   async approveTopic(topicId) {
     try {
-      const response = await apiPost(
+      const response = await apiPatch(
         `${API_ENDPOINTS.APPROVE_TOPIC}?topicId=${topicId}`
       );
-      return response;
+      return {
+        success: true,
+        data: response,
+        message: "Duyệt đề tài thành công",
+      };
     } catch (error) {
       console.error("Lỗi khi duyệt đề tài:", error);
 
@@ -161,10 +216,14 @@ class TopicService {
    */
   async rejectTopic(topicId) {
     try {
-      const response = await apiPost(
+      const response = await apiPatch(
         `${API_ENDPOINTS.REJECT_TOPIC}?topicId=${topicId}`
       );
-      return response;
+      return {
+        success: true,
+        data: response,
+        message: "Từ chối đề tài thành công",
+      };
     } catch (error) {
       console.error("Lỗi khi từ chối đề tài:", error);
 

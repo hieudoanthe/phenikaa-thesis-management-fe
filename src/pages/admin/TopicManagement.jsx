@@ -94,25 +94,6 @@ const TopicManagement = () => {
       const result = await topicService.getTopicList();
 
       if (result.success && result.data && result.data.length > 0) {
-        console.log("Danh sách topic từ API:", result.data);
-        console.log("Raw data structure:", result.data[0]); // Log cấu trúc dữ liệu đầu tiên
-        console.log(
-          "Raw approval status:",
-          result.data.map((item) => item.approvalStatus)
-        );
-        console.log(
-          "Raw topic status:",
-          result.data.map((item) => item.topicStatus)
-        );
-        console.log(
-          "Raw academic year fields:",
-          result.data.map((item) => ({
-            academicYear: item.academicYear,
-            academicYearName: item.academicYearName,
-            yearName: item.yearName,
-            year: item.year,
-          }))
-        );
         // Chuyển đổi dữ liệu từ API sang format hiện tại
         const formattedTopics = result.data.map((item) => ({
           code: item.code || item.topicCode,
@@ -141,14 +122,8 @@ const TopicManagement = () => {
               ? "Inactive"
               : item.topicStatus || "Active",
         }));
-        console.log("Formatted topics:", formattedTopics);
-        console.log(
-          "Academic years after mapping:",
-          formattedTopics.map((item) => item.academicYear)
-        );
         setTopics(formattedTopics);
       } else {
-        console.log("API không trả về dữ liệu");
         setTopics([]);
       }
     } catch (error) {
@@ -163,10 +138,7 @@ const TopicManagement = () => {
   const handleCreate = () => setOpenModal(true);
   const handleClose = () => setOpenModal(false);
   const handleSubmit = (result) => {
-    console.log("Kết quả tạo topic:", result);
-
     if (result.success) {
-      console.log("Tạo topic thành công:", result.data);
       // Refresh danh sách topic sau khi tạo thành công
       loadTopicList();
       alert("Tạo đề tài thành công!");

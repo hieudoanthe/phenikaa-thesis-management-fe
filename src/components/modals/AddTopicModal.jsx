@@ -165,39 +165,23 @@ const AddTopicModal = ({
         );
 
         if (selectedYear) {
-          console.log("Năm học được chọn:", {
-            id: selectedYear.id,
-            name: selectedYear.name,
-          });
-
           // Thêm thông tin năm học vào DTO nếu cần
           submitData.academicYear = {
             id: selectedYear.id,
             name: selectedYear.name,
           };
         } else {
-          console.warn(
-            "Không tìm thấy năm học với ID:",
-            submitData.academicYearId
-          );
         }
       } else {
-        console.warn("Chưa chọn năm học");
       }
-
-      console.log("Dữ liệu sẽ gửi lên server:", submitData);
-      console.log("isViewMode:", isViewMode);
-      console.log("form.topicId:", form.topicId);
 
       let result;
 
       // Phân biệt giữa tạo mới và cập nhật
       if (isViewMode && form.topicId) {
-        console.log("Chế độ cập nhật - gọi updateTopic");
         // Chế độ cập nhật - gọi API updateTopic
         result = await topicService.updateTopic(form.topicId, submitData);
         if (result.success) {
-          console.log("Cập nhật topic thành công:", result.data);
           alert("Cập nhật đề tài thành công!");
         } else {
           console.error("Lỗi cập nhật topic:", result.message);
@@ -205,11 +189,9 @@ const AddTopicModal = ({
           return;
         }
       } else {
-        console.log("Chế độ tạo mới - gọi createTopic");
         // Chế độ tạo mới - gọi API createTopic
         result = await topicService.createTopic(submitData);
         if (result.success) {
-          console.log("Tạo topic thành công:", result.data);
           alert("Tạo đề tài thành công!");
         } else {
           console.error("Lỗi tạo topic:", result.message);
