@@ -8,6 +8,7 @@ import LecturerDashboard from "./pages/lecturer/Dashboard.jsx";
 import ThesisManagement from "./pages/lecturer/ThesisManagement.jsx";
 import AssignmentManagement from "./pages/lecturer/AssignmentManagement.jsx";
 import TeacherProfile from "./pages/lecturer/TeacherProfile.jsx";
+import NotiOfTeacher from "./pages/lecturer/NotiOfTeacher.jsx";
 import LecturerLayout from "./components/layout/lecturer/LecturerLayout.jsx";
 import LecturerRoute from "./routers/LecturerRoute.jsx";
 import StudentRoute from "./routers/StudentRoute.jsx";
@@ -16,6 +17,7 @@ import PlaceholderPage from "./components/common/PlaceholderPage.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProfileStudentProvider } from "./contexts/ProfileStudentContext";
 import { ProfileTeacherProvider } from "./contexts/ProfileTeacherContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import SessionManager from "./components/common/SessionManager";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -48,7 +50,9 @@ createRoot(document.getElementById("root")).render(
                 element={
                   <LecturerRoute>
                     <ProfileTeacherProvider>
-                      <LecturerLayout />
+                      <NotificationProvider>
+                        <LecturerLayout />
+                      </NotificationProvider>
                     </ProfileTeacherProvider>
                   </LecturerRoute>
                 }
@@ -103,15 +107,7 @@ createRoot(document.getElementById("root")).render(
                     />
                   }
                 />
-                <Route
-                  path="notifications"
-                  element={
-                    <PlaceholderPage
-                      title="Thông báo"
-                      description="Tính năng quản lý thông báo đang được phát triển."
-                    />
-                  }
-                />
+                <Route path="notifications" element={<NotiOfTeacher />} />
                 <Route
                   path="settings"
                   element={

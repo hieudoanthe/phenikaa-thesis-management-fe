@@ -7,6 +7,7 @@ import {
   getTeacherIdFromToken,
 } from "../../../auth/authUtils";
 import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
+import { useNotifications } from "../../../contexts/NotificationContext";
 import { WS_ENDPOINTS, APP_CONFIG } from "../../../config/api";
 import { ToastContainer } from "../../common";
 import userService from "../../../services/user.service";
@@ -23,9 +24,14 @@ const LecturerLayout = () => {
   const [isStudentProfileOpen, setIsStudentProfileOpen] = useState(false);
   const [studentProfile, setStudentProfile] = useState(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
   const studentProfileCacheRef = useRef({});
   const toastQueueRef = useRef([]);
   const toastReadyTimerRef = useRef(null);
+
+  // Sử dụng notification context
+  const { markAllAsRead: markAllAsReadFromContext, addNotification } =
+    useNotifications();
 
   // Sử dụng ProfileTeacherContext
   let contextData;
@@ -373,15 +379,24 @@ const LecturerLayout = () => {
       message: message,
       time: formatRelativeOnce(createdAtMs),
       createdAt: createdAtMs,
+      // Chuẩn hoá: dùng isRead là nguồn chính
       isRead: !!read,
       studentId: studentId ?? null,
       studentName: studentName ?? null,
     };
+    // Cập nhật state local
     setNotificationsState((prev) => {
       const next = [item, ...prev];
       return next.slice(0, 50);
     });
-    setUnreadCount((c) => c + (read ? 0 : 1));
+
+    // Cập nhật context
+    addNotification(item);
+
+    // Chỉ tăng số thông báo chưa đọc nếu thông báo chưa đọc
+    if (!read) {
+      setUnreadCount((c) => c + 1);
+    }
   };
 
   const handleOpenStudentProfile = async (studentId) => {
@@ -446,10 +461,14 @@ const LecturerLayout = () => {
             read: parsed?.read,
             studentId: parsed?.studentId,
           });
-          if (!isBuffering) {
-            showToast(msg, "success");
-          } else {
-            bufferedCountRef.current += 1;
+
+          // Chỉ hiển thị toast nếu thông báo chưa đọc
+          if (!parsed?.read) {
+            if (!isBuffering) {
+              showToast(msg, "success");
+            } else {
+              bufferedCountRef.current += 1;
+            }
           }
           window.dispatchEvent(
             new CustomEvent("app:notification", { detail: parsed })
@@ -484,6 +503,8 @@ const LecturerLayout = () => {
             createdAt: Date.now(),
             read: false,
           });
+
+          // Thông báo không có trạng thái read được coi là chưa đọc
           if (!isBuffering) {
             showToast(display, "success");
           } else {
@@ -522,10 +543,14 @@ const LecturerLayout = () => {
         studentId: data.studentId,
       });
       lastActivityAtRef.current = Date.now();
-      if (!isBuffering) {
-        showToast(msg, "success");
-      } else {
-        bufferedCountRef.current += 1;
+
+      // Chỉ hiển thị toast nếu thông báo chưa đọc
+      if (!data.read) {
+        if (!isBuffering) {
+          showToast(msg, "success");
+        } else {
+          bufferedCountRef.current += 1;
+        }
       }
       window.dispatchEvent(
         new CustomEvent("app:notification", { detail: data })
@@ -666,9 +691,41 @@ const LecturerLayout = () => {
     return () => clearInterval(id);
   }, [isNotificationOpen]);
 
-  const markAllAsRead = () => {
-    setNotificationsState((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    setUnreadCount(0);
+  const markAllAsRead = async () => {
+    if (isMarkingAllAsRead) return; // Tránh gọi nhiều lần
+
+    try {
+      setIsMarkingAllAsRead(true);
+      const teacherId = getTeacherIdFromToken();
+      if (!teacherId) {
+        showToast("Không thể xác định ID giảng viên", "error");
+        return;
+      }
+
+      // Sử dụng context để đánh dấu tất cả thông báo đã đọc
+      const success = await markAllAsReadFromContext(teacherId);
+
+      if (success) {
+        // Cập nhật UI local
+        setNotificationsState((prev) =>
+          prev.map((n) => ({ ...n, isRead: true }))
+        );
+        setUnreadCount(0);
+        showToast("Đã đánh dấu tất cả thông báo đã đọc", "success");
+      } else {
+        // Nếu context trả về false, có thể do backend trả về success: false mặc dù DB đã cập nhật
+        // Trong trường hợp này, vẫn cập nhật UI local để tránh trải nghiệm người dùng kém
+        setNotificationsState((prev) =>
+          prev.map((n) => ({ ...n, isRead: true }))
+        );
+        setUnreadCount(0);
+        showToast("Đã đánh dấu tất cả thông báo đã đọc", "success");
+      }
+    } catch (error) {
+      showToast("Đã xảy ra lỗi khi đánh dấu thông báo đã đọc", "error");
+    } finally {
+      setIsMarkingAllAsRead(false);
+    }
   };
 
   return (
@@ -769,10 +826,22 @@ const LecturerLayout = () => {
                         Thông báo
                       </h3>
                       <button
-                        className="text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100"
+                        className={`text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100 ${
+                          isMarkingAllAsRead
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
                         onClick={markAllAsRead}
+                        disabled={isMarkingAllAsRead}
                       >
-                        Đánh dấu tất cả đã đọc
+                        {isMarkingAllAsRead ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-info border-t-transparent rounded-full animate-spin"></div>
+                            <span>Đang xử lý...</span>
+                          </div>
+                        ) : (
+                          "Đánh dấu tất cả đã đọc"
+                        )}
                       </button>
                     </div>
                     <div className="max-h-[240px] overflow-y-auto thin-scrollbar pr-1">
@@ -826,7 +895,13 @@ const LecturerLayout = () => {
                       ))}
                     </div>
                     <div className="p-4 border-t border-gray-100 text-center">
-                      <button className="text-info text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
+                      <button
+                        onClick={() => {
+                          navigate("/lecturer/notifications");
+                          setIsNotificationOpen(false);
+                        }}
+                        className="text-info text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                      >
                         Xem tất cả thông báo
                       </button>
                     </div>

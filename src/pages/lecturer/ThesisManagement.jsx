@@ -36,10 +36,9 @@ const ThesisManagement = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 6;
   const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const lastReloadRef = useRef(0);
-  const toastQueueRef = useRef([]);
-  const toastFlushTimerRef = useRef(null);
 
   // Load danh sách topics và academic years khi component mount
   useEffect(() => {
@@ -47,30 +46,20 @@ const ThesisManagement = () => {
     loadAcademicYears();
   }, []);
 
-  // Helper hiển thị toast (có queue nếu ToastContainer chưa mount)
-  const flushToastQueue = () => {
-    if (typeof window !== "undefined" && window.addToast) {
-      while (toastQueueRef.current.length > 0) {
-        const { message, type } = toastQueueRef.current.shift();
-        try {
-          window.addToast(message, type);
-        } catch (err) {
-          console.error("Không thể hiển thị toast:", err);
-          (type === "success" ? console.log : console.error)(message);
-        }
-      }
-      if (toastFlushTimerRef.current) {
-        clearTimeout(toastFlushTimerRef.current);
-        toastFlushTimerRef.current = null;
-      }
-    } else if (!toastFlushTimerRef.current) {
-      toastFlushTimerRef.current = setTimeout(flushToastQueue, 300);
-    }
-  };
-
+  // Helper hiển thị toast sử dụng hệ thống chung từ LecturerLayout
   const showToast = (message, type = "success") => {
-    toastQueueRef.current.push({ message, type });
-    flushToastQueue();
+    if (typeof window !== "undefined" && window.addToast) {
+      try {
+        window.addToast(message, type);
+      } catch (err) {
+        console.error("Không thể hiển thị toast:", err);
+        // Fallback: hiển thị trong console
+        (type === "success" ? console.log : console.error)(message);
+      }
+    } else {
+      // Fallback: hiển thị trong console nếu ToastContainer chưa sẵn sàng
+      console.log(`[Toast] ${type.toUpperCase()}: ${message}`);
+    }
   };
 
   // Hàm load thông tin profile của người đề xuất
@@ -124,7 +113,9 @@ const ThesisManagement = () => {
 
     try {
       // Sử dụng API mới với TeacherId từ JWT token
-      const response = await topicService.getTopicListByTeacher();
+      const response = await topicService.getTopicListByTeacher({
+        params: { page: 0, size: 1000 },
+      });
 
       if (response.success) {
         // Đảm bảo response.data là array
@@ -144,21 +135,32 @@ const ThesisManagement = () => {
         }
 
         setTopics(topicsData);
-        setTotalElements(topicsData.length);
+        const serverTotal =
+          typeof response?.data?.totalElements === "number"
+            ? response.data.totalElements
+            : topicsData.length;
+        setTotalElements(serverTotal);
+        setTotalPages(
+          typeof response?.data?.totalPages === "number"
+            ? response.data.totalPages
+            : Math.ceil(serverTotal / pageSize)
+        );
 
         // Load thông tin profile của người đề xuất
         await loadSuggestedByProfiles(topicsData);
       } else {
         console.error("API trả về success: false:", response.message);
         setError(response.message || "Không thể tải danh sách đề tài");
-        setTopics([]); // Set array rỗng để tránh lỗi
+        setTopics([]);
         setTotalElements(0);
+        setTotalPages(1);
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách topics:", error);
       setError("Đã xảy ra lỗi khi tải danh sách đề tài");
-      setTopics([]); // Set array rỗng để tránh lỗi
+      setTopics([]);
       setTotalElements(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -1260,26 +1262,14 @@ const ThesisManagement = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="text-sm text-gray-700">
             Hiển thị{" "}
-            {Array.isArray(filteredTopics) && filteredTopics.length > 0
-              ? currentPage * pageSize + 1
-              : 0}{" "}
-            đến{" "}
-            {Array.isArray(filteredTopics)
-              ? Math.min(
-                  currentPage * pageSize + pageSize,
-                  filteredTopics.length
-                )
-              : 0}{" "}
-            trên {Array.isArray(filteredTopics) ? filteredTopics.length : 0} bản
-            ghi — Trang {currentPage + 1}/
-            {Array.isArray(filteredTopics)
-              ? Math.ceil(filteredTopics.length / pageSize)
-              : 1}
+            {filteredTopics.length > 0 ? currentPage * pageSize + 1 : 0} đến{" "}
+            {Math.min(currentPage * pageSize + pageSize, totalElements)} trên{" "}
+            {totalElements} bản ghi — Trang {currentPage + 1}/
+            {Math.ceil(totalElements / pageSize)}
           </div>
 
-          {/* Pagination - Hiển thị khi có nhiều hơn 1 trang */}
-          {Array.isArray(filteredTopics) &&
-          Math.ceil(filteredTopics.length / pageSize) > 1 ? (
+          {/* Pagination - theo cách UserManagement */}
+          {Math.ceil(totalElements / pageSize) > 1 ? (
             <div className="flex items-center gap-1 sm:gap-2">
               <button
                 className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
@@ -1301,12 +1291,12 @@ const ThesisManagement = () => {
                 {currentPage + 1}
               </button>
               <span className="px-1 sm:px-2 text-sm text-gray-500">
-                / {Math.ceil(filteredTopics.length / pageSize)}
+                / {Math.ceil(totalElements / pageSize)}
               </span>
               <button
                 className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 disabled={
-                  currentPage + 1 >= Math.ceil(filteredTopics.length / pageSize)
+                  currentPage + 1 >= Math.ceil(totalElements / pageSize)
                 }
                 onClick={() => setCurrentPage(currentPage + 1)}
               >
@@ -1322,9 +1312,7 @@ const ThesisManagement = () => {
             </div>
           ) : (
             <div className="text-sm text-gray-500">
-              Không có phân trang (chỉ có{" "}
-              {Array.isArray(filteredTopics) ? filteredTopics.length : 0} bản
-              ghi)
+              Không có phân trang (chỉ có {totalElements} bản ghi)
             </div>
           )}
         </div>
