@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Select from "react-select";
 import topicService from "../../services/topic.service";
 import academicYearService from "../../services/academic-year.service";
 import userService from "../../services/user.service";
 import AddTopicModal from "../../components/modals/AddTopicModal.jsx";
-import { ToastContainer } from "../../components/common";
 
 const ThesisManagement = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -38,19 +37,40 @@ const ThesisManagement = () => {
   const pageSize = 6;
   const [totalElements, setTotalElements] = useState(0);
 
+  const lastReloadRef = useRef(0);
+  const toastQueueRef = useRef([]);
+  const toastFlushTimerRef = useRef(null);
+
   // Load danh sách topics và academic years khi component mount
   useEffect(() => {
     loadTopics();
     loadAcademicYears();
   }, []);
 
-  // Helper hiển thị toast
-  const showToast = (message, type = "success") => {
+  // Helper hiển thị toast (có queue nếu ToastContainer chưa mount)
+  const flushToastQueue = () => {
     if (typeof window !== "undefined" && window.addToast) {
-      window.addToast(message, type);
-    } else {
-      (type === "success" ? console.log : console.error)(message);
+      while (toastQueueRef.current.length > 0) {
+        const { message, type } = toastQueueRef.current.shift();
+        try {
+          window.addToast(message, type);
+        } catch (err) {
+          console.error("Không thể hiển thị toast:", err);
+          (type === "success" ? console.log : console.error)(message);
+        }
+      }
+      if (toastFlushTimerRef.current) {
+        clearTimeout(toastFlushTimerRef.current);
+        toastFlushTimerRef.current = null;
+      }
+    } else if (!toastFlushTimerRef.current) {
+      toastFlushTimerRef.current = setTimeout(flushToastQueue, 300);
     }
+  };
+
+  const showToast = (message, type = "success") => {
+    toastQueueRef.current.push({ message, type });
+    flushToastQueue();
   };
 
   // Hàm load thông tin profile của người đề xuất
@@ -76,6 +96,11 @@ const ThesisManagement = () => {
               className: profile.className || profile.class || "",
             };
           } catch (error) {
+            console.warn(
+              "Không thể lấy profile sinh viên, dùng dữ liệu fallback cho:",
+              topic.suggestedBy,
+              error
+            );
             profiles[topic.suggestedBy] = {
               fullName: "Không xác định",
               studentId: topic.suggestedBy,
@@ -107,14 +132,10 @@ const ThesisManagement = () => {
 
         if (Array.isArray(response.data)) {
           topicsData = response.data;
-        } else if (
-          response.data &&
-          response.data.content &&
-          Array.isArray(response.data.content)
-        ) {
+        } else if (Array.isArray(response.data?.content)) {
           // Nếu API trả về dạng pagination { content: [...], totalElements: ... }
           topicsData = response.data.content;
-        } else if (response.data && Array.isArray(response.data.data)) {
+        } else if (Array.isArray(response.data?.data)) {
           // Nếu API trả về dạng nested { data: [...] }
           topicsData = response.data.data;
         } else {
@@ -149,14 +170,11 @@ const ThesisManagement = () => {
       const response = await academicYearService.getAcademicYearList();
 
       if (response.success) {
-        setAcademicYears(response.data || []);
+        const years = response.data ?? [];
+        setAcademicYears(years);
         // Set default academic year nếu có và chưa được set
-        if (
-          response.data &&
-          response.data.length > 0 &&
-          selectedYear === "All"
-        ) {
-          const defaultYear = response.data[response.data.length - 1]; // Lấy năm mới nhất
+        if (years.length > 0 && selectedYear === "All") {
+          const defaultYear = years[years.length - 1]; // Lấy năm mới nhất
           setSelectedYear(defaultYear.id.toString());
         }
       } else {
@@ -166,6 +184,30 @@ const ThesisManagement = () => {
       console.error("Lỗi khi tải danh sách năm học:", error);
     }
   };
+
+  // WebSocket: Xây dựng URL
+  const buildNotificationsWsUrl = (teacherId) => {
+    const base = WS_ENDPOINTS.NOTIFICATIONS;
+    return `${base}?teacherId=${encodeURIComponent(teacherId)}`;
+  };
+
+  // Nhận thông báo từ Layout để tránh toast trùng; reload khi cần
+  useEffect(() => {
+    const handler = async (evt) => {
+      const detail = evt?.detail || {};
+      const isTopicEvent =
+        detail?.entity === "TOPIC" ||
+        detail?.topicChanged === true ||
+        /topic/i.test(String(detail?.type || ""));
+      const now = Date.now();
+      if (isTopicEvent && now - lastReloadRef.current > 2000) {
+        lastReloadRef.current = now;
+        await loadTopics();
+      }
+    };
+    window.addEventListener("app:notification", handler);
+    return () => window.removeEventListener("app:notification", handler);
+  }, []);
 
   // Hàm xử lý khi tạo topic hoặc cập nhật topic thành công từ modal
   const handleTopicCreated = async (result) => {
@@ -1287,7 +1329,7 @@ const ThesisManagement = () => {
           )}
         </div>
       </div>
-      <ToastContainer />
+      {/* ToastContainer được render ở LecturerLayout */}
     </div>
   );
 };

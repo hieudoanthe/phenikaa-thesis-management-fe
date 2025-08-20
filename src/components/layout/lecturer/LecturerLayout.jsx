@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import SidebarOfLecturer from "./SidebarOfLecturer.jsx";
-import { logout, getRefreshToken } from "../../../auth/authUtils";
+import {
+  logout,
+  getRefreshToken,
+  getTeacherIdFromToken,
+} from "../../../auth/authUtils";
 import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
+import { WS_ENDPOINTS, APP_CONFIG } from "../../../config/api";
+import { ToastContainer } from "../../common";
+import userService from "../../../services/user.service";
 
 const LecturerLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -10,6 +17,15 @@ const LecturerLayout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [notificationsState, setNotificationsState] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [timeTick, setTimeTick] = useState(0);
+  const [isStudentProfileOpen, setIsStudentProfileOpen] = useState(false);
+  const [studentProfile, setStudentProfile] = useState(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const studentProfileCacheRef = useRef({});
+  const toastQueueRef = useRef([]);
+  const toastReadyTimerRef = useRef(null);
 
   // Sử dụng ProfileTeacherContext
   let contextData;
@@ -38,6 +54,16 @@ const LecturerLayout = () => {
   const userDropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
+  const connectTimeRef = useRef(0);
+  const bufferInitialMsRef = useRef(1500);
+  const bufferedCountRef = useRef(0);
+  const bufferToastTimerRef = useRef(null);
+  const summaryShownRef = useRef(false);
+  const heartbeatTimerRef = useRef(null);
+  const lastActivityAtRef = useRef(0);
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
@@ -201,30 +227,449 @@ const LecturerLayout = () => {
     }
   };
 
-  // Mock data cho notifications
-  const notifications = [
-    {
-      id: 1,
-      title: "Báo cáo tiến độ mới",
-      message: "Sinh viên Nguyễn Văn A đã nộp báo cáo tiến độ",
-      time: "2 giờ trước",
-      isRead: false,
-    },
-    {
-      id: 2,
-      title: "Lịch bảo vệ cập nhật",
-      message: "Lịch bảo vệ luận văn đã được cập nhật",
-      time: "5 giờ trước",
-      isRead: false,
-    },
-    {
-      id: 3,
-      title: "Nhắc nhở chấm điểm",
-      message: "Bạn có 3 bài báo cáo cần chấm điểm",
-      time: "1 ngày trước",
-      isRead: false,
-    },
-  ];
+  // WebSocket helpers
+  // Chuẩn hoá WS base URL theo giao thức hiện tại (ws/wss)
+  const normalizeWsBaseUrl = (base) => {
+    try {
+      const url = new URL(base, window.location.origin);
+      const isHttps = window.location.protocol === "https:";
+      url.protocol = isHttps ? "wss:" : "ws:";
+      // Loại bỏ dấu gạch chéo cuối để tránh // khi nối query
+      return url.toString().replace(/\/$/, "");
+    } catch (_) {
+      if (typeof base === "string") {
+        const scheme =
+          window.location.protocol === "https:" ? "wss://" : "ws://";
+        return base.replace(/^ws(s)?:\/\//, scheme).replace(/\/$/, "");
+      }
+      return base;
+    }
+  };
+
+  const buildNotificationsWsUrl = (teacherId) => {
+    const base = normalizeWsBaseUrl(WS_ENDPOINTS.NOTIFICATIONS);
+    return `${base}?teacherId=${encodeURIComponent(teacherId)}`;
+  };
+
+  // Heartbeat giữ kết nối sống
+  const clearHeartbeatTimer = () => {
+    if (heartbeatTimerRef.current) {
+      clearInterval(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+  };
+
+  const startHeartbeat = () => {
+    clearHeartbeatTimer();
+    heartbeatTimerRef.current = setInterval(() => {
+      try {
+        const ws = wsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send("ping");
+        }
+      } catch (_) {
+        // no-op
+      }
+    }, 25000);
+  };
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  };
+
+  const scheduleReconnect = () => {
+    const attempt = reconnectAttemptsRef.current + 1;
+    reconnectAttemptsRef.current = attempt;
+    // Rút ngắn tối đa 8s để nhận thông báo sớm hơn
+    const delay = Math.min(8000, 1000 * Math.pow(2, attempt));
+    clearReconnectTimer();
+    reconnectTimerRef.current = setTimeout(() => {
+      connectWebSocket();
+    }, delay);
+  };
+
+  // Hiển thị thời gian tương đối theo createdAt
+  const formatRelativeTime = (createdAtMs) => {
+    if (!createdAtMs) return "Vừa xong";
+    const diff = Math.max(0, Date.now() - createdAtMs);
+    const sec = Math.floor(diff / 1000);
+    if (sec < 60) return "Vừa xong";
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min} phút trước`;
+    const hour = Math.floor(min / 60);
+    if (hour < 24) return `${hour} giờ trước`;
+    const day = Math.floor(hour / 24);
+    return `${day} ngày trước`;
+  };
+
+  // Định dạng thời gian tương đối 1 lần khi nhận
+  const formatRelativeOnce = (createdAtMs) => {
+    if (!createdAtMs) return "Vừa xong";
+    const diff = Math.max(0, Date.now() - createdAtMs);
+    const sec = Math.floor(diff / 1000);
+    if (sec < 60) return "Vừa xong";
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min} phút trước`;
+    const hour = Math.floor(min / 60);
+    if (hour < 24) return `${hour} giờ trước`;
+    const day = Math.floor(hour / 24);
+    return `${day} ngày trước`;
+  };
+
+  // Hiển thị toast an toàn dù ToastContainer chưa mount
+  const showToast = (message, type = "success") => {
+    toastQueueRef.current.push({ message, type });
+    const flush = () => {
+      if (typeof window !== "undefined" && window.addToast) {
+        while (toastQueueRef.current.length > 0) {
+          const { message: msg, type: t } = toastQueueRef.current.shift();
+          try {
+            window.addToast(msg, t);
+          } catch (err) {
+            // fallback log
+            (t === "success" ? console.log : console.error)(msg);
+          }
+        }
+        if (toastReadyTimerRef.current) {
+          clearTimeout(toastReadyTimerRef.current);
+          toastReadyTimerRef.current = null;
+        }
+      } else if (!toastReadyTimerRef.current) {
+        toastReadyTimerRef.current = setTimeout(flush, 300);
+      }
+    };
+    flush();
+  };
+
+  const appendNotification = async ({
+    message,
+    createdAt,
+    read,
+    studentId,
+  }) => {
+    const createdAtMs = createdAt ? Number(createdAt) : Date.now();
+
+    // Thử lấy tên sinh viên nếu có studentId
+    let studentName;
+    if (studentId) {
+      try {
+        const cached = studentProfileCacheRef.current[studentId];
+        const profile =
+          cached || (await userService.getStudentProfileById(studentId));
+        if (!cached) studentProfileCacheRef.current[studentId] = profile;
+        const fullName = profile?.fullName || profile?.name;
+        if (fullName) studentName = fullName;
+      } catch (err) {
+        // Không chặn hiển thị nếu lỗi, giữ nguyên message
+      }
+    }
+
+    const item = {
+      id: Date.now() + Math.random(),
+      title: "Thông báo",
+      message: message,
+      time: formatRelativeOnce(createdAtMs),
+      createdAt: createdAtMs,
+      isRead: !!read,
+      studentId: studentId ?? null,
+      studentName: studentName ?? null,
+    };
+    setNotificationsState((prev) => {
+      const next = [item, ...prev];
+      return next.slice(0, 50);
+    });
+    setUnreadCount((c) => c + (read ? 0 : 1));
+  };
+
+  const handleOpenStudentProfile = async (studentId) => {
+    if (!studentId) return;
+    setIsProfileLoading(true);
+    try {
+      const cached = studentProfileCacheRef.current[studentId];
+      const profile =
+        cached || (await userService.getStudentProfileById(studentId));
+      if (!cached) studentProfileCacheRef.current[studentId] = profile;
+      const info = {
+        fullName: profile?.fullName || profile?.name || "Không xác định",
+        email: profile?.email || "",
+        major: profile?.major || "",
+        className: profile?.className || profile?.class || "",
+        phoneNumber: profile?.phoneNumber || "",
+        avt: profile?.avt || profile?.avatar || "",
+      };
+      setStudentProfile(info);
+      setIsStudentProfileOpen(true);
+    } catch (err) {
+      if (APP_CONFIG.DEBUG_MODE)
+        console.debug("[WS][Layout] Lỗi tải profile sinh viên:", err);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  };
+
+  const handleIncomingMessage = async (event) => {
+    try {
+      let rawData = event.data;
+      if (rawData instanceof Blob) {
+        try {
+          rawData = await rawData.text();
+        } catch (_) {
+          rawData = "";
+        }
+      }
+      const now = Date.now();
+      const isBuffering =
+        connectTimeRef.current > 0 &&
+        now - connectTimeRef.current < bufferInitialMsRef.current;
+
+      if (typeof rawData === "string") {
+        const raw = rawData.trim();
+        const lower = raw.toLowerCase();
+        if (lower === "ping" || lower === "pong" || lower === "message") {
+          lastActivityAtRef.current = Date.now();
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(raw);
+          const msg =
+            parsed?.message ||
+            parsed?.content ||
+            parsed?.text ||
+            "Bạn có thông báo mới";
+          await appendNotification({
+            message: msg,
+            createdAt: parsed?.createdAt,
+            read: parsed?.read,
+            studentId: parsed?.studentId,
+          });
+          if (!isBuffering) {
+            showToast(msg, "success");
+          } else {
+            bufferedCountRef.current += 1;
+          }
+          window.dispatchEvent(
+            new CustomEvent("app:notification", { detail: parsed })
+          );
+          // Lên lịch toast tổng hợp nếu đang buffer
+          if (isBuffering && !bufferToastTimerRef.current) {
+            const delay =
+              bufferInitialMsRef.current - (now - connectTimeRef.current) + 50;
+            bufferToastTimerRef.current = setTimeout(() => {
+              const count = bufferedCountRef.current;
+              bufferToastTimerRef.current = null;
+              bufferedCountRef.current = 0;
+              if (count > 0 && !summaryShownRef.current) {
+                summaryShownRef.current = true;
+                showToast(`Bạn có ${count} thông báo mới`, "success");
+              }
+            }, Math.max(0, delay));
+          }
+          return;
+        } catch (_) {
+          let display = raw;
+          if (lower.startsWith("message:"))
+            display = raw.substring(raw.indexOf(":") + 1).trim();
+          if (
+            (display.startsWith('"') && display.endsWith('"')) ||
+            (display.startsWith("'") && display.endsWith("'"))
+          ) {
+            display = display.slice(1, -1);
+          }
+          await appendNotification({
+            message: display,
+            createdAt: Date.now(),
+            read: false,
+          });
+          if (!isBuffering) {
+            showToast(display, "success");
+          } else {
+            bufferedCountRef.current += 1;
+          }
+          window.dispatchEvent(
+            new CustomEvent("app:notification", {
+              detail: { message: display },
+            })
+          );
+          // Lên lịch toast tổng hợp nếu đang buffer
+          if (isBuffering && !bufferToastTimerRef.current) {
+            const delay =
+              bufferInitialMsRef.current - (now - connectTimeRef.current) + 50;
+            bufferToastTimerRef.current = setTimeout(() => {
+              const count = bufferedCountRef.current;
+              bufferToastTimerRef.current = null;
+              bufferedCountRef.current = 0;
+              if (count > 0 && !summaryShownRef.current) {
+                summaryShownRef.current = true;
+                showToast(`Bạn có ${count} thông báo mới`, "success");
+              }
+            }, Math.max(0, delay));
+          }
+          return;
+        }
+      }
+
+      const data = rawData || {};
+      const msg =
+        data.message || data.content || data.text || "Bạn có thông báo mới";
+      await appendNotification({
+        message: msg,
+        createdAt: data.createdAt,
+        read: data.read,
+        studentId: data.studentId,
+      });
+      lastActivityAtRef.current = Date.now();
+      if (!isBuffering) {
+        showToast(msg, "success");
+      } else {
+        bufferedCountRef.current += 1;
+      }
+      window.dispatchEvent(
+        new CustomEvent("app:notification", { detail: data })
+      );
+
+      // Lên lịch hiển thị toast tổng hợp khi hết thời gian buffer
+      if (isBuffering && !bufferToastTimerRef.current) {
+        const delay =
+          bufferInitialMsRef.current - (now - connectTimeRef.current) + 50;
+        bufferToastTimerRef.current = setTimeout(() => {
+          const count = bufferedCountRef.current;
+          bufferToastTimerRef.current = null;
+          bufferedCountRef.current = 0;
+          if (count > 0 && !summaryShownRef.current) {
+            summaryShownRef.current = true;
+            if (typeof window !== "undefined" && window.addToast) {
+              window.addToast(`Bạn có ${count} thông báo mới`, "success");
+            }
+          }
+        }, Math.max(0, delay));
+      }
+    } catch (err) {
+      if (APP_CONFIG.DEBUG_MODE)
+        console.debug("[WS][Layout] Lỗi xử lý message:", err);
+    }
+  };
+
+  const connectWebSocket = () => {
+    try {
+      const teacherId = getTeacherIdFromToken();
+      if (!teacherId) return;
+
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+        wsRef.current.close();
+      }
+
+      const url = buildNotificationsWsUrl(teacherId);
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (APP_CONFIG.DEBUG_MODE) console.debug("[WS][Layout] Opened:", url);
+        reconnectAttemptsRef.current = 0;
+        clearReconnectTimer();
+        // Đánh dấu đã có kết nối toàn cục để tránh trùng từ page
+        if (typeof window !== "undefined")
+          window.__wsNotificationsConnected = true;
+        // Đặt mốc thời gian để buffer thông báo ban đầu
+        connectTimeRef.current = Date.now();
+        bufferedCountRef.current = 0;
+        summaryShownRef.current = false;
+        if (bufferToastTimerRef.current) {
+          clearTimeout(bufferToastTimerRef.current);
+          bufferToastTimerRef.current = null;
+        }
+        lastActivityAtRef.current = Date.now();
+        startHeartbeat();
+      };
+
+      ws.onmessage = (evt) => {
+        if (APP_CONFIG.DEBUG_MODE)
+          console.debug("[WS][Layout] Message:", evt.data);
+        lastActivityAtRef.current = Date.now();
+        handleIncomingMessage(evt);
+      };
+
+      ws.onerror = (e) => {
+        if (APP_CONFIG.DEBUG_MODE) console.debug("[WS][Layout] Error:", e);
+      };
+
+      ws.onclose = (e) => {
+        if (APP_CONFIG.DEBUG_MODE)
+          console.debug("[WS][Layout] Closed:", e?.code, e?.reason);
+        scheduleReconnect();
+        connectTimeRef.current = 0;
+        clearHeartbeatTimer();
+        if (bufferToastTimerRef.current) {
+          clearTimeout(bufferToastTimerRef.current);
+          bufferToastTimerRef.current = null;
+        }
+      };
+    } catch (err) {
+      if (APP_CONFIG.DEBUG_MODE)
+        console.debug("[WS][Layout] Cannot init:", err);
+      scheduleReconnect();
+    }
+  };
+
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      clearReconnectTimer();
+      clearHeartbeatTimer();
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
+    };
+  }, []);
+
+  // Tự động reconnect khi tab quay lại foreground hoặc mạng online
+  useEffect(() => {
+    const tryReconnect = () => {
+      if (document.hidden) return;
+      try {
+        const ws = wsRef.current;
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          connectWebSocket();
+        } else if (ws.readyState !== WebSocket.OPEN) {
+          scheduleReconnect();
+        } else {
+          try {
+            ws.send("ping");
+          } catch (_) {}
+        }
+      } catch (_) {}
+    };
+
+    const handleVisibilityChange = () => tryReconnect();
+    const handleOnline = () => tryReconnect();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
+  // Cập nhật lại relative time theo phút khi dropdown đang mở
+  useEffect(() => {
+    if (!isNotificationOpen) return;
+    const id = setInterval(() => setTimeTick((t) => t + 1), 60000);
+    return () => clearInterval(id);
+  }, [isNotificationOpen]);
+
+  const markAllAsRead = () => {
+    setNotificationsState((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+  };
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -309,24 +754,34 @@ const LecturerLayout = () => {
                   >
                     <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                   </svg>
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                    3
-                  </span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {unreadCount}
+                    </span>
+                  )}
                 </div>
 
                 {/* Notification Dropdown Menu */}
                 {isNotificationOpen && (
-                  <div className="absolute top-full right-0 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
+                  <div className="absolute top-full right-0 w-[22rem] sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
                     <div className="p-4 border-b border-gray-100 flex justify-between items-center">
                       <h3 className="text-base font-semibold text-gray-900 m-0">
                         Thông báo
                       </h3>
-                      <button className="text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100">
+                      <button
+                        className="text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100"
+                        onClick={markAllAsRead}
+                      >
                         Đánh dấu tất cả đã đọc
                       </button>
                     </div>
-                    <div className="max-h-[300px] overflow-y-auto">
-                      {notifications.map((notification) => (
+                    <div className="max-h-[240px] overflow-y-auto thin-scrollbar pr-1">
+                      {notificationsState.length === 0 && (
+                        <div className="p-6 text-center text-gray-500">
+                          Không có thông báo
+                        </div>
+                      )}
+                      {notificationsState.map((notification) => (
                         <div
                           key={notification.id}
                           className={`p-4 border-b border-gray-100 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
@@ -339,9 +794,29 @@ const LecturerLayout = () => {
                             </h4>
                             <p className="text-sm text-gray-600 m-0 mb-2 leading-relaxed">
                               {notification.message}
+                              {notification.studentName && (
+                                <>
+                                  {" "}
+                                  — Đề xuất bởi:{" "}
+                                  <button
+                                    type="button"
+                                    className="text-blue-600 hover:text-blue-800 underline"
+                                    onClick={() =>
+                                      handleOpenStudentProfile(
+                                        notification.studentId
+                                      )
+                                    }
+                                  >
+                                    {notification.studentName}
+                                  </button>
+                                </>
+                              )}
                             </p>
                             <span className="text-xs text-gray-500">
-                              {notification.time}
+                              {formatRelativeTime(
+                                notification.createdAt,
+                                timeTick
+                              )}
                             </span>
                           </div>
                           {!notification.isRead && (
@@ -512,6 +987,102 @@ const LecturerLayout = () => {
             <Outlet />
           </div>
         </main>
+        <ToastContainer />
+        {isStudentProfileOpen && studentProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Thông tin sinh viên
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsStudentProfileOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                {studentProfile.avt && (
+                  <div className="flex justify-center">
+                    <img
+                      src={studentProfile.avt}
+                      alt="Avatar"
+                      className="w-20 h-20 rounded-full object-cover border-4 border-gray-200"
+                    />
+                  </div>
+                )}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      Họ và tên
+                    </label>
+                    <p className="text-base font-semibold text-gray-900">
+                      {studentProfile.fullName}
+                    </p>
+                  </div>
+                  {studentProfile.email && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Email
+                      </label>
+                      <p className="text-base text-gray-700">
+                        {studentProfile.email}
+                      </p>
+                    </div>
+                  )}
+                  {studentProfile.phoneNumber && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Số điện thoại
+                      </label>
+                      <p className="text-base text-gray-700">
+                        {studentProfile.phoneNumber}
+                      </p>
+                    </div>
+                  )}
+                  {studentProfile.major && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Chuyên ngành
+                      </label>
+                      <p className="text-base text-gray-700">
+                        {studentProfile.major}
+                      </p>
+                    </div>
+                  )}
+                  {studentProfile.className && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Lớp
+                      </label>
+                      <p className="text-base text-gray-700">
+                        {studentProfile.className}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end p-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setIsStudentProfileOpen(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

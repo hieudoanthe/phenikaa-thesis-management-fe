@@ -71,3 +71,9 @@ export const API_ENDPOINTS = {
   GET_TEACHER_PROFILE: "/api/profile-service/teacher/get-profile/{userId}",
   UPDATE_TEACHER_PROFILE: "/api/profile-service/teacher/update-profile-teacher",
 };
+
+// WebSocket Endpoints
+export const WS_ENDPOINTS = {
+  // Thông báo theo giáo viên
+  NOTIFICATIONS: "ws://localhost:8080/ws/notifications",
+};
