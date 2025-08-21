@@ -12,8 +12,20 @@ const notificationService = {
         `/notifications/mark-all-read/${receiverId}`
       );
 
-      // Trả về response.data thay vì response
-      return response.data || response;
+      // Chuẩn hóa kết quả: coi mọi phản hồi 2xx là thành công
+      const status = response?.status;
+      const isOk = typeof status === "number" && status >= 200 && status < 300;
+      const payload = response?.data;
+      return {
+        success:
+          isOk === true ||
+          payload?.success === true ||
+          payload === true ||
+          payload === "",
+        status,
+        data: payload,
+        message: payload?.message || (isOk ? "Thành công" : "Không thành công"),
+      };
     } catch (error) {
       throw error;
     }

@@ -24,6 +24,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ThesisRegister from "./pages/student/ThesisRegister.jsx";
 import TopicRegistration from "./pages/student/TopicRegistration.jsx";
 import StudentHome from "./pages/student/Home.jsx";
+import StudentNotifications from "./pages/student/Notifications.jsx";
+import StudentChat from "./pages/student/Chat.jsx";
+import LecturerChat from "./pages/lecturer/Chat.jsx";
 import StudentProfile from "./pages/student/StudentProfile.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
@@ -98,15 +101,7 @@ createRoot(document.getElementById("root")).render(
                     />
                   }
                 />
-                <Route
-                  path="chat"
-                  element={
-                    <PlaceholderPage
-                      title="Chat"
-                      description="Tính năng chat đang được phát triển."
-                    />
-                  }
-                />
+                <Route path="chat" element={<LecturerChat />} />
                 <Route path="notifications" element={<NotiOfTeacher />} />
                 <Route
                   path="settings"
@@ -137,6 +132,11 @@ createRoot(document.getElementById("root")).render(
                   element={<TopicRegistration />}
                 />
                 <Route path="profile" element={<StudentProfile />} />
+                <Route path="chat" element={<StudentChat />} />
+                <Route
+                  path="notifications"
+                  element={<StudentNotifications />}
+                />
                 {/* Có thể thêm các route con khác cho student ở đây */}
               </Route>
 

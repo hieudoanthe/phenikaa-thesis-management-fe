@@ -68,7 +68,7 @@ const SidebarOfStudent = ({
       tooltip: "Báo cáo",
     },
     {
-      path: "/student/message",
+      path: "/student/chat",
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
@@ -76,6 +76,16 @@ const SidebarOfStudent = ({
       ),
       text: "Tin nhắn",
       tooltip: "Tin nhắn",
+    },
+    {
+      path: "/student/notifications",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S10.5 3.17 10.5 4v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
+        </svg>
+      ),
+      text: "Thông báo",
+      tooltip: "Thông báo",
     },
     {
       path: "/student/settings",
