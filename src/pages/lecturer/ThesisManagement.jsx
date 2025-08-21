@@ -188,9 +188,9 @@ const ThesisManagement = () => {
   };
 
   // WebSocket: Xây dựng URL
-  const buildNotificationsWsUrl = (teacherId) => {
+  const buildNotificationsWsUrl = (receiverId) => {
     const base = WS_ENDPOINTS.NOTIFICATIONS;
-    return `${base}?teacherId=${encodeURIComponent(teacherId)}`;
+    return `${base}?receiverId=${encodeURIComponent(receiverId)}`;
   };
 
   // Nhận thông báo từ Layout để tránh toast trùng; reload khi cần

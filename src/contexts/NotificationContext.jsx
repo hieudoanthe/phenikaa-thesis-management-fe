@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { getTeacherIdFromToken } from "../auth/authUtils";
+import { getUserIdFromToken } from "../auth/authUtils";
 import notificationService from "../services/notification.service";
 
 const NotificationContext = createContext();
@@ -20,7 +20,7 @@ export const NotificationProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   // Load thông báo từ API (tạm thời sử dụng dữ liệu mẫu vì API chưa có)
-  const loadNotifications = async (teacherId, params = {}) => {
+  const loadNotifications = async (receiverId, params = {}) => {
     try {
       setLoading(true);
       setError(null);
@@ -29,71 +29,61 @@ export const NotificationProvider = ({ children }) => {
       const mockNotifications = [
         {
           id: 1,
-          title: "Đề tài mới được đăng ký",
-          message:
-            "Sinh viên Nguyễn Văn A đã đăng ký đề tài 'Xây dựng hệ thống quản lý sinh viên'",
-          read: false,
-          studentId: "ST001",
-          createdAt: Date.now() - 1000 * 60 * 30, // 30 phút trước
+          title: "Thông báo mới",
+          message: "Bạn có thông báo mới từ hệ thống",
+          time: "2 phút trước",
+          createdAt: Date.now() - 2 * 60 * 1000,
+          isRead: false,
         },
         {
           id: 2,
-          title: "Báo cáo tiến độ",
-          message: "Sinh viên Trần Thị B đã nộp báo cáo tiến độ tháng 12",
-          read: true,
-          studentId: "ST002",
-          createdAt: Date.now() - 1000 * 60 * 60 * 2, // 2 giờ trước
-        },
-        {
-          id: 3,
-          title: "Lịch bảo vệ",
-          message: "Lịch bảo vệ luận văn đã được cập nhật cho tuần tới",
-          read: false,
-          createdAt: Date.now() - 1000 * 60 * 60 * 24, // 1 ngày trước
-        },
-        {
-          id: 4,
-          title: "Nhận xét đề tài",
-          message: "Đề tài 'Phát triển ứng dụng mobile' đã được duyệt",
-          read: true,
-          createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2, // 2 ngày trước
-        },
-        {
-          id: 5,
-          title: "Thông báo họp",
-          message: "Cuộc họp định kỳ giữa kỳ sẽ diễn ra vào thứ 6 tuần này",
-          read: false,
-          createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 ngày trước
+          title: "Cập nhật đề tài",
+          message: "Đề tài của bạn đã được cập nhật",
+          time: "1 giờ trước",
+          createdAt: Date.now() - 60 * 60 * 1000,
+          isRead: true,
         },
       ];
 
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       setNotifications(mockNotifications);
-      return mockNotifications;
+      return {
+        success: true,
+        data: mockNotifications,
+        message: "Tải thông báo thành công",
+      };
     } catch (error) {
       console.error("Lỗi khi tải thông báo:", error);
-      setError("Đã xảy ra lỗi khi tải danh sách thông báo");
-      setNotifications([]);
-      return [];
+      setError("Không thể tải danh sách thông báo");
+      return {
+        success: false,
+        message: "Không thể tải danh sách thông báo",
+      };
     } finally {
       setLoading(false);
     }
   };
 
-  // Đánh dấu tất cả đã đọc
-  const markAllAsRead = async (teacherId) => {
+  // Đánh dấu tất cả thông báo đã đọc
+  const markAllAsRead = async (receiverId) => {
     try {
-      const response = await notificationService.markAllAsRead(teacherId);
+      setLoading(true);
+      setError(null);
 
-      // Chấp nhận nhiều format response khác nhau
+      // Gọi API để đánh dấu tất cả đã đọc
+      const response = await notificationService.markAllAsRead(receiverId);
+
+      // Kiểm tra response
       const isSuccess =
         response?.success === true ||
         response?.status === 200 ||
         response?.statusCode === 200 ||
-        response?.data !== undefined ||
-        response?.message?.toLowerCase().includes("success") ||
         response?.message?.toLowerCase().includes("thành công");
 
       if (isSuccess) {
+        // Cập nhật state local
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
         return true;
       } else {
@@ -108,27 +98,34 @@ export const NotificationProvider = ({ children }) => {
           return true;
         }
 
-        setError(response?.message || "Không thể đánh dấu thông báo đã đọc");
+        setError(
+          response?.message || "Không thể đánh dấu tất cả thông báo đã đọc"
+        );
         return false;
       }
     } catch (error) {
+      console.error("Lỗi khi đánh dấu tất cả thông báo đã đọc:", error);
       setError("Đã xảy ra lỗi khi đánh dấu thông báo đã đọc");
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
   // Đánh dấu một thông báo đã đọc
   const markAsRead = async (notificationId) => {
     try {
+      setLoading(true);
+      setError(null);
+
+      // Gọi API để đánh dấu đã đọc
       const response = await notificationService.markAsRead(notificationId);
 
-      // Chấp nhận nhiều format response khác nhau
+      // Kiểm tra response
       const isSuccess =
         response?.success === true ||
         response?.status === 200 ||
         response?.statusCode === 200 ||
-        response?.data !== undefined ||
-        response?.message?.toLowerCase().includes("success") ||
         response?.message?.toLowerCase().includes("thành công");
 
       if (isSuccess) {

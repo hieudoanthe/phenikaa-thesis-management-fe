@@ -252,9 +252,9 @@ const LecturerLayout = () => {
     }
   };
 
-  const buildNotificationsWsUrl = (teacherId) => {
+  const buildNotificationsWsUrl = (receiverId) => {
     const base = normalizeWsBaseUrl(WS_ENDPOINTS.NOTIFICATIONS);
-    return `${base}?teacherId=${encodeURIComponent(teacherId)}`;
+    return `${base}?receiverId=${encodeURIComponent(receiverId)}`;
   };
 
   // Heartbeat giữ kết nối sống
@@ -580,14 +580,14 @@ const LecturerLayout = () => {
 
   const connectWebSocket = () => {
     try {
-      const teacherId = getTeacherIdFromToken();
-      if (!teacherId) return;
+      const receiverId = getTeacherIdFromToken();
+      if (!receiverId) return;
 
       if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
         wsRef.current.close();
       }
 
-      const url = buildNotificationsWsUrl(teacherId);
+      const url = buildNotificationsWsUrl(receiverId);
       const ws = new WebSocket(url);
       wsRef.current = ws;
 
@@ -696,14 +696,14 @@ const LecturerLayout = () => {
 
     try {
       setIsMarkingAllAsRead(true);
-      const teacherId = getTeacherIdFromToken();
-      if (!teacherId) {
+      const receiverId = getTeacherIdFromToken();
+      if (!receiverId) {
         showToast("Không thể xác định ID giảng viên", "error");
         return;
       }
 
       // Sử dụng context để đánh dấu tất cả thông báo đã đọc
-      const success = await markAllAsReadFromContext(teacherId);
+      const success = await markAllAsReadFromContext(receiverId);
 
       if (success) {
         // Cập nhật UI local
@@ -850,7 +850,7 @@ const LecturerLayout = () => {
                           Không có thông báo
                         </div>
                       )}
-                      {notificationsState.map((notification) => (
+                      {notificationsState.slice(0, 5).map((notification) => (
                         <div
                           key={notification.id}
                           className={`p-4 border-b border-gray-100 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
@@ -893,6 +893,11 @@ const LecturerLayout = () => {
                           )}
                         </div>
                       ))}
+                      {notificationsState.length > 5 && (
+                        <div className="p-4 text-center text-sm text-gray-500 border-t border-gray-100">
+                          Và {notificationsState.length - 5} thông báo khác...
+                        </div>
+                      )}
                     </div>
                     <div className="p-4 border-t border-gray-100 text-center">
                       <button

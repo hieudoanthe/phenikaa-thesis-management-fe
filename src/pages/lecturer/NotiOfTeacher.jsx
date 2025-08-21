@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getTeacherIdFromToken } from "../../auth/authUtils";
+import { getUserIdFromToken } from "../../auth/authUtils";
 import { useNotifications } from "../../contexts/NotificationContext";
 import userService from "../../services/user.service";
 
@@ -136,15 +136,15 @@ const NotiOfTeacher = () => {
   const handleMarkAllAsRead = async () => {
     try {
       setIsMarkingAllAsRead(true);
-      const teacherId = getTeacherIdFromToken();
+      const receiverId = getUserIdFromToken();
 
-      if (!teacherId) {
-        showToast("Không thể xác định ID giảng viên", "error");
+      if (!receiverId) {
+        showToast("Không thể xác định ID người nhận", "error");
         return;
       }
 
       // Sử dụng context để đánh dấu tất cả đã đọc
-      const success = await markAllAsReadFromContext(teacherId);
+      const success = await markAllAsReadFromContext(receiverId);
 
       if (success) {
         clearError();

@@ -9,7 +9,7 @@ const initialForm = {
   mucTieu: "",
   phuongPhap: "",
   ketQuaDuKien: "",
-  giangVien: null, // sẽ lấy id khi submit
+  giangVien: null,
   lyDo: "",
 };
 
@@ -174,136 +174,130 @@ const ThesisRegister = () => {
             </span>
           </div>
 
-          {/* Form Fields - 2 Columns Layout */}
+          {/* Form Fields - Single Column Layout */}
           <div
-            className={`grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 transition-all duration-300 ${
+            className={`space-y-4 mb-4 transition-all duration-300 ${
               showLecturerList ? "opacity-0 invisible" : "opacity-100 visible"
             }`}
           >
-            {/* Cột 1 */}
-            <div className="space-y-4">
-              {/* Tên đề tài */}
-              <div className="relative">
-                <input
-                  id="tieuDe"
-                  type="text"
-                  name="tieuDe"
-                  placeholder=" "
-                  value={form.tieuDe}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
-                />
-                <label
-                  htmlFor="tieuDe"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Tên đề tài <span className="text-red-500">*</span>
-                </label>
-              </div>
-
-              {/* Mô tả đề tài */}
-              <div className="relative">
-                <textarea
-                  id="moTa"
-                  name="moTa"
-                  placeholder=" "
-                  value={form.moTa}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                  rows={2}
-                />
-                <label
-                  htmlFor="moTa"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Mô tả đề tài <span className="text-red-500">*</span>
-                </label>
-              </div>
-
-              {/* Mục tiêu */}
-              <div className="relative">
-                <textarea
-                  id="mucTieu"
-                  name="mucTieu"
-                  placeholder=" "
-                  value={form.mucTieu}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                  rows={2}
-                />
-                <label
-                  htmlFor="mucTieu"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Mục tiêu <span className="text-red-500">*</span>
-                </label>
-              </div>
+            {/* Tên đề tài */}
+            <div className="relative">
+              <input
+                id="tieuDe"
+                type="text"
+                name="tieuDe"
+                placeholder=" "
+                value={form.tieuDe}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
+              />
+              <label
+                htmlFor="tieuDe"
+                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Tên đề tài <span className="text-red-500">*</span>
+              </label>
             </div>
 
-            {/* Cột 2 */}
-            <div className="space-y-4">
-              {/* Phương pháp thực hiện */}
-              <div className="relative">
-                <textarea
-                  id="phuongPhap"
-                  name="phuongPhap"
-                  placeholder=" "
-                  value={form.phuongPhap}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                  rows={2}
-                />
-                <label
-                  htmlFor="phuongPhap"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Phương pháp thực hiện <span className="text-red-500">*</span>
-                </label>
-              </div>
+            {/* Mô tả đề tài */}
+            <div className="relative">
+              <textarea
+                id="moTa"
+                name="moTa"
+                placeholder=" "
+                value={form.moTa}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                rows={3}
+              />
+              <label
+                htmlFor="moTa"
+                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Mô tả đề tài <span className="text-red-500">*</span>
+              </label>
+            </div>
 
-              {/* Kết quả dự kiến */}
-              <div className="relative">
-                <textarea
-                  id="ketQuaDuKien"
-                  name="ketQuaDuKien"
-                  placeholder=" "
-                  value={form.ketQuaDuKien}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                  rows={2}
-                />
-                <label
-                  htmlFor="ketQuaDuKien"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Kết quả dự kiến <span className="text-red-500">*</span>
-                </label>
-              </div>
+            {/* Mục tiêu */}
+            <div className="relative">
+              <textarea
+                id="mucTieu"
+                name="mucTieu"
+                placeholder=" "
+                value={form.mucTieu}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                rows={3}
+              />
+              <label
+                htmlFor="mucTieu"
+                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Mục tiêu <span className="text-red-500">*</span>
+              </label>
+            </div>
 
-              {/* Lý do đề xuất */}
-              <div className="relative">
-                <textarea
-                  id="lyDo"
-                  name="lyDo"
-                  placeholder=" "
-                  value={form.lyDo}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                  required
-                  rows={2}
-                />
-                <label
-                  htmlFor="lyDo"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Lý do đề xuất <span className="text-red-500">*</span>
-                </label>
-              </div>
+            {/* Phương pháp thực hiện */}
+            <div className="relative">
+              <textarea
+                id="phuongPhap"
+                name="phuongPhap"
+                placeholder=" "
+                value={form.phuongPhap}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                rows={3}
+              />
+              <label
+                htmlFor="phuongPhap"
+                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Phương pháp thực hiện <span className="text-red-500">*</span>
+              </label>
+            </div>
+
+            {/* Kết quả dự kiến */}
+            <div className="relative">
+              <textarea
+                id="ketQuaDuKien"
+                name="ketQuaDuKien"
+                placeholder=" "
+                value={form.ketQuaDuKien}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                rows={3}
+              />
+              <label
+                htmlFor="ketQuaDuKien"
+                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Kết quả dự kiến <span className="text-red-500">*</span>
+              </label>
+            </div>
+
+            {/* Lý do đề xuất */}
+            <div className="relative">
+              <textarea
+                id="lyDo"
+                name="lyDo"
+                placeholder=" "
+                value={form.lyDo}
+                onChange={handleChange}
+                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                required
+                rows={3}
+              />
+              <label
+                htmlFor="lyDo"
+                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Lý do đề xuất <span className="text-red-500">*</span>
+              </label>
             </div>
           </div>
 

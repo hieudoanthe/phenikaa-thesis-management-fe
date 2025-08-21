@@ -290,10 +290,10 @@ export const isTokenExpired = () => {
 };
 
 /**
- * Lấy TeacherId từ JWT token
- * @returns {string|null} - TeacherId hoặc null nếu không tìm thấy
+ * Lấy UserId từ JWT token (dùng cho cả teacher và student)
+ * @returns {string|null} - UserId hoặc null nếu không tìm thấy
  */
-export const getTeacherIdFromToken = () => {
+export const getUserIdFromToken = () => {
   try {
     const token = getToken();
     if (!token) return null;
@@ -304,20 +304,24 @@ export const getTeacherIdFromToken = () => {
     console.log("JWT Token payload:", payload);
 
     // Ưu tiên userId trước vì trong token có userId: 109
-    const teacherId =
-      payload.userId ||
-      payload.user_id ||
-      payload.teacherId ||
-      payload.teacher_id ||
-      payload.sub;
+    const userId = payload.userId || payload.user_id || payload.sub;
 
-    console.log("TeacherId được tìm thấy:", teacherId);
+    console.log("UserId được tìm thấy:", userId);
 
-    return teacherId ? String(teacherId) : null;
+    return userId ? String(userId) : null;
   } catch (error) {
-    console.error("Lỗi khi lấy TeacherId từ token:", error);
+    console.error("Lỗi khi lấy UserId từ token:", error);
     return null;
   }
+};
+
+/**
+ * Lấy TeacherId từ JWT token (giữ lại để tương thích ngược)
+ * @returns {string|null} - TeacherId hoặc null nếu không tìm thấy
+ */
+export const getTeacherIdFromToken = () => {
+  // Sử dụng getUserIdFromToken để lấy userId chung
+  return getUserIdFromToken();
 };
 
 /**

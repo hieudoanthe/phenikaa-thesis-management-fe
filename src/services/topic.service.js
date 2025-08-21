@@ -59,25 +59,25 @@ class TopicService {
   }
 
   /**
-   * Lấy danh sách topic theo TeacherId từ JWT token
+   * Lấy danh sách topic theo UserId từ JWT token (dành cho teacher)
    * @param {Object} params - Tham số tìm kiếm
    * @returns {Promise<Object>} - Danh sách topic của teacher
    */
   async getTopicListByTeacher(params = {}) {
     try {
-      // Lấy TeacherId từ JWT token
+      // Lấy UserId từ JWT token (getTeacherIdFromToken() thực chất trả về userId)
       const teacherId = getTeacherIdFromToken();
 
       if (!teacherId) {
-        console.error("Không thể lấy TeacherId từ token");
+        console.error("Không thể lấy UserId từ token");
         return {
           success: false,
-          error: "Không thể lấy TeacherId từ token",
+          error: "Không thể lấy UserId từ token",
           message: "Vui lòng đăng nhập lại để lấy danh sách đề tài",
         };
       }
 
-      // Tạo URL API với TeacherId
+      // Tạo URL API với UserId (được sử dụng làm teacherId)
       const apiUrl = API_ENDPOINTS.GET_TOPIC_LIST_PAGED.replace(
         "{teacherId}",
         teacherId

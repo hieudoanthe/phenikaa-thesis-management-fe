@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FaCamera,
   FaCheckCircle,
@@ -14,7 +14,7 @@ import {
 import Select from "react-select";
 import userService from "../../services/user.service";
 import useAuth from "../../hooks/useAuth";
-import { getToken } from "../../auth/authUtils";
+import { getUserIdFromToken, getToken } from "../../auth/authUtils";
 import { useProfileTeacher } from "../../contexts/ProfileTeacherContext";
 
 const TeacherProfile = () => {
@@ -40,21 +40,6 @@ const TeacherProfile = () => {
 
   // State cho avatar file
   const [avatarFile, setAvatarFile] = useState(null);
-
-  // Lấy userId từ access token
-  const getUserIdFromToken = () => {
-    try {
-      const token = getToken();
-      if (!token) return null;
-
-      // Decode JWT token để lấy userId
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.userId || payload.sub || null;
-    } catch (error) {
-      console.error("Lỗi khi decode token:", error);
-      return null;
-    }
-  };
 
   // Đồng bộ dữ liệu khi context thay đổi
   useEffect(() => {

@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import SidebarOfStudent from "./SidebarOfStudent.jsx";
-import { logout, getRefreshToken, getToken } from "../../../auth/authUtils";
+import {
+  logout,
+  getRefreshToken,
+  getToken,
+  getUserIdFromToken,
+} from "../../../auth/authUtils";
 import { useProfileStudent } from "../../../contexts/ProfileStudentContext";
 
 const StudentLayout = () => {
@@ -20,20 +25,8 @@ const StudentLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Lấy userId từ access token
-  const getUserIdFromToken = () => {
-    try {
-      const token = getToken();
-      if (!token) return null;
-
-      // Decode JWT token để lấy userId
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.userId || payload.sub || null;
-    } catch (error) {
-      console.error("Lỗi khi decode token:", error);
-      return null;
-    }
-  };
+  // Sử dụng hàm getUserIdFromToken từ authUtils
+  // const getUserIdFromToken = () => { ... } - Đã xóa, sử dụng từ authUtils
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {

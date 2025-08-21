@@ -5,8 +5,8 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+import { getToken, getUserIdFromToken } from "../auth/authUtils";
 import userService from "../services/user.service";
-import { getToken } from "../auth/authUtils";
 
 // Tạo context cho Teacher Profile
 const ProfileTeacherContext = createContext();
@@ -41,19 +41,8 @@ export const ProfileTeacherProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [hasInitialData, setHasInitialData] = useState(false);
 
-  // Lấy userId từ access token
-  const getUserIdFromToken = () => {
-    try {
-      const token = getToken();
-      if (!token) return null;
-
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.userId || payload.sub || null;
-    } catch (error) {
-      console.error("Lỗi khi decode token:", error);
-      return null;
-    }
-  };
+  // Sử dụng hàm getUserIdFromToken từ authUtils
+  // const getUserIdFromToken = () => { ... } - Đã xóa, sử dụng từ authUtils
 
   // Fetch profile data từ API - sử dụng useCallback để tránh re-create function
   const fetchProfileData = useCallback(
