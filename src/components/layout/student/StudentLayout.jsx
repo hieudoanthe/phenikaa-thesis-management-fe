@@ -427,18 +427,21 @@ const StudentLayout = () => {
               isRead: dataObj.read === true ? true : false,
             };
 
-            setNotifications((prev) => {
-              const updated = [newNotification, ...prev];
-              try {
-                window.__studentNotifications = updated;
-                window.dispatchEvent(
-                  new CustomEvent("app:student-notifications", {
-                    detail: updated,
-                  })
-                );
-              } catch (_) {}
-              return updated;
-            });
+            // Sử dụng setTimeout để tránh setState trong render
+            setTimeout(() => {
+              setNotifications((prev) => {
+                const updated = [newNotification, ...prev];
+                try {
+                  window.__studentNotifications = updated;
+                  window.dispatchEvent(
+                    new CustomEvent("app:student-notifications", {
+                      detail: updated,
+                    })
+                  );
+                } catch (_) {}
+                return updated;
+              });
+            }, 0);
 
             const now = Date.now();
             const inInitialBuffer =

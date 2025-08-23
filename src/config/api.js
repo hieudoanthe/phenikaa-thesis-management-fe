@@ -74,6 +74,10 @@ export const API_ENDPOINTS = {
 
 // WebSocket Endpoints
 export const WS_ENDPOINTS = {
-  // Thông báo theo receiverId (teacher hoặc student)
+
+  // Notification
   NOTIFICATIONS: "ws://localhost:8080/ws/notifications",
+  // Chat
+  CHAT: "ws://localhost:8080/ws/chat",
+  
 };
