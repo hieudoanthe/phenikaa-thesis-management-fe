@@ -86,6 +86,11 @@ const StudentLayout = () => {
           title: "Hồ sơ cá nhân",
           subtitle: "Quản lý thông tin cá nhân và tài khoản",
         };
+      case "/student/my-thesis":
+        return {
+          title: "Đề tài của tôi",
+          subtitle: "Theo dõi tiến độ và trạng thái đề tài luận văn",
+        };
       default:
         return {
           title: "Trang chủ",
@@ -786,6 +791,24 @@ const StudentLayout = () => {
                             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                           </svg>
                           Hồ sơ cá nhân
+                        </button>
+                        <button
+                          className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left"
+                          onClick={() => {
+                            navigate("/student/my-thesis");
+                            setIsUserDropdownOpen(false);
+                          }}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="text-gray-600"
+                          >
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                          </svg>
+                          Đề tài của tôi
                         </button>
                         <button className="w-full flex items-center gap-3 px-4 py-3 bg-none border-none text-gray-700 text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
                           <svg

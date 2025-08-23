@@ -56,6 +56,8 @@ export const API_ENDPOINTS = {
   GET_AVAILABLE_TOPIC_LIST: "/api/thesis-service/student/available-topics",
   REGISTER_TOPIC: "/api/thesis-service/student/register-topic",
   STUDENT_SUGGEST_TOPIC: "/api/thesis-service/student/suggest-topic",
+  GET_STUDENT_TOPIC:
+    "/api/thesis-service/student/get-suggest-topic-{studentId}/paged",
 
   // Student Profile
   GET_STUDENT_PROFILE: "/api/profile-service/student/get-profile/{userId}",
@@ -74,10 +76,8 @@ export const API_ENDPOINTS = {
 
 // WebSocket Endpoints
 export const WS_ENDPOINTS = {
-
   // Notification
   NOTIFICATIONS: "ws://localhost:8080/ws/notifications",
   // Chat
   CHAT: "ws://localhost:8080/ws/chat",
-  
 };

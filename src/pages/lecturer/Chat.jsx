@@ -30,6 +30,9 @@ const LecturerChat = () => {
   // Sử dụng useRef để lưu conversations và tránh bị reset khi component re-render
   const conversationsRef = useRef([]);
 
+  // Ref để tránh duplicate WebSocket messages
+  const processedMessagesRef = useRef(new Set());
+
   // Sync conversationsRef với conversations state
   useEffect(() => {
     conversationsRef.current = conversations;
@@ -101,6 +104,8 @@ const LecturerChat = () => {
       ) {
         wsConnectionRef.current.close();
       }
+      // Xóa tất cả processed messages
+      processedMessagesRef.current.clear();
     };
   }, []);
 
@@ -108,7 +113,26 @@ const LecturerChat = () => {
   const handleWebSocketMessage = (data) => {
     // API response format: { id, senderId, receiverId, content, timestamp }
     if (data.content && data.senderId) {
+      // Tạo unique key cho message để tránh duplicate
+      const messageKey = `${data.id || data.senderId}_${data.content}_${
+        data.timestamp
+      }`;
+
+      // Kiểm tra xem message đã được xử lý chưa
+      if (processedMessagesRef.current.has(messageKey)) {
+        return; // Bỏ qua nếu đã xử lý
+      }
+
+      // Đánh dấu message đã được xử lý
+      processedMessagesRef.current.add(messageKey);
+
+      // Xử lý message
       handleChatMessage(data);
+
+      // Xóa message key sau 10 giây để tránh memory leak
+      setTimeout(() => {
+        processedMessagesRef.current.delete(messageKey);
+      }, 10000);
     }
   };
 
@@ -158,6 +182,18 @@ const LecturerChat = () => {
       setConversations((prev) => {
         const updated = prev.map((conv) => {
           if (conv.studentId === senderId) {
+            // Kiểm tra duplicate message trước khi thêm
+            const isDuplicate = conv.messages.some(
+              (msg) =>
+                msg.id === newMessage.id ||
+                (msg.text === newMessage.text &&
+                  Math.abs(msg.time - newMessage.time) < 5000)
+            );
+
+            if (isDuplicate) {
+              return conv; // Không thay đổi nếu là duplicate
+            }
+
             const newMessages = [...conv.messages, newMessage];
 
             return {
@@ -202,6 +238,18 @@ const LecturerChat = () => {
         setConversations((prev) => {
           const updated = prev.map((conv) => {
             if (conv.studentId === senderId) {
+              // Kiểm tra duplicate message trước khi thêm
+              const isDuplicate = conv.messages.some(
+                (msg) =>
+                  msg.id === newMessage.id ||
+                  (msg.text === newMessage.text &&
+                    Math.abs(msg.time - newMessage.time) < 5000)
+              );
+
+              if (isDuplicate) {
+                return conv; // Không thay đổi nếu là duplicate
+              }
+
               return {
                 ...conv,
                 messages: [...conv.messages, newMessage],
@@ -234,17 +282,37 @@ const LecturerChat = () => {
         messages: [],
       };
 
-      // Thêm conversation mới vào đầu danh sách - sử dụng callback để tránh race condition
+      // Tạo tin nhắn đầu tiên
+      const newMessage = {
+        id: id || `msg_${Date.now()}_${Math.random()}`,
+        sender: `Sinh viên ${profile.fullName || profile.name || senderId}`,
+        time: timestamp ? new Date(timestamp).getTime() : Date.now(),
+        text: content,
+        mine: false,
+        read: false,
+        studentId: senderId,
+      };
+
+      // Thêm conversation mới VÀ tin nhắn đầu tiên trong 1 lần setConversations
       setConversations((prev) => {
         // Kiểm tra lần cuối để chắc chắn không có duplicate
         const alreadyExists = prev.find((conv) => conv.studentId === senderId);
         if (alreadyExists) {
           return prev; // Không thêm nếu đã tồn tại
         }
+
+        // Tạo conversation mới với tin nhắn đầu tiên
+        const conversationWithMessage = {
+          ...newConversation,
+          messages: [newMessage],
+          lastMessageAt: newMessage.time,
+        };
+
         // Cập nhật conversationsRef để đồng bộ
-        conversationsRef.current = [newConversation, ...prev];
-        return [newConversation, ...prev];
+        conversationsRef.current = [conversationWithMessage, ...prev];
+        return [conversationWithMessage, ...prev];
       });
+
       setActiveConvId(newConversation.id);
 
       // Cập nhật students state để cache thông tin
@@ -264,35 +332,6 @@ const LecturerChat = () => {
             )}&background=random`,
         },
       ]);
-
-      // Tạo tin nhắn đầu tiên
-      const newMessage = {
-        id: id || `msg_${Date.now()}_${Math.random()}`,
-        sender: `Sinh viên ${profile.fullName || profile.name || senderId}`,
-        time: timestamp ? new Date(timestamp).getTime() : Date.now(),
-        text: content,
-        mine: false,
-        read: false,
-        studentId: senderId,
-      };
-
-      // Cập nhật conversation với tin nhắn đầu tiên
-      setConversations((prev) => {
-        const updated = prev.map((conv) => {
-          if (conv.id === newConversation.id) {
-            return {
-              ...conv,
-              messages: [newMessage],
-              lastMessageAt: newMessage.time,
-            };
-          }
-          return conv;
-        });
-
-        // Cập nhật conversationsRef để đồng bộ
-        conversationsRef.current = updated;
-        return updated;
-      });
 
       return;
     } catch (error) {

@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import { WS_ENDPOINTS } from "../../config/api";
 import userService from "../../services/user.service";
@@ -22,6 +28,9 @@ const StudentChat = () => {
   const [wsConnection, setWsConnection] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
+
+  // Ref để tránh duplicate WebSocket messages
+  const processedMessagesRef = useRef(new Set());
 
   // Chọn giảng viên để chat
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -188,92 +197,129 @@ const StudentChat = () => {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
+      // Xóa tất cả processed messages
+      processedMessagesRef.current.clear();
     };
   }, [selectedTeacher]); // Dependency vào selectedTeacher
 
   // Xử lý message từ WebSocket
-  const handleWebSocketMessage = (data) => {
+  const handleWebSocketMessage = useCallback((data) => {
     // API response format: { id, senderId, receiverId, content, timestamp }
     // Không cần switch case nữa, tất cả message đều là chat message
     if (data.content && data.senderId) {
+      // Tạo unique key cho message để tránh duplicate
+      const messageKey = `${data.id || data.senderId}_${data.content}_${
+        data.timestamp
+      }`;
+
+      // Kiểm tra xem message đã được xử lý chưa
+      if (processedMessagesRef.current.has(messageKey)) {
+        return; // Bỏ qua nếu đã xử lý
+      }
+
+      // Đánh dấu message đã được xử lý
+      processedMessagesRef.current.add(messageKey);
+
+      // Xử lý message
       handleChatMessage(data);
+
+      // Xóa message key sau 10 giây để tránh memory leak
+      setTimeout(() => {
+        processedMessagesRef.current.delete(messageKey);
+      }, 10000);
     } else {
       console.log("Message không hợp lệ:", data);
     }
-  };
+  }, []);
 
   // Xử lý tin nhắn chat
-  const handleChatMessage = (data) => {
-    // API response format: { id, senderId, receiverId, content, timestamp }
-    const { id, senderId, receiverId, content, timestamp } = data;
-    const userId = getUserIdFromToken();
+  const handleChatMessage = useCallback(
+    (data) => {
+      // API response format: { id, senderId, receiverId, content, timestamp }
+      const { id, senderId, receiverId, content, timestamp } = data;
+      const userId = getUserIdFromToken();
 
-    // Kiểm tra xem tin nhắn này đã tồn tại chưa (tránh duplicate)
-    const existingMessage = conversations[0]?.messages?.find((msg) => {
-      // Kiểm tra theo ID
-      if (msg.id === id) return true;
+      // Kiểm tra xem tin nhắn này đã tồn tại chưa (tránh duplicate)
+      const existingMessage = conversations[0]?.messages?.find((msg) => {
+        // Kiểm tra theo ID
+        if (msg.id === id) return true;
 
-      // Kiểm tra theo nội dung và thời gian (tránh duplicate từ server)
-      if (
-        msg.text === content &&
-        Math.abs(msg.time - new Date(timestamp).getTime()) < 2000
-      )
-        return true;
+        // Kiểm tra theo nội dung và thời gian (tránh duplicate từ server)
+        if (
+          msg.text === content &&
+          Math.abs(msg.time - new Date(timestamp).getTime()) < 2000
+        )
+          return true;
 
-      // Kiểm tra tin nhắn local có cùng nội dung
-      if (msg.isLocal && msg.text === content) return true;
+        // Kiểm tra tin nhắn local có cùng nội dung
+        if (msg.isLocal && msg.text === content) return true;
 
-      return false;
-    });
+        return false;
+      });
 
-    if (existingMessage) {
-      console.log("Tin nhắn đã tồn tại, bỏ qua:", content);
-      return;
-    }
+      if (existingMessage) {
+        console.log("Tin nhắn đã tồn tại, bỏ qua:", content);
+        return;
+      }
 
-    // Chỉ hiển thị content, ẩn các thông tin kỹ thuật
-    const newMessage = {
-      id: id || `msg_${Date.now()}_${Math.random()}`,
-      sender: senderId === userId ? "You" : `User ${senderId}`, // Ẩn senderId thực tế
-      time: timestamp ? new Date(timestamp).getTime() : Date.now(),
-      text: content, // Sử dụng content thay vì message
-      mine: senderId === userId,
-      read: false,
-    };
+      // Chỉ hiển thị content, ẩn các thông tin kỹ thuật
+      const newMessage = {
+        id: id || `msg_${Date.now()}_${Math.random()}_${content.slice(0, 10)}`, // Unique ID với content
+        sender: senderId === userId ? "You" : `User ${senderId}`, // Ẩn senderId thực tế
+        time: timestamp ? new Date(timestamp).getTime() : Date.now(),
+        text: content, // Sử dụng content thay vì message
+        mine: senderId === userId,
+        read: false,
+      };
 
-    // Thêm tin nhắn vào conversation đầu tiên hoặc thay thế tin nhắn local
-    setConversations((prev) =>
-      prev.map((conv, index) => {
-        if (index === 0) {
-          // Tìm tin nhắn local có cùng nội dung để thay thế
-          const localMessageIndex = conv.messages.findIndex(
-            (msg) => msg.isLocal && msg.text === content
-          );
+      // Thêm tin nhắn vào conversation đầu tiên hoặc thay thế tin nhắn local
+      setConversations((prev) =>
+        prev.map((conv, index) => {
+          if (index === 0) {
+            // Tìm tin nhắn local có cùng nội dung để thay thế
+            const localMessageIndex = conv.messages.findIndex(
+              (msg) => msg.isLocal && msg.text === content
+            );
 
-          let newMessages;
-          if (localMessageIndex !== -1) {
-            // Thay thế tin nhắn local bằng tin nhắn từ server
-            newMessages = [...conv.messages];
-            newMessages[localMessageIndex] = {
-              ...newMessage,
-              isLocal: false, // Đánh dấu không còn là local
+            let newMessages;
+            if (localMessageIndex !== -1) {
+              // Thay thế tin nhắn local bằng tin nhắn từ server
+              newMessages = [...conv.messages];
+              newMessages[localMessageIndex] = {
+                ...newMessage,
+                isLocal: false, // Đánh dấu không còn là local
+              };
+            } else {
+              // Kiểm tra duplicate trước khi thêm tin nhắn mới
+              const isDuplicate = conv.messages.some(
+                (msg) =>
+                  msg.id === newMessage.id ||
+                  (msg.text === newMessage.text &&
+                    Math.abs(msg.time - newMessage.time) < 5000)
+              );
+
+              if (!isDuplicate) {
+                // Thêm tin nhắn mới nếu không duplicate
+                newMessages = [...conv.messages, newMessage];
+              } else {
+                // Giữ nguyên messages nếu là duplicate
+                newMessages = conv.messages;
+              }
+            }
+
+            return {
+              ...conv,
+              messages: newMessages,
+              lastMessageAt: newMessage.time,
+              unread: conv.unread + (newMessage.mine ? 0 : 1),
             };
-          } else {
-            // Thêm tin nhắn mới
-            newMessages = [...conv.messages, newMessage];
           }
-
-          return {
-            ...conv,
-            messages: newMessages,
-            lastMessageAt: newMessage.time,
-            unread: conv.unread + (newMessage.mine ? 0 : 1),
-          };
-        }
-        return conv;
-      })
-    );
-  };
+          return conv;
+        })
+      );
+    },
+    [conversations]
+  );
 
   // Xử lý user join topic
   const handleUserJoined = (data) => {
@@ -392,7 +438,7 @@ const StudentChat = () => {
     } catch (_) {}
   }, [activeConvId, activeConv?.messages?.length]);
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     const text = messageInput.trim();
     if (!text || !activeConv || !isConnected || !selectedTeacher) return;
 
@@ -475,7 +521,7 @@ const StudentChat = () => {
         )
       );
     }
-  };
+  }, [messageInput, activeConv, isConnected, selectedTeacher, wsConnection]);
 
   return (
     <>
