@@ -555,7 +555,7 @@ const StudentLayout = () => {
 
   return (
     <>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-screen bg-gray-50">
         {/* Sidebar */}
         <div
           className={`fixed h-screen z-50 transition-all duration-500 ease-in-out ${
@@ -860,7 +860,11 @@ const StudentLayout = () => {
 
           {/* Main content */}
           <main className="flex-1 bg-gray-50 text-secondary overflow-auto">
-            <div className="px-6 py-6">
+            <div
+              className={`px-6 ${
+                location.pathname === "/student/my-thesis" ? "py-2" : "py-6"
+              }`}
+            >
               <Outlet />
             </div>
           </main>

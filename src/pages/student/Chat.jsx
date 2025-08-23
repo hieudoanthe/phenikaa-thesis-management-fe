@@ -5,12 +5,15 @@ import React, {
   useState,
   useCallback,
 } from "react";
+import { useLocation } from "react-router-dom";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import { WS_ENDPOINTS } from "../../config/api";
 import userService from "../../services/user.service";
 
 // Trang Chat của Sinh viên - giao diện giống Slack/Teams, học thuật
 const StudentChat = () => {
+  const location = useLocation();
+
   // CSS reset để đảm bảo không có margin/padding không mong muốn
   useEffect(() => {
     // Không cần reset body nữa vì sẽ hiển thị trong layout
@@ -68,6 +71,17 @@ const StudentChat = () => {
 
           setTeachers(formattedTeachers);
           console.log("Danh sách giảng viên:", formattedTeachers);
+
+          // Tự động chọn giảng viên từ URL parameters nếu có
+          const urlParams = new URLSearchParams(location.search);
+          const teacherId = urlParams.get("teacherId");
+          if (teacherId) {
+            const teacher = formattedTeachers.find((t) => t.id == teacherId);
+            if (teacher) {
+              console.log("Tự động chọn giảng viên từ URL:", teacher);
+              setSelectedTeacher(teacher);
+            }
+          }
         } else {
           console.error("API không trả về array:", response);
           setErrorTeachers("API không trả về dữ liệu hợp lệ");
@@ -83,7 +97,7 @@ const StudentChat = () => {
     };
 
     loadTeachers();
-  }, []);
+  }, [location.search]); // Thêm location.search vào dependencies
 
   // Khởi tạo WebSocket chat và conversations
   useEffect(() => {

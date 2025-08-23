@@ -474,13 +474,6 @@ const ThesisRegister = () => {
               "Gửi đề xuất"
             )}
           </button>
-
-          {/* Success Message */}
-          {success && (
-            <div className="text-green-800 bg-green-100 rounded-lg py-3 text-center font-semibold mt-3 text-sm">
-              Đề xuất đề tài thành công!
-            </div>
-          )}
         </div>
 
         {/* Lecturer Preview Card */}

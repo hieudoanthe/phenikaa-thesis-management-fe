@@ -1,17 +1,34 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getUserIdFromToken } from "../../auth/authUtils";
-import { API_ENDPOINTS } from "../../config/api";
-import { apiGet } from "../../services/mainHttpClient";
+import {
+  getStudentSuggestedTopics,
+  getAllTeachers,
+} from "../../services/suggest.service";
+import userService from "../../services/user.service";
 
 /**
  * Trang theo dõi trạng thái đề tài của sinh viên
  * Hiển thị thông tin chi tiết về đề tài đã đăng ký và trạng thái xử lý
  */
 const MyThesis = () => {
-  const [thesisData, setThesisData] = useState(null);
+  const navigate = useNavigate();
+  const [thesisList, setThesisList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [pageSize] = useState(6);
+  const [isChangingPage, setIsChangingPage] = useState(false);
+  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [selectedThesis, setSelectedThesis] = useState(null);
+  const [suggestedByProfiles, setSuggestedByProfiles] = useState({});
+  const [suggestedForProfiles, setSuggestedForProfiles] = useState({});
+  const [teacherProfiles, setTeacherProfiles] = useState({});
 
   // Hàm lấy trạng thái hiển thị
   const getStatusDisplay = (status) => {
@@ -32,15 +49,16 @@ const MyThesis = () => {
 
   // Hàm lấy màu trạng thái
   const getStatusColor = (status) => {
-    const colorMap = {
-      PENDING: "bg-yellow-100 text-yellow-800",
-      APPROVED: "bg-blue-100 text-blue-800",
-      REJECTED: "bg-red-100 text-red-800",
-      IN_PROGRESS: "bg-green-100 text-green-800",
-      COMPLETED: "bg-purple-100 text-purple-800",
-      DEFENDED: "bg-indigo-100 text-indigo-800",
-    };
-    return colorMap[status] || "bg-gray-100 text-gray-800";
+    switch (status) {
+      case "APPROVED":
+        return "bg-emerald-500 text-white"; // Màu emerald-500 cho đã duyệt
+      case "PENDING":
+        return "bg-yellow-500 text-white";
+      case "REJECTED":
+        return "bg-red-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
   };
 
   // Hàm tính phần trăm tiến độ
@@ -78,11 +96,110 @@ const MyThesis = () => {
     }
   };
 
+  // Hàm chuyển trang
+  const handlePageChange = (page) => {
+    setIsChangingPage(true);
+    setCurrentPage(page);
+    setSelectedThesis(null); // Reset đề tài được chọn khi chuyển trang
+    setSuggestedByProfiles({}); // Reset profiles khi chuyển trang
+    setSuggestedForProfiles({}); // Reset profiles khi chuyển trang
+    setTeacherProfiles({}); // Reset teacher profiles khi chuyển trang
+
+    // Chỉ hiển thị spinner sau 300ms để tránh nháy khó chịu
+    const timeout = setTimeout(() => {
+      setShowLoadingSpinner(true);
+    }, 300);
+
+    setLoadingTimeout(timeout);
+  };
+
+  // Hàm chọn đề tài để xem chi tiết
+  const handleThesisSelect = (thesis) => {
+    setSelectedThesis(thesis);
+  };
+
+  // Hàm mở chat với giảng viên
+  const handleOpenChat = (teacherId) => {
+    // Chuyển hướng đến trang chat với giảng viên
+    navigate(`/student/chat?teacherId=${teacherId}`);
+  };
+
+  // Hàm lấy profile của người đề xuất và người được đề xuất
+  const fetchProfiles = async (thesisList) => {
+    try {
+      const suggestedByIds = [...new Set(thesisList.map((t) => t.suggestedBy))];
+      const suggestedForIds = [
+        ...new Set(thesisList.map((t) => t.suggestedFor)),
+      ];
+
+      // Lấy profile của người đề xuất (sinh viên)
+      const suggestedByProfilesData = {};
+      for (const id of suggestedByIds) {
+        try {
+          const profile = await userService.getStudentProfileById(id);
+          if (profile && profile.fullName) {
+            suggestedByProfilesData[id] = profile.fullName;
+          }
+        } catch (error) {
+          console.error(`Lỗi khi lấy profile của người đề xuất ${id}:`, error);
+          suggestedByProfilesData[id] = `ID: ${id}`;
+        }
+      }
+      setSuggestedByProfiles(suggestedByProfilesData);
+
+      // Lấy danh sách tất cả giảng viên trước
+      try {
+        console.log("Đang lấy danh sách tất cả giảng viên...");
+        const allTeachers = await getAllTeachers();
+        console.log("Danh sách tất cả giảng viên:", allTeachers);
+
+        // Tạo map từ ID sang fullName
+        const teacherMap = {};
+        if (allTeachers && Array.isArray(allTeachers)) {
+          allTeachers.forEach((teacher) => {
+            if (teacher.userId && teacher.fullName) {
+              teacherMap[teacher.userId] = teacher.fullName;
+            }
+          });
+        }
+        console.log("Map giảng viên ID -> fullName:", teacherMap);
+
+        // Lấy profile của người được đề xuất (giảng viên) từ map
+        const suggestedForProfilesData = {};
+        for (const id of suggestedForIds) {
+          if (teacherMap[id]) {
+            suggestedForProfilesData[id] = teacherMap[id];
+          } else {
+            console.log(`Không tìm thấy giảng viên với ID: ${id}`);
+            suggestedForProfilesData[id] = `ID: ${id}`;
+          }
+        }
+        console.log(
+          "Tất cả profiles của giảng viên:",
+          suggestedForProfilesData
+        );
+        setSuggestedForProfiles(suggestedForProfilesData);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách giảng viên:", error);
+        // Fallback: sử dụng cách cũ
+        const suggestedForProfilesData = {};
+        for (const id of suggestedForIds) {
+          suggestedForProfilesData[id] = `ID: ${id}`;
+        }
+        setSuggestedForProfiles(suggestedForProfilesData);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy profiles:", error);
+    }
+  };
+
   // Lấy thông tin đề tài của sinh viên
   useEffect(() => {
     const fetchThesisData = async () => {
       try {
-        setLoading(true);
+        if (isInitialLoad) {
+          setLoading(true);
+        }
         setError("");
 
         const userId = getUserIdFromToken();
@@ -90,15 +207,17 @@ const MyThesis = () => {
           throw new Error("Không thể xác định người dùng");
         }
 
-        // Sử dụng API mới để lấy thông tin đề tài của sinh viên
-        const endpoint = API_ENDPOINTS.GET_STUDENT_TOPIC.replace(
-          "{studentId}",
-          userId
+        // Sử dụng API mới để lấy thông tin đề tài của sinh viên với phân trang
+        const response = await getStudentSuggestedTopics(
+          userId,
+          currentPage,
+          pageSize
         );
-        const response = await apiGet(endpoint);
 
         // Debug: Log response để kiểm tra cấu trúc
         console.log("API Response:", response);
+        console.log("Current Page:", currentPage);
+        console.log("Page Size:", pageSize);
 
         // API trả về dữ liệu trực tiếp thông qua apiGet
         if (response) {
@@ -107,45 +226,24 @@ const MyThesis = () => {
           // Debug: Log data để kiểm tra cấu trúc
           console.log("Data content:", data?.content);
           console.log("Content length:", data?.content?.length);
+          console.log("Total pages:", data?.totalPages);
+          console.log("Total elements:", data?.totalElements);
 
           if (data && data.content && data.content.length > 0) {
-            // Lấy đề tài đầu tiên (mới nhất theo createdAt)
-            const studentTopic = data.content[0];
+            // Cập nhật danh sách đề tài và thông tin phân trang
+            setThesisList(data.content);
+            setTotalPages(data.totalPages || 0);
+            setTotalElements(data.totalElements || 0);
+            setCurrentPage(data.number || currentPage);
 
-            // Debug: Log studentTopic để kiểm tra
-            console.log("Student Topic:", studentTopic);
-            console.log("Topic ID:", studentTopic?.topicId);
-            console.log("Suggestion Status:", studentTopic?.suggestionStatus);
-
-            // Kiểm tra xem có phải là đề tài đã được đề xuất không
-            if (studentTopic.topicId && studentTopic.suggestionStatus) {
-              // Kết hợp thông tin đề tài và trạng thái
-              const thesisInfo = {
-                ...studentTopic,
-                // Sử dụng suggestionStatus thay vì status
-                status: getStatusDisplay(studentTopic.suggestionStatus),
-                statusColor: getStatusColor(studentTopic.suggestionStatus),
-                progress: getProgressPercentage(studentTopic.suggestionStatus),
-                // Sử dụng createdAt làm ngày đăng ký
-                registrationDate: studentTopic.createdAt,
-                // Các thông tin khác sẽ được lấy từ API đề tài nếu cần
-                topicId: studentTopic.topicId,
-                suggestedId: studentTopic.suggestedId,
-                suggestedBy: studentTopic.suggestedBy,
-                approvedBy: studentTopic.approvedBy,
-              };
-
-              console.log("Setting thesis data:", thesisInfo);
-              setThesisData(thesisInfo);
-            } else {
-              // Chưa đề xuất đề tài nào
-              console.log("Không có topicId hoặc suggestionStatus");
-              setThesisData(null);
-            }
+            // Lấy profile của người đề xuất và người được đề xuất
+            await fetchProfiles(data.content);
           } else {
             // Chưa đề xuất đề tài nào
             console.log("Không có content hoặc content rỗng");
-            setThesisData(null);
+            setThesisList([]);
+            setTotalPages(0);
+            setTotalElements(0);
           }
         } else {
           throw new Error("Không có dữ liệu từ API");
@@ -167,12 +265,32 @@ const MyThesis = () => {
         }
         setError(errorMessage);
       } finally {
-        setLoading(false);
+        if (isInitialLoad) {
+          setLoading(false);
+          setIsInitialLoad(false);
+        }
+        setIsChangingPage(false);
+        setShowLoadingSpinner(false);
+
+        // Clear timeout nếu có
+        if (loadingTimeout) {
+          clearTimeout(loadingTimeout);
+          setLoadingTimeout(null);
+        }
       }
     };
 
     fetchThesisData();
-  }, [refreshKey]);
+  }, [refreshKey, currentPage, pageSize]);
+
+  // Cleanup timeout khi component unmount
+  useEffect(() => {
+    return () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+    };
+  }, [loadingTimeout]);
 
   if (loading) {
     return (
@@ -209,7 +327,7 @@ const MyThesis = () => {
     );
   }
 
-  if (!thesisData) {
+  if (!thesisList || thesisList.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto p-6">
@@ -254,26 +372,18 @@ const MyThesis = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Đề tài đã đề xuất
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Theo dõi tiến độ và trạng thái đề tài đã đề xuất
-              </p>
-            </div>
+    <div className="h-full bg-gray-50 overflow-hidden">
+      <div className="max-w-full mx-auto p-2 h-full flex flex-col">
+        {/* Header - Giảm margin và padding */}
+        <div className="mb-2">
+          <div className="flex items-center justify-end mb-2">
             <button
               onClick={handleRefresh}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-2"
+              className="px-2 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200 flex items-center gap-1 text-xs"
             >
               <svg
-                width="16"
-                height="16"
+                width="14"
+                height="14"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
@@ -282,229 +392,398 @@ const MyThesis = () => {
               Làm mới
             </button>
           </div>
-
-          {/* Progress Bar */}
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Tiến độ thực hiện
-              </h3>
-              <span className="text-sm font-medium text-gray-600">
-                {thesisData.progress}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-secondary h-3 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${thesisData.progress}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
-              <span>Đề xuất</span>
-              <span>Xem xét</span>
-              <span>Duyệt</span>
-              <span>Thực hiện</span>
-              <span>Hoàn thành</span>
-            </div>
-          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Thông tin đề tài */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Thông tin đề tài
-                </h2>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${thesisData.statusColor}`}
+        {/* Main Content - Grid Layout */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden">
+          {/* Thông tin đề tài - Bên trái */}
+          <div className="lg:col-span-1 bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Thông tin đề tài
+            </h3>
+
+            {selectedThesis ? (
+              // Hiển thị thông tin chi tiết của đề tài được chọn
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-900 mb-2">
+                    Đề tài {selectedThesis.topicId}
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-blue-700 mb-1">
+                        Trạng thái:
+                      </label>
+                      <span
+                        className={`inline-block px-3 py-1.5 rounded-lg text-sm font-medium ${getStatusColor(
+                          selectedThesis.suggestionStatus
+                        )}`}
+                      >
+                        {getStatusDisplay(selectedThesis.suggestionStatus)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-blue-700 mb-1">
+                        Sinh viên đề xuất:
+                      </label>
+                      <p className="font-medium text-blue-900">
+                        {suggestedByProfiles[selectedThesis.suggestedBy] ||
+                          `ID: ${selectedThesis.suggestedBy}`}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-blue-700 mb-1">
+                        Giảng viên được đề xuất:
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-blue-900">
+                          {(() => {
+                            const name =
+                              suggestedForProfiles[selectedThesis.suggestedFor];
+                            console.log(
+                              `Hiển thị người được đề xuất chi tiết cho thesis ${selectedThesis.suggestedFor}:`,
+                              name
+                            );
+                            return name || `ID: ${selectedThesis.suggestedFor}`;
+                          })()}
+                        </p>
+                        <button
+                          onClick={() =>
+                            handleOpenChat(selectedThesis.suggestedFor)
+                          }
+                          className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                          title="Chat với giảng viên"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-blue-700 mb-1">
+                        Ngày đề xuất:
+                      </label>
+                      <p className="font-medium text-blue-900">
+                        {formatDate(selectedThesis.createdAt)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-blue-700 mb-1">
+                        Tiến độ thực hiện:
+                      </label>
+                      <div className="w-full bg-blue-200 rounded-lg h-2 mb-2">
+                        <div
+                          className="bg-orange-600 h-2 rounded-lg transition-all duration-500 ease-out"
+                          style={{
+                            width: `${getProgressPercentage(
+                              selectedThesis.suggestionStatus
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-blue-700">
+                        {getProgressPercentage(selectedThesis.suggestionStatus)}
+                        %
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSelectedThesis(null)}
+                  className="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  {thesisData.status}
-                </span>
+                  Xem tất cả đề tài
+                </button>
               </div>
-
+            ) : (
+              // Hiển thị thông tin tổng quan
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ID Đề tài
-                  </label>
-                  <p className="text-gray-900 font-medium">
-                    {thesisData.topicId || "Chưa cập nhật"}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ID Đề xuất
-                  </label>
-                  <p className="text-gray-900">
-                    {thesisData.suggestedId || "Chưa cập nhật"}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Người đề xuất
-                    </label>
-                    <p className="text-gray-900">
-                      {thesisData.suggestedBy || "Chưa cập nhật"}
-                    </p>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-600 mb-2">
+                    {totalElements}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Người duyệt
-                    </label>
-                    <p className="text-gray-900">
-                      {thesisData.approvedBy || "Chưa phân công"}
-                    </p>
-                  </div>
+                  <p className="text-sm text-gray-600">Đề tài đã đề xuất</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Trạng thái đề xuất
-                    </label>
-                    <p className="text-gray-900 font-medium">
-                      {thesisData.status || "Chưa cập nhật"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tiến độ
-                    </label>
-                    <p className="text-gray-900">{thesisData.progress || 0}%</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Thông tin đăng ký và timeline */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Thông tin đăng ký
-              </h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ngày đề xuất
-                  </label>
-                  <p className="text-gray-900">
-                    {formatDate(thesisData.createdAt)}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Trạng thái
-                  </label>
-                  <p className="text-gray-900">{thesisData.status}</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Người duyệt
-                  </label>
-                  <p className="text-gray-900">
-                    {thesisData.approvedBy || "Chưa có người duyệt"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">
-                  Quy trình đề xuất
-                </h4>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600">
-                      Đề xuất đề tài
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Đã duyệt:</span>
+                    <span className="font-medium text-green-600">
+                      {
+                        thesisList.filter(
+                          (t) => t.suggestionStatus === "APPROVED"
+                        ).length
+                      }
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        thesisData.progress >= 30
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <span className="text-sm text-gray-600">Xem xét</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Chờ duyệt:</span>
+                    <span className="font-medium text-yellow-600">
+                      {
+                        thesisList.filter(
+                          (t) => t.suggestionStatus === "PENDING"
+                        ).length
+                      }
+                    </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        thesisData.progress >= 50
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <span className="text-sm text-gray-600">Duyệt</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        thesisData.progress >= 70
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <span className="text-sm text-gray-600">Thực hiện</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        thesisData.progress >= 100
-                          ? "bg-green-500"
-                          : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <span className="text-sm text-gray-600">Hoàn thành</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Từ chối:</span>
+                    <span className="font-medium text-red-600">
+                      {
+                        thesisList.filter(
+                          (t) => t.suggestionStatus === "REJECTED"
+                        ).length
+                      }
+                    </span>
                   </div>
                 </div>
+
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 text-center">
+                    Click vào đề tài để xem chi tiết
+                  </p>
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Danh sách đề tài - 3 cột */}
+          <div className="lg:col-span-3 flex flex-col">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Danh sách đề tài đã đề xuất ({totalElements})
+                  {totalPages > 1 && (
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                      - Trang {currentPage + 1}/{totalPages}
+                    </span>
+                  )}
+                </h3>
+              </div>
+
+              {/* Loading khi chuyển trang - Chỉ hiển thị spinner khi thực sự cần */}
+              {isChangingPage && showLoadingSpinner ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-3"></div>
+                    <p className="text-sm text-gray-600">
+                      Đang tải trang mới...
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Grid đề tài - Tăng height và padding */
+                <div className="flex-1 overflow-y-auto mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {thesisList.map((thesis, index) => (
+                      <div
+                        key={thesis.suggestedId}
+                        className="border border-gray-200 rounded-lg p-4 transition-all duration-200 bg-white min-h-[180px] cursor-pointer hover:shadow-md hover:border-orange-600"
+                        onClick={() => handleThesisSelect(thesis)}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-500">
+                              #{index + 1}
+                            </span>
+                            <span className="text-base font-semibold text-gray-900">
+                              Đề tài {thesis.topicId}
+                            </span>
+                          </div>
+                          <span
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${getStatusColor(
+                              thesis.suggestionStatus
+                            )}`}
+                          >
+                            {getStatusDisplay(thesis.suggestionStatus)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-2.5 text-sm">
+                          <div>
+                            <label className="block text-gray-600 mb-1.5">
+                              Sinh viên đề xuất:
+                            </label>
+                            <p className="font-medium">
+                              {suggestedByProfiles[thesis.suggestedBy] ||
+                                `ID: ${thesis.suggestedBy}`}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-gray-600 mb-1.5">
+                              Giảng viên được đề xuất:
+                            </label>
+                            <p className="font-medium">
+                              {(() => {
+                                const name =
+                                  suggestedForProfiles[thesis.suggestedFor];
+                                console.log(
+                                  `Hiển thị người được đề xuất cho thesis ${thesis.suggestedFor}:`,
+                                  name
+                                );
+                                return name || `ID: ${thesis.suggestedFor}`;
+                              })()}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-gray-600 mb-1.5">
+                              Ngày đề xuất:
+                            </label>
+                            <p className="font-medium">
+                              {formatDate(thesis.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600">
+                              Tiến độ:
+                            </span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {getProgressPercentage(thesis.suggestionStatus)}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-lg h-2">
+                            <div
+                              className="bg-orange-600 h-2 rounded-lg transition-all duration-500 ease-out"
+                              style={{
+                                width: `${getProgressPercentage(
+                                  thesis.suggestionStatus
+                                )}%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Phân trang - Tăng font size */}
+              {totalPages > 1 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      Hiển thị{" "}
+                      {thesisList.length > 0 ? currentPage * pageSize + 1 : 0}{" "}
+                      đến{" "}
+                      {Math.min(
+                        currentPage * pageSize + pageSize,
+                        totalElements
+                      )}{" "}
+                      trong tổng số {totalElements} đề tài
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 0}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                      >
+                        Trước
+                      </button>
+
+                      {/* Logic phân trang thông minh */}
+                      {(() => {
+                        const pages = [];
+
+                        if (totalPages <= 7) {
+                          // Nếu ít hơn 7 trang, hiển thị tất cả
+                          for (let i = 0; i < totalPages; i++) {
+                            pages.push(i);
+                          }
+                        } else {
+                          // Nếu nhiều hơn 7 trang, hiển thị thông minh
+                          if (currentPage < 4) {
+                            // Trang đầu: 1 2 3 4 5 ... last
+                            for (let i = 0; i < 5; i++) {
+                              pages.push(i);
+                            }
+                            pages.push("...");
+                            pages.push(totalPages - 1);
+                          } else if (currentPage > totalPages - 4) {
+                            // Trang cuối: 0 ... last-4 last-3 last-2 last-1 last
+                            pages.push(0);
+                            pages.push("...");
+                            for (let i = totalPages - 5; i < totalPages; i++) {
+                              pages.push(i);
+                            }
+                          } else {
+                            // Trang giữa: 0 ... current-1 current current+1 ... last
+                            pages.push(0);
+                            pages.push("...");
+                            for (
+                              let i = currentPage - 1;
+                              i <= currentPage + 1;
+                              i++
+                            ) {
+                              pages.push(i);
+                            }
+                            pages.push("...");
+                            pages.push(totalPages - 1);
+                          }
+                        }
+
+                        return pages.map((page, index) => {
+                          if (page === "...") {
+                            return (
+                              <span
+                                key={`ellipsis-${index}`}
+                                className="px-3 py-2 text-sm text-gray-400"
+                              >
+                                ...
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => handlePageChange(page)}
+                              className={`px-3 py-2 text-sm font-medium rounded ${
+                                currentPage === page
+                                  ? "bg-secondary text-white"
+                                  : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              {page + 1}
+                            </button>
+                          );
+                        });
+                      })()}
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages - 1}
+                        className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                      >
+                        Sau
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Actions */}
-        {thesisData && (
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Hành động
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => (window.location.href = "/student/chat")}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                Chat với giảng viên
-              </button>
-              <button
-                onClick={() => (window.location.href = "/student/profile")}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-              >
-                Cập nhật hồ sơ
-              </button>
-              <button
-                onClick={() =>
-                  (window.location.href = "/student/notifications")
-                }
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-              >
-                Xem thông báo
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

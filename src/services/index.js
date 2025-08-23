@@ -5,7 +5,11 @@ export { default as userService } from "./user.service";
 export { default as topicService } from "./topic.service";
 export { default as registrationService } from "./registration.service";
 export { default as notificationService } from "./notification.service";
-export { suggestTopicForStudent } from "./suggest.service";
+export {
+  suggestTopicForStudent,
+  getStudentSuggestedTopics,
+  getAllTeachers,
+} from "./suggest.service";
 
 // Export HTTP clients
 export { default as mainHttpClient } from "./mainHttpClient";
