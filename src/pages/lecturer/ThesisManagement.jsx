@@ -42,7 +42,7 @@ const ThesisManagement = () => {
 
   // Load danh sách topics và academic years khi component mount
   useEffect(() => {
-    loadTopics();
+    loadTopics(0); // Gọi API với trang đầu tiên
     loadAcademicYears();
   }, []);
 
@@ -107,15 +107,19 @@ const ThesisManagement = () => {
   };
 
   // Hàm load danh sách topics từ API
-  const loadTopics = async () => {
+  const loadTopics = async (page = currentPage) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Sử dụng API mới với TeacherId từ JWT token
-      const response = await topicService.getTopicListByTeacher({
-        params: { page: 0, size: 1000 },
-      });
+      // Tạo params cho API call
+      const apiParams = {
+        page: page,
+        size: pageSize, // Sử dụng pageSize = 6 thay vì 1000
+      };
+
+      // Sử dụng API mới với TeacherId từ JWT token và server-side pagination
+      const response = await topicService.getTopicListByTeacher(apiParams);
 
       if (response.success) {
         // Đảm bảo response.data là array
@@ -130,7 +134,6 @@ const ThesisManagement = () => {
           // Nếu API trả về dạng nested { data: [...] }
           topicsData = response.data.data;
         } else {
-          console.warn("Response.data không phải array, sử dụng array rỗng");
           topicsData = [];
         }
 
@@ -149,7 +152,6 @@ const ThesisManagement = () => {
         // Load thông tin profile của người đề xuất
         await loadSuggestedByProfiles(topicsData);
       } else {
-        console.error("API trả về success: false:", response.message);
         setError(response.message || "Không thể tải danh sách đề tài");
         setTopics([]);
         setTotalElements(0);
@@ -184,6 +186,24 @@ const ThesisManagement = () => {
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách năm học:", error);
+    }
+  };
+
+  /**
+   * Xử lý thay đổi trang - gọi API để lấy dữ liệu mới
+   */
+  const handlePageChange = async (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      // Sử dụng biến local để đảm bảo giá trị chính xác
+      const targetPage = newPage;
+
+      // Cập nhật currentPage trước
+      setCurrentPage(targetPage);
+
+      // Gọi API để lấy dữ liệu trang mới
+      await loadTopics(targetPage);
+    } else {
+      console.warn("Trang không hợp lệ:", newPage);
     }
   };
 
@@ -407,15 +427,14 @@ const ThesisManagement = () => {
     return matchesSearch && matchesYear && matchesApprovalStatus;
   });
 
-  // Áp dụng phân trang client-side
-  const paginatedTopics = filteredTopics.slice(
-    currentPage * pageSize,
-    (currentPage + 1) * pageSize
-  );
+  // Áp dụng phân trang server-side - không cần slice nữa
+  const paginatedTopics = filteredTopics; // Sử dụng dữ liệu trực tiếp từ API
 
   // Reset về trang đầu tiên khi filter thay đổi
   useEffect(() => {
     setCurrentPage(0);
+    // Gọi API để lấy dữ liệu trang đầu tiên khi filter thay đổi
+    loadTopics(0);
   }, [selectedYear, selectedApprovalStatus, searchTerm]);
 
   // Debug khi suggestedByProfiles thay đổi (loại bỏ log không cần thiết)
@@ -522,8 +541,6 @@ const ThesisManagement = () => {
     const limit = window.innerWidth < 640 ? 30 : 50;
     return title.length > limit ? title.substring(0, limit) + "..." : title;
   };
-
-  // Bỏ các log debug không cần thiết
 
   // Hiển thị loading
   if (loading && (!Array.isArray(topics) || topics.length === 0)) {
@@ -1263,7 +1280,7 @@ const ThesisManagement = () => {
           <div className="text-sm text-gray-700">
             Hiển thị{" "}
             {filteredTopics.length > 0 ? currentPage * pageSize + 1 : 0} đến{" "}
-            {Math.min(currentPage * pageSize + pageSize, totalElements)} trên{" "}
+            {currentPage * pageSize + filteredTopics.length} trên{" "}
             {totalElements} bản ghi — Trang {currentPage + 1}/
             {Math.ceil(totalElements / pageSize)}
           </div>
@@ -1274,9 +1291,7 @@ const ThesisManagement = () => {
               <button
                 className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 disabled={currentPage === 0}
-                onClick={() =>
-                  currentPage > 0 && setCurrentPage(currentPage - 1)
-                }
+                onClick={() => handlePageChange(currentPage - 1)}
               >
                 <svg
                   width="16"
@@ -1298,7 +1313,7 @@ const ThesisManagement = () => {
                 disabled={
                   currentPage + 1 >= Math.ceil(totalElements / pageSize)
                 }
-                onClick={() => setCurrentPage(currentPage + 1)}
+                onClick={() => handlePageChange(currentPage + 1)}
               >
                 <svg
                   width="16"

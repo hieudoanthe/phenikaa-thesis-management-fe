@@ -28,7 +28,7 @@ const SidebarOfStudent = ({
       tooltip: "Trang chủ",
     },
     {
-      path: "/student/topic",
+      path: "/student/topic-registration",
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
@@ -36,16 +36,6 @@ const SidebarOfStudent = ({
       ),
       text: "Đề tài",
       tooltip: "Đề tài",
-    },
-    {
-      path: "/student/topic-registration",
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-        </svg>
-      ),
-      text: "Đăng ký đề tài",
-      tooltip: "Đăng ký đề tài",
     },
     {
       path: "/student/my-thesis",

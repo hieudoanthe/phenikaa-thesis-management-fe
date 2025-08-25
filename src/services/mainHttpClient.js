@@ -81,12 +81,14 @@ export const mainApiRequest = async (
   config = {}
 ) => {
   try {
-    const response = await mainHttpClient.request({
+    const finalConfig = {
       method,
       url: endpoint,
       data,
       ...config,
-    });
+    };
+
+    const response = await mainHttpClient.request(finalConfig);
     return response.data;
   } catch (error) {
     throw handleApiError(error);

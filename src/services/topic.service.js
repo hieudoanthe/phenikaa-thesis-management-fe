@@ -10,12 +10,7 @@ class TopicService {
    */
   async createTopic(topicData) {
     try {
-      console.log("Đang gọi API createTopic với dữ liệu:", topicData);
-      console.log("API URL:", API_ENDPOINTS.CREATE_TOPIC);
-
       const response = await apiPost(API_ENDPOINTS.CREATE_TOPIC, topicData);
-
-      console.log("API createTopic response:", response);
 
       return {
         success: true,
@@ -83,14 +78,13 @@ class TopicService {
         teacherId
       );
 
-      console.log("API URL gốc:", API_ENDPOINTS.GET_TOPIC_LIST_PAGED);
-      console.log("API URL sau khi thay thế:", apiUrl);
-      console.log("Params:", params);
+      // Đảm bảo tham số được truyền đúng cách vào query string
+      const config = {
+        params: params,
+      };
 
       // Sử dụng API mới với TeacherId
-      const response = await apiGet(apiUrl, params);
-
-      console.log("API getTopicListByTeacher response:", response);
+      const response = await apiGet(apiUrl, config);
 
       return {
         success: true,
@@ -231,6 +225,109 @@ class TopicService {
         success: false,
         error: error.message,
         message: "Từ chối đề tài thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy danh sách đề tài đã được approve với pagination
+   * @param {Object} params - Tham số pagination {page, size}
+   * @returns {Promise<Object>} - Danh sách đề tài đã approve
+   */
+  async getApprovedTopics(params = {}) {
+    try {
+      // Đảm bảo tham số được truyền đúng cách vào query string
+      const config = {
+        params: params,
+      };
+
+      const response = await apiGet(
+        API_ENDPOINTS.GET_APPROVED_TOPICS_PAGED,
+        config
+      );
+
+      return {
+        success: true,
+        data: response,
+        message: "Lấy danh sách đề tài đã approve thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách đề tài đã approve:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy danh sách đề tài đã approve thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy số lượng đề tài đã được approve
+   * @returns {Promise<Object>} - Số lượng đề tài đã approve
+   */
+  async getApprovedTopicsCount() {
+    try {
+      const response = await apiGet(API_ENDPOINTS.GET_APPROVED_TOPICS_COUNT);
+      return {
+        success: true,
+        data: response,
+        message: "Lấy số lượng đề tài đã approve thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy số lượng đề tài đã approve:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy số lượng đề tài đã approve thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy thông tin trạng thái chi tiết của một đề tài
+   * @param {number} topicId - ID đề tài
+   * @returns {Promise<Object>} - Thông tin trạng thái đề tài
+   */
+  async getTopicStatus(topicId) {
+    try {
+      const apiUrl = API_ENDPOINTS.GET_TOPIC_STATUS.replace(
+        "{topicId}",
+        topicId
+      );
+      const response = await apiGet(apiUrl);
+      return {
+        success: true,
+        data: response,
+        message: "Lấy thông tin trạng thái đề tài thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin trạng thái đề tài:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy thông tin trạng thái đề tài thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy thông tin năng lực của giảng viên
+   * @returns {Promise<Object>} - Thông tin năng lực giảng viên
+   */
+  async getSupervisorCapacity() {
+    try {
+      const response = await apiGet(API_ENDPOINTS.GET_SUPERVISOR_CAPACITY);
+      return {
+        success: true,
+        data: response,
+        message: "Lấy thông tin năng lực giảng viên thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin năng lực giảng viên:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy thông tin năng lực giảng viên thất bại",
       };
     }
   }

@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { ToastContainer } from "react-toastify";
 import App from "./App.jsx";
 import Dashboard from "./pages/admin/Dashboard.jsx";
 import UserManagement from "./pages/admin/UserManagement.jsx";
@@ -36,6 +37,7 @@ import AcademicYearManagement from "./pages/admin/AcademicYearManagement.jsx";
 import DefenseSessionsSchedule from "./pages/admin/DefenseSessionsSchedule.jsx";
 // Import CSS
 import "./index.css";
+import "react-toastify/dist/ReactToastify.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -213,6 +215,23 @@ createRoot(document.getElementById("root")).render(
               </Route>
             </Routes>
           </BrowserRouter>
+
+          {/* Toast Container global */}
+          <ToastContainer
+            position="bottom-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+            limit={3}
+            style={{ zIndex: 99999 }}
+            toastStyle={{ zIndex: 99999 }}
+          />
         </AuthProvider>
       </SessionManager>
     </ErrorBoundary>

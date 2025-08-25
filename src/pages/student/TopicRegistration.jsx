@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import registrationService from "../../services/registration.service";
+import ThesisRegisterModal from "./ThesisRegister.jsx";
+import { toast } from "react-toastify";
 
 const difficultyMap = {
   ADVANCED: {
@@ -26,6 +28,7 @@ const TopicRegistration = () => {
   const [registeringId, setRegisteringId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [topicsPerPage] = useState(10);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -82,24 +85,16 @@ const TopicRegistration = () => {
             topic.topicId === topicId ? { ...topic, status: "Pending" } : topic
           )
         );
-
-        if (window.addToast) {
-          window.addToast(
-            res.message ||
-              "Đăng ký đề tài thành công! Vui lòng chờ giảng viên duyệt.",
-            "success"
-          );
-        }
+        toast.success(
+          res.message ||
+            "Đăng ký đề tài thành công! Vui lòng chờ giảng viên duyệt."
+        );
       } else {
-        if (window.addToast) {
-          window.addToast(res.message || "Đăng ký đề tài thất bại", "error");
-        }
+        toast.error(res.message || "Đăng ký đề tài thất bại");
       }
     } catch (err) {
       console.error("Lỗi khi đăng ký:", err);
-      if (window.addToast) {
-        window.addToast("Đã xảy ra lỗi khi đăng ký đề tài", "error");
-      }
+      toast.error("Đã xảy ra lỗi khi đăng ký đề tài");
     } finally {
       setRegisteringId(null);
     }
@@ -134,6 +129,17 @@ const TopicRegistration = () => {
 
   return (
     <div className="max-w-full mx-auto p-3">
+      {/* Nút mở modal đề xuất đề tài */}
+      <div className="flex justify-end mb-3">
+        <button
+          type="button"
+          onClick={() => setIsRegisterModalOpen(true)}
+          className="px-3 py-2 bg-orange-500 text-white rounded-md font-medium hover:bg-orange-600 transition-colors"
+        >
+          Đề xuất đề tài mới
+        </button>
+      </div>
+
       {/* Filters Bar */}
       <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-200 mb-4 flex gap-3.5 items-end flex-wrap">
         {/* Department Filter */}
@@ -362,7 +368,7 @@ const TopicRegistration = () => {
           {filteredTopics.length > 0 && (
             <div className="text-center mb-4 text-gray-500 text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-md">
               <p className="m-0 p-3 bg-gray-50 rounded-md border border-gray-200">
-                Hiển thị {indexOfFirstTopic + 1} đến{" "}
+                Hiển thị {indexOfFirstTopic + 1} đến {""}
                 {Math.min(indexOfLastTopic, filteredTopics.length)} trong tổng
                 số {filteredTopics.length} đề tài
               </p>
@@ -370,6 +376,12 @@ const TopicRegistration = () => {
           )}
         </>
       )}
+
+      {/* Modal Đề xuất đề tài */}
+      <ThesisRegisterModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+      />
     </div>
   );
 };

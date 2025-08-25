@@ -48,6 +48,16 @@ export const API_ENDPOINTS = {
   APPROVE_TOPIC: "/api/thesis-service/teacher/approve-topic",
   REJECT_TOPIC: "/api/thesis-service/teacher/reject-topic",
 
+    // Approved Topics Management
+    GET_APPROVED_TOPICS_PAGED:
+      "/api/thesis-service/teacher/approved-topics/paged",
+  GET_APPROVED_TOPICS_COUNT:
+    "/api/thesis-service/teacher/approved-topics/count",
+  GET_TOPIC_STATUS: "/api/thesis-service/teacher/topic-status/{topicId}",
+  GET_TOPIC_CAN_APPROVE:
+    "/api/thesis-service/teacher/topic-can-approve/{topicId}",
+  GET_SUPERVISOR_CAPACITY: "/api/thesis-service/teacher/supervisor-capacity",
+
   /**
    * Student Permission
    */

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { suggestTopicForStudent } from "../../services/suggest.service";
 import { userService } from "../../services";
-import { ToastContainer } from "../../components/common";
+import { toast } from "react-toastify";
 
 const initialForm = {
   tieuDe: "",
@@ -44,7 +44,8 @@ const fieldsOfStudy = [
   "Data Science",
 ];
 
-const ThesisRegister = () => {
+const ThesisRegisterModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -131,17 +132,12 @@ const ThesisRegister = () => {
       setSuccess(true);
       setForm(initialForm);
       setSearchQuery(""); // Reset search input
-      // Hiển thị toast thành công
-      if (window.addToast) {
-        window.addToast("Đề xuất đề tài thành công!", "success");
-      }
+      toast.success("Đề xuất đề tài thành công!");
+      onClose && onClose();
     } catch (err) {
       const errorMessage = err.message || "Có lỗi xảy ra, vui lòng thử lại!";
       setError(errorMessage);
-      // Hiển thị toast lỗi
-      if (window.addToast) {
-        window.addToast(errorMessage, "error");
-      }
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -155,10 +151,18 @@ const ThesisRegister = () => {
   );
 
   return (
-    <>
-      <div className="flex flex-col lg:flex-row gap-6 mx-auto my-4 px-4 max-w-7xl">
+    <div
+      className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="relative flex flex-col lg:flex-row gap-6 mx-auto my-4 px-4 py-6 bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Form Card */}
-        <div className="flex-1 lg:flex-[1.2] bg-white rounded-2xl shadow-lg p-6 lg:p-8 flex flex-col gap-4 min-w-0">
+        <div className="flex-1 lg:flex-[1.2] bg-white rounded-2xl p-6 lg:p-8 flex flex-col gap-4 min-w-0">
           <h2 className="text-xl lg:text-2xl font-bold text-blue-900 mb-2">
             Đề xuất đề tài khóa luận
           </h2>
@@ -517,12 +521,18 @@ const ThesisRegister = () => {
             </div>
           )}
         </div>
+        {/* Close Button */}
+        <button
+          type="button"
+          className="absolute top-3 right-3 bg-white rounded-full p-2 shadow hover:bg-gray-100"
+          onClick={onClose}
+          aria-label="Đóng"
+        >
+          ✕
+        </button>
       </div>
-
-      {/* Toast Container */}
-      <ToastContainer />
-    </>
+    </div>
   );
 };
 
-export default ThesisRegister;
+export default ThesisRegisterModal;

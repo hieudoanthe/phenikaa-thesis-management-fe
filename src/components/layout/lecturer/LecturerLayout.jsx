@@ -9,7 +9,8 @@ import {
 import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { WS_ENDPOINTS, APP_CONFIG } from "../../../config/api";
-import { ToastContainer } from "../../common";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import userService from "../../../services/user.service";
 
 const LecturerLayout = () => {
@@ -26,8 +27,7 @@ const LecturerLayout = () => {
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
   const studentProfileCacheRef = useRef({});
-  const toastQueueRef = useRef([]);
-  const toastReadyTimerRef = useRef(null);
+  // Dùng react-toastify nên không cần hàng đợi toast thủ công
 
   // Sử dụng notification context
   const { markAllAsRead: markAllAsReadFromContext, addNotification } =
@@ -64,12 +64,13 @@ const LecturerLayout = () => {
   const reconnectTimerRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
   const connectTimeRef = useRef(0);
-  const bufferInitialMsRef = useRef(1500);
+  const bufferInitialMsRef = useRef(0);
   const bufferedCountRef = useRef(0);
   const bufferToastTimerRef = useRef(null);
   const summaryShownRef = useRef(false);
   const heartbeatTimerRef = useRef(null);
   const lastActivityAtRef = useRef(0);
+  const seenNotificationIdsRef = useRef(new Set());
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
@@ -325,32 +326,20 @@ const LecturerLayout = () => {
     return `${day} ngày trước`;
   };
 
-  // Hiển thị toast an toàn dù ToastContainer chưa mount
+  // Hiển thị toast qua react-toastify
   const showToast = (message, type = "success") => {
-    toastQueueRef.current.push({ message, type });
-    const flush = () => {
-      if (typeof window !== "undefined" && window.addToast) {
-        while (toastQueueRef.current.length > 0) {
-          const { message: msg, type: t } = toastQueueRef.current.shift();
-          try {
-            window.addToast(msg, t);
-          } catch (err) {
-            // fallback log
-            (t === "success" ? console.log : console.error)(msg);
-          }
-        }
-        if (toastReadyTimerRef.current) {
-          clearTimeout(toastReadyTimerRef.current);
-          toastReadyTimerRef.current = null;
-        }
-      } else if (!toastReadyTimerRef.current) {
-        toastReadyTimerRef.current = setTimeout(flush, 300);
-      }
-    };
-    flush();
+    try {
+      if (type === "error") return toast.error(message);
+      if (type === "warning") return toast.warn(message);
+      if (type === "info") return toast.info(message);
+      return toast.success(message);
+    } catch (_) {
+      (type === "error" ? console.error : console.log)(message);
+    }
   };
 
   const appendNotification = async ({
+    id,
     message,
     createdAt,
     read,
@@ -374,7 +363,9 @@ const LecturerLayout = () => {
     }
 
     const item = {
-      id: Date.now() + Math.random(),
+      id:
+        id ||
+        `${studentId || ""}-${createdAtMs}-${(message || "").slice(0, 24)}`,
       title: "Thông báo",
       message: message,
       time: formatRelativeOnce(createdAtMs),
@@ -384,6 +375,11 @@ const LecturerLayout = () => {
       studentId: studentId ?? null,
       studentName: studentName ?? null,
     };
+    // Chặn trùng lặp
+    if (item.id && seenNotificationIdsRef.current.has(item.id)) {
+      return;
+    }
+    if (item.id) seenNotificationIdsRef.current.add(item.id);
     // Cập nhật state local
     setNotificationsState((prev) => {
       const next = [item, ...prev];
@@ -396,6 +392,16 @@ const LecturerLayout = () => {
     // Chỉ tăng số thông báo chưa đọc nếu thông báo chưa đọc
     if (!read) {
       setUnreadCount((c) => c + 1);
+      // Quyết định hiển thị toast ngay hay gom theo buffer
+      const now = Date.now();
+      const isBuffering =
+        connectTimeRef.current > 0 &&
+        now - connectTimeRef.current < bufferInitialMsRef.current;
+      if (!isBuffering) {
+        showToast(message, "success");
+      } else {
+        bufferedCountRef.current += 1;
+      }
     }
   };
 
@@ -450,30 +456,37 @@ const LecturerLayout = () => {
 
         try {
           const parsed = JSON.parse(raw);
-          const msg =
-            parsed?.message ||
-            parsed?.content ||
-            parsed?.text ||
-            "Bạn có thông báo mới";
-          await appendNotification({
-            message: msg,
-            createdAt: parsed?.createdAt,
-            read: parsed?.read,
-            studentId: parsed?.studentId,
-          });
 
-          // Chỉ hiển thị toast nếu thông báo chưa đọc
-          if (!parsed?.read) {
-            if (!isBuffering) {
-              showToast(msg, "success");
-            } else {
-              bufferedCountRef.current += 1;
+          const handleOne = async (p) => {
+            const msg =
+              p?.message || p?.content || p?.text || "Bạn có thông báo mới";
+            const notifId =
+              p?.id ||
+              `${p?.studentId || ""}-${p?.createdAt || Date.now()}-${(
+                msg || ""
+              ).slice(0, 24)}`;
+            await appendNotification({
+              id: notifId,
+              message: msg,
+              createdAt: p?.createdAt,
+              read: p?.read,
+              studentId: p?.studentId,
+            });
+
+            // appendNotification sẽ quyết định hiển thị toast/buffer
+            window.dispatchEvent(
+              new CustomEvent("app:notification", { detail: p })
+            );
+          };
+
+          if (Array.isArray(parsed)) {
+            for (const p of parsed) {
+              await handleOne(p);
             }
+          } else {
+            await handleOne(parsed);
           }
-          window.dispatchEvent(
-            new CustomEvent("app:notification", { detail: parsed })
-          );
-          // Lên lịch toast tổng hợp nếu đang buffer
+
           if (isBuffering && !bufferToastTimerRef.current) {
             const delay =
               bufferInitialMsRef.current - (now - connectTimeRef.current) + 50;
@@ -498,18 +511,15 @@ const LecturerLayout = () => {
           ) {
             display = display.slice(1, -1);
           }
+          const syntheticId = `${Date.now()}-${(display || "").slice(0, 24)}`;
           await appendNotification({
+            id: syntheticId,
             message: display,
             createdAt: Date.now(),
             read: false,
           });
 
-          // Thông báo không có trạng thái read được coi là chưa đọc
-          if (!isBuffering) {
-            showToast(display, "success");
-          } else {
-            bufferedCountRef.current += 1;
-          }
+          // appendNotification sẽ quyết định hiển thị toast/buffer
           window.dispatchEvent(
             new CustomEvent("app:notification", {
               detail: { message: display },
@@ -536,7 +546,13 @@ const LecturerLayout = () => {
       const data = rawData || {};
       const msg =
         data.message || data.content || data.text || "Bạn có thông báo mới";
+      const objId =
+        data.id ||
+        `${data.studentId || ""}-${data.createdAt || Date.now()}-${(
+          msg || ""
+        ).slice(0, 24)}`;
       await appendNotification({
+        id: objId,
         message: msg,
         createdAt: data.createdAt,
         read: data.read,
@@ -544,14 +560,7 @@ const LecturerLayout = () => {
       });
       lastActivityAtRef.current = Date.now();
 
-      // Chỉ hiển thị toast nếu thông báo chưa đọc
-      if (!data.read) {
-        if (!isBuffering) {
-          showToast(msg, "success");
-        } else {
-          bufferedCountRef.current += 1;
-        }
-      }
+      // appendNotification sẽ quyết định hiển thị toast/buffer
       window.dispatchEvent(
         new CustomEvent("app:notification", { detail: data })
       );
@@ -566,9 +575,7 @@ const LecturerLayout = () => {
           bufferedCountRef.current = 0;
           if (count > 0 && !summaryShownRef.current) {
             summaryShownRef.current = true;
-            if (typeof window !== "undefined" && window.addToast) {
-              window.addToast(`Bạn có ${count} thông báo mới`, "success");
-            }
+            showToast(`Bạn có ${count} thông báo mới`, "success");
           }
         }, Math.max(0, delay));
       }
@@ -1067,7 +1074,19 @@ const LecturerLayout = () => {
             <Outlet />
           </div>
         </main>
-        <ToastContainer />
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3500}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss={false}
+          draggable
+          pauseOnHover
+          theme="colored"
+          limit={3}
+        />
         {isStudentProfileOpen && studentProfile && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">

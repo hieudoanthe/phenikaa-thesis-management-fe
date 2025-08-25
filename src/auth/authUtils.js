@@ -392,11 +392,6 @@ export const getRefreshToken = () => {
   const localToken = localStorage.getItem("refreshToken");
   const cookieToken = getCookie("refreshToken");
 
-  console.log("getRefreshToken() - sessionKey:", sessionKey);
-  console.log("getRefreshToken() - sessionStorage:", sessionToken);
-  console.log("getRefreshToken() - localStorage:", localToken);
-  console.log("getRefreshToken() - cookie:", cookieToken);
-
   const result = sessionToken || localToken || cookieToken;
   console.log("getRefreshToken() - kết quả cuối:", result);
 

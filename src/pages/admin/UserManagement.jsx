@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import AddUserModal from "../../components/modals/AddUserModal.jsx";
 import ConfirmModal from "../../components/modals/ConfirmModal.jsx";
-import { ToastContainer } from "../../components/common";
+import { toast, ToastContainer } from "react-toastify";
 import { userService } from "../../services";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
+import "react-toastify/dist/ReactToastify.css";
 
 // Mapping roleIds sang tên hiển thị theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
 const roleMapping = {
@@ -37,7 +38,7 @@ const UserManagement = () => {
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [confirmState, setConfirmState] = useState({
     open: false,
@@ -58,15 +59,20 @@ const UserManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   // Fetch users từ API (server-side paging)
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = currentPage, options = {}) => {
+    const { initial = false } = options;
     try {
-      setLoading(true);
+      if (initial) setIsInitialLoading(true);
 
-      // Luôn fetch tất cả users (không filter theo role vì API không hỗ trợ)
-      const response = await userService.getUsers({
-        page: 0,
-        size: 1000, // Lấy tất cả users
-      });
+      // Tạo params cho API call với server-side pagination
+      const apiParams = {
+        page: page,
+        size: pageSize, // Sử dụng pageSize = 6 thay vì 1000
+      };
+
+      // Gọi API với server-side pagination
+      const response = await userService.getUsers(apiParams);
+
       const content = response?.content || [];
 
       // Map dữ liệu user và lấy ảnh đại diện đúng từ API (ưu tiên user.avt/user.avatar)
@@ -94,16 +100,39 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Lỗi khi lấy danh sách users:", error);
       setError("Không thể tải danh sách người dùng");
-      if (window.addToast) {
-        window.addToast("Lỗi khi tải danh sách người dùng!", "error");
-      }
+      toast.error("Lỗi khi tải danh sách người dùng!");
     } finally {
-      setLoading(false);
+      if (initial) setIsInitialLoading(false);
+    }
+  };
+
+  /**
+   * Xử lý thay đổi trang - gọi API để lấy dữ liệu mới
+   */
+  const handlePageChange = async (newPage) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      // Sử dụng biến local để đảm bảo giá trị chính xác
+      const targetPage = newPage;
+
+      // Cập nhật currentPage trước
+      setCurrentPage(targetPage);
+
+      // Gọi API để lấy dữ liệu trang mới
+      await fetchUsers(targetPage);
+    } else {
+      console.warn("Trang không hợp lệ:", newPage);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(0, { initial: true });
+  }, []);
+
+  // Gọi API khi currentPage thay đổi
+  useEffect(() => {
+    if (currentPage > 0) {
+      fetchUsers(currentPage);
+    }
   }, [currentPage]);
 
   // Hàm helper để lấy role display từ roleIds
@@ -145,11 +174,8 @@ const UserManagement = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Áp dụng phân trang client-side
-  const paginatedUsers = filteredUsers.slice(
-    currentPage * pageSize,
-    (currentPage + 1) * pageSize
-  );
+  // Sử dụng dữ liệu trực tiếp từ server (không cần client-side pagination)
+  const paginatedUsers = filteredUsers;
 
   // Debug filteredUsers và paginatedUsers
   useEffect(() => {
@@ -162,10 +188,13 @@ const UserManagement = () => {
     searchTerm,
   ]);
 
+  // Debug log để kiểm tra dữ liệu
   // Reset về trang đầu tiên khi filter thay đổi
   useEffect(() => {
     setCurrentPage(0);
-  }, [selectedRole.value]);
+    // Gọi API để lấy dữ liệu trang đầu tiên với filter mới
+    fetchUsers(0);
+  }, [selectedRole.value, searchTerm]);
 
   // Hàm helper cho status
   const getStatusLabel = (status) => {
@@ -230,13 +259,11 @@ const UserManagement = () => {
       // Refetch dữ liệu mới từ API để cập nhật giao diện
       await fetchUsers();
 
-      if (window.addToast)
-        window.addToast("Cập nhật người dùng thành công!", "success");
+      toast.success("Cập nhật người dùng thành công!");
       cancelEdit();
     } catch (err) {
       console.error("Cập nhật người dùng thất bại:", err);
-      if (window.addToast)
-        window.addToast("Cập nhật người dùng thất bại!", "error");
+      toast.error("Cập nhật người dùng thất bại!");
     }
   };
 
@@ -249,15 +276,10 @@ const UserManagement = () => {
       // Refetch dữ liệu mới từ API để cập nhật giao diện
       await fetchUsers();
 
-      if (window.addToast)
-        window.addToast(
-          "Cập nhật trạng thái người dùng thành công!",
-          "success"
-        );
+      toast.success("Cập nhật trạng thái người dùng thành công!");
     } catch (err) {
       console.error("Cập nhật trạng thái thất bại:", err);
-      if (window.addToast)
-        window.addToast("Cập nhật trạng thái thất bại!", "error");
+      toast.error("Cập nhật trạng thái thất bại!");
     } finally {
       setStatusLoadingId(null);
     }
@@ -273,9 +295,7 @@ const UserManagement = () => {
       !userData.roleIds
     ) {
       console.error("Dữ liệu không đầy đủ");
-      if (window.addToast) {
-        window.addToast("Dữ liệu không đầy đủ!", "error");
-      }
+      toast.error("Dữ liệu không đầy đủ!");
       throw new Error("Dữ liệu không đầy đủ");
     }
 
@@ -283,13 +303,8 @@ const UserManagement = () => {
       // Gọi API để tạo user
       const response = await userService.createUser(userData);
 
-      // 🔄 REFRESH: Refetch dữ liệu mới từ API để cập nhật giao diện ngay lập tức
-      await fetchUsers();
-
-      // Hiển thị thông báo thành công
-      if (window.addToast) {
-        window.addToast("Thêm người dùng thành công!", "success");
-      }
+      // 🔄 REFRESH: Refetch dữ liệu mới ở nền để không chặn đóng modal
+      fetchUsers();
 
       // Trả về kết quả để modal biết đã thành công
       return response;
@@ -297,9 +312,7 @@ const UserManagement = () => {
       console.error("Lỗi khi tạo user:", error);
 
       // Hiển thị thông báo lỗi
-      if (window.addToast) {
-        window.addToast("Lỗi khi thêm người dùng. Vui lòng thử lại!", "error");
-      }
+      toast.error("Lỗi khi thêm người dùng. Vui lòng thử lại!");
 
       // Throw error để modal biết có lỗi
       throw error;
@@ -328,17 +341,16 @@ const UserManagement = () => {
         setCurrentPage((p) => p - 1);
       }
 
-      if (window.addToast)
-        window.addToast("Xóa người dùng thành công!", "success");
+      toast.success("Xóa người dùng thành công!");
     } catch (err) {
       console.error("Xóa người dùng thất bại:", err);
-      if (window.addToast) window.addToast("Xóa người dùng thất bại!", "error");
+      toast.error("Xóa người dùng thất bại!");
     } finally {
       setConfirmState({ open: false, userId: null, loading: false });
     }
   };
 
-  if (loading) {
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
         <div className="text-center py-12">
@@ -648,9 +660,10 @@ const UserManagement = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mt-6 mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="text-sm text-gray-700">
-            Hiển thị {filteredUsers.length > 0 ? currentPage * pageSize + 1 : 0}{" "}
-            đến {Math.min(currentPage * pageSize + pageSize, totalElements)}{" "}
-            trên {totalElements} bản ghi — Trang {currentPage + 1}/
+            Hiển thị{" "}
+            {paginatedUsers.length > 0 ? currentPage * pageSize + 1 : 0} đến{" "}
+            {currentPage * pageSize + paginatedUsers.length} trên{" "}
+            {totalElements} bản ghi — Trang {currentPage + 1}/
             {Math.ceil(totalElements / pageSize)}
           </div>
 
@@ -660,9 +673,9 @@ const UserManagement = () => {
               <button
                 className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                 disabled={currentPage === 0}
-                onClick={() =>
-                  currentPage > 0 && setCurrentPage(currentPage - 1)
-                }
+                onClick={() => {
+                  handlePageChange(currentPage - 1);
+                }}
               >
                 <i className="bi bi-chevron-left text-sm sm:text-base"></i>
               </button>
@@ -677,7 +690,9 @@ const UserManagement = () => {
                 disabled={
                   currentPage + 1 >= Math.ceil(totalElements / pageSize)
                 }
-                onClick={() => setCurrentPage(currentPage + 1)}
+                onClick={() => {
+                  handlePageChange(currentPage + 1);
+                }}
               >
                 <i className="bi bi-chevron-right text-sm sm:text-base"></i>
               </button>
@@ -712,7 +727,22 @@ const UserManagement = () => {
       />
 
       {/* Toast Container */}
-      <ToastContainer />
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        limit={3}
+        closeButton={true}
+        theme="light"
+        style={{ zIndex: 9999 }}
+        toastStyle={{ zIndex: 9999 }}
+      />
     </div>
   );
 };

@@ -9,7 +9,8 @@ import {
 import { useProfileStudent } from "../../../contexts/ProfileStudentContext";
 import { WS_ENDPOINTS } from "../../../config/api";
 import notificationService from "../../../services/notification.service";
-import ToastContainer from "../../common/ToastContainer.jsx";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const StudentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -237,9 +238,7 @@ const StudentLayout = () => {
       setIsMarkingAllAsRead(true);
       const receiverId = getUserIdFromToken();
       if (!receiverId) {
-        if (typeof window !== "undefined" && window.addToast) {
-          window.addToast("Không xác định được người dùng", "error");
-        }
+        toast.error("Không xác định được người dùng");
         return;
       }
       const res = await notificationService.markAllAsRead(receiverId);
@@ -270,21 +269,12 @@ const StudentLayout = () => {
           } catch (_) {}
           return updated;
         });
-        if (typeof window !== "undefined" && window.addToast) {
-          window.addToast("Đã đánh dấu tất cả thông báo là đã đọc", "success");
-        }
+        toast.success("Đã đánh dấu tất cả thông báo là đã đọc");
       } else {
-        if (typeof window !== "undefined" && window.addToast) {
-          window.addToast(
-            res?.message || "Không thể đánh dấu tất cả đã đọc",
-            "error"
-          );
-        }
+        toast.error(res?.message || "Không thể đánh dấu tất cả đã đọc");
       }
     } catch (err) {
-      if (typeof window !== "undefined" && window.addToast) {
-        window.addToast("Có lỗi khi đánh dấu tất cả đã đọc", "error");
-      }
+      toast.error("Có lỗi khi đánh dấu tất cả đã đọc");
     } finally {
       setIsMarkingAllAsRead(false);
     }
@@ -378,11 +368,7 @@ const StudentLayout = () => {
           bufferedCountRef.current = 0;
           if (count > 0 && !summaryShownRef.current) {
             summaryShownRef.current = true;
-            if (typeof window !== "undefined" && window.addToast) {
-              try {
-                window.addToast(`Bạn có ${count} thông báo mới`, "success");
-              } catch (_) {}
-            }
+            toast.success(`Bạn có ${count} thông báo mới`);
           }
         }, bufferInitialMsRef.current + 100);
       };
@@ -454,13 +440,9 @@ const StudentLayout = () => {
 
             if (!newNotification.isRead) {
               if (inInitialBuffer) {
-                // Trong giai đoạn khởi tạo: chỉ gom số lượng, không hiện chi tiết
                 bufferedCountRef.current += 1;
-              } else if (typeof window !== "undefined" && window.addToast) {
-                // Sau giai đoạn buffer: hiển thị chi tiết từng thông báo
-                try {
-                  window.addToast(messageText, "success");
-                } catch (_) {}
+              } else {
+                toast.success(messageText);
               }
             }
 
@@ -870,7 +852,19 @@ const StudentLayout = () => {
           </main>
         </div>
       </div>
-      <ToastContainer />
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        pauseOnHover
+        theme="colored"
+        limit={3}
+      />
     </>
   );
 };

@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useAuthHook from "../../hooks/useAuth";
 import Select from "react-select";
+import { toast } from "react-toastify";
 
 const PhenikaaLogin = () => {
   const navigate = useNavigate();
@@ -13,7 +14,6 @@ const PhenikaaLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [toasts, setToasts] = useState([]);
   const [rememberMe, setRememberMe] = useState(false);
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
@@ -78,23 +78,21 @@ const PhenikaaLogin = () => {
         rememberMe
       );
 
-      addToast("Đăng nhập thành công!");
+      toast.success("Đăng nhập thành công!");
 
       // Chuyển hướng dựa trên role từ user data (ưu tiên) hoặc role từ form
       const userRole = user?.role || role;
 
-      // Thêm delay 1.5 giây trước khi chuyển hướng
-      setTimeout(() => {
-        if (userRole === "ADMIN") {
-          navigate("/admin/dashboard");
-        } else if (userRole === "TEACHER") {
-          navigate("/lecturer/home");
-        } else if (userRole === "STUDENT") {
-          navigate("/student/home");
-        } else {
-          navigate("/home");
-        }
-      }, 1500);
+      // Điều hướng ngay; ToastContainer nằm global nên toast vẫn hiển thị
+      if (userRole === "ADMIN") {
+        navigate("/admin/dashboard");
+      } else if (userRole === "TEACHER") {
+        navigate("/lecturer/home");
+      } else if (userRole === "STUDENT") {
+        navigate("/student/home");
+      } else {
+        navigate("/home");
+      }
     } catch (err) {
       let errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
 
@@ -163,20 +161,11 @@ const PhenikaaLogin = () => {
         }
       }
 
-      addToast(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
-  const clearOldToasts = () => {
-    setToasts((prev) => prev.filter((t) => Date.now() - t.id < 3500));
-  };
-
-  React.useEffect(() => {
-    const timer = setTimeout(clearOldToasts, 3500);
-    return () => clearTimeout(timer);
-  }, [toasts]);
 
   const roleOptions = [
     { value: "STUDENT", label: "Sinh viên" },
@@ -188,19 +177,6 @@ const PhenikaaLogin = () => {
     if (state.isSelected) return "#1e3286";
     if (state.isFocused) return "#e6eaf6";
     return "#fff";
-  };
-
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const addToast = (message) => {
-    const id = Date.now() + Math.random();
-    setToasts((prev) => {
-      const newToasts = [...prev, { id, message }];
-      return newToasts.length > 3 ? newToasts.slice(1) : newToasts;
-    });
-    setTimeout(() => removeToast(id), 3500);
   };
 
   const handleImageError = (e) => {
@@ -589,64 +565,7 @@ const PhenikaaLogin = () => {
         </div>
       </section>
 
-      {/* Toast Notifications */}
-      <div className="fixed right-2 sm:right-3 md:right-5 bottom-4 sm:bottom-6 md:bottom-8 z-[9999] flex flex-col-reverse gap-2 sm:gap-3 md:gap-4 max-w-[280px] sm:max-w-[350px] md:max-w-[450px] lg:max-w-[550px]">
-        {toasts
-          .slice()
-          .reverse()
-          .map((toast) => (
-            <div
-              key={toast.id}
-              className={`rounded-lg p-3 sm:p-4 md:p-4 px-4 sm:px-6 flex items-center font-medium text-sm sm:text-base shadow-toast min-w-64 sm:min-w-72 md:min-w-80 mt-2 animate-fade-in-up ${
-                toast.message.includes("thành công")
-                  ? "bg-success-500 text-white"
-                  : "bg-error-500 text-white"
-              }`}
-            >
-              {toast.message.includes("thành công") ? (
-                <svg
-                  className="mr-2 sm:mr-3 flex-shrink-0 w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] md:w-[22px] md:h-[22px]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="white"
-                  strokeWidth="2"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22,4 12,14.01 9,11.01" />
-                </svg>
-              ) : (
-                <svg
-                  className="mr-2 sm:mr-3 flex-shrink-0 w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] md:w-[22px] md:h-[22px]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="white"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="10" fill="#e53935" />
-                  <line
-                    x1="8"
-                    y1="8"
-                    x2="16"
-                    y2="16"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  <line
-                    x1="16"
-                    y1="8"
-                    x2="8"
-                    y2="16"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                </svg>
-              )}
-              <span className="text-xs sm:text-sm md:text-base">
-                {toast.message}
-              </span>
-            </div>
-          ))}
-      </div>
+      {/* Toasts hiển thị qua ToastContainer (global) */}
     </main>
   );
 };

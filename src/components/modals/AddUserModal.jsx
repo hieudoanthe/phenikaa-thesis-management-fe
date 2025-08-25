@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
+import { toast } from "react-toastify";
 
 // Mapping role theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
 const roleOptions = [
@@ -16,6 +17,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
     roles: [],
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Reset form khi modal đóng
   useEffect(() => {
@@ -53,6 +55,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
       };
 
       try {
+        setSubmitting(true);
         // Gọi onAddUser và chờ kết quả
         await onAddUser(userData);
 
@@ -64,20 +67,19 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
           roles: [],
         });
 
-        // Đóng modal sau khi thành công
+        // Hiển thị toast thành công và đóng modal ngay
+        toast.success("Thêm người dùng thành công!");
         onClose();
       } catch (error) {
         // Nếu có lỗi, không đóng modal và hiển thị toast lỗi
         console.error("Lỗi khi thêm người dùng:", error);
-        if (window.addToast) {
-          window.addToast("Có lỗi xảy ra khi thêm người dùng!", "error");
-        }
+        toast.error("Có lỗi xảy ra khi thêm người dùng!");
+      } finally {
+        setSubmitting(false);
       }
     } else {
       // Hiển thị thông báo lỗi nếu form không hợp lệ
-      if (window.addToast) {
-        window.addToast("Vui lòng điền đầy đủ thông tin!", "error");
-      }
+      toast.error("Vui lòng điền đầy đủ thông tin!");
     }
   };
 
@@ -294,9 +296,21 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 text-base font-medium text-white bg-secondary rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-secondary-hover min-w-[120px]"
+              disabled={submitting}
+              className={`px-6 py-2.5 text-base font-medium text-white bg-secondary rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[120px] ${
+                submitting
+                  ? "opacity-70 cursor-not-allowed"
+                  : "hover:bg-secondary-hover"
+              }`}
             >
-              Thêm người dùng
+              {submitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Đang thêm...
+                </span>
+              ) : (
+                "Thêm người dùng"
+              )}
             </button>
           </div>
         </form>
