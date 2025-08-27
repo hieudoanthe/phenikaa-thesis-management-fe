@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { suggestTopicForStudent } from "../../services/suggest.service";
 import { userService } from "../../services";
 import { toast } from "react-toastify";
@@ -52,6 +52,8 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
   const [error, setError] = useState("");
   const [showLecturerList, setShowLecturerList] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   // State cho danh sách giảng viên từ API
   const [lecturers, setLecturers] = useState([]);
@@ -67,22 +69,34 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
         const response = await userService.getAllTeachers();
 
         // Chuyển đổi dữ liệu từ API sang format phù hợp với UI
+        // Tổng chỉ tiêu giảng viên (cấu hình tạm thời ở FE, nên đưa về từ BE nếu có)
+        const TOTAL_TEACHER_CAPACITY = 15;
+
         const formattedLecturers =
-          response?.map((teacher) => ({
-            id: teacher.userId, // API trả về userId
-            name: teacher.fullName || "Chưa có tên",
-            email: teacher.phoneNumber || "Chưa có thông tin liên lạc", // Sử dụng phoneNumber thay vì email
-            avatar:
-              teacher.avt ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                teacher.fullName || "GV"
-              )}&background=random`, // API trả về avt
-            specialization: teacher.specialization || "Chưa có chuyên ngành",
-            department: teacher.department || "Chưa có khoa",
-            assigned: 0, // API không trả về, mặc định là 0
-            max: teacher.maxStudents || 5,
-            status: "Available", // Mặc định là Available vì không có thông tin assigned
-          })) || [];
+          response?.map((teacher) => {
+            const max = Number.isFinite(teacher?.maxStudents)
+              ? teacher.maxStudents
+              : teacher?.maxStudents ?? 0;
+            return {
+              id: teacher.userId,
+              name: teacher.fullName || "Chưa có tên",
+              email: teacher.phoneNumber || "Chưa có thông tin liên lạc",
+              avatar:
+                teacher.avt ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  teacher.fullName || "GV"
+                )}&background=random`,
+              specialization: teacher.specialization || "Chưa có chuyên ngành",
+              department: teacher.department || "Chưa có khoa",
+              assigned: 0,
+              max: max,
+              accepted: Math.max(
+                0,
+                TOTAL_TEACHER_CAPACITY - (Number.isFinite(max) ? max : 0)
+              ),
+              status: max > 0 ? "Available" : "Unavailable",
+            };
+          }) || [];
 
         setLecturers(formattedLecturers);
       } catch (err) {
@@ -159,7 +173,18 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
     >
       <div
         className="relative flex flex-col lg:flex-row gap-6 mx-auto my-4 px-4 py-6 bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (
+            showLecturerList &&
+            dropdownRef.current &&
+            !dropdownRef.current.contains(e.target) &&
+            searchInputRef.current &&
+            !searchInputRef.current.contains(e.target)
+          ) {
+            setShowLecturerList(false);
+          }
+        }}
       >
         {/* Form Card */}
         <div className="flex-1 lg:flex-[1.2] bg-white rounded-2xl p-6 lg:p-8 flex flex-col gap-4 min-w-0">
@@ -181,7 +206,7 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
           {/* Form Fields - Single Column Layout */}
           <div
             className={`space-y-4 mb-4 transition-all duration-300 ${
-              showLecturerList ? "opacity-0 invisible" : "opacity-100 visible"
+              showLecturerList ? "opacity-40" : "opacity-100"
             }`}
           >
             {/* Tên đề tài */}
@@ -340,6 +365,7 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                   }
                 }}
                 onFocus={() => setShowLecturerList(true)}
+                ref={searchInputRef}
                 className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
               />
               <label
@@ -352,19 +378,14 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
 
               {/* Lecturer Dropdown */}
               {showLecturerList && (
-                <div className="absolute left-0 right-0 bottom-full mb-3 bg-white border border-gray-300 rounded-lg shadow-xl z-20 max-h-80 overflow-hidden">
-                  {/* Search Header */}
-                  <div className="sticky top-0 bg-white border-b border-gray-200 p-3">
-                    <div className="text-sm text-gray-600 mb-1 font-medium">
-                      Tìm kiếm giảng viên ({filteredLecturers.length} kết quả)
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      💡 Gõ tên, email hoặc chuyên ngành để tìm nhanh
-                    </div>
-                  </div>
+                <div
+                  ref={dropdownRef}
+                  className="absolute left-0 right-0 bottom-full mb-6 bg-white border border-gray-300 rounded-lg shadow-xl z-20 max-h-96 overflow-hidden"
+                >
+                  {/* Search Header removed as requested */}
 
                   {/* Lecturer List */}
-                  <div className="max-h-52 overflow-y-auto">
+                  <div className="max-h-72 overflow-y-auto">
                     {loadingLecturers ? (
                       <div className="p-3 text-center text-gray-500">
                         <div className="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
@@ -405,12 +426,14 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                             </div>
                             <span
                               className={`text-xs font-semibold rounded-lg px-2 py-1 flex-shrink-0 ${
-                                l.status === "Available"
+                                l.max > 0
                                   ? "bg-green-100 text-green-800"
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {l.status === "Available" ? "Còn nhận" : "Đã đủ"}
+                              {l.max === 0
+                                ? "Đã đủ"
+                                : `Đã nhận (${l.accepted})`}
                             </span>
                           </div>
                         ))}
@@ -438,28 +461,7 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                     )}
                   </div>
 
-                  {/* Footer with close button */}
-                  <div className="border-t border-gray-200 p-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <button
-                        type="button"
-                        onClick={() => setShowLecturerList(false)}
-                        className="text-xs text-gray-500 hover:text-gray-700 py-1.5 px-3 rounded-md hover:bg-gray-200 transition-colors"
-                      >
-                        ✕ Đóng danh sách
-                      </button>
-                      {filteredLecturers.length > 0 && (
-                        <div className="text-xs text-gray-600 text-right font-medium">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span>Enter: Chọn đầu tiên</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span>Esc: Đóng danh sách</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  {/* Footer removed as requested */}
                 </div>
               )}
             </div>

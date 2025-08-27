@@ -80,6 +80,84 @@
     @apply bg-gray-100 text-secondary;
   }
 
+  /* Custom scrollbar for react-select dropdowns */
+  .custom-select .select__menu {
+    scrollbar-width: thin !important;
+    scrollbar-color: #cbd5e1 transparent !important;
+  }
+
+  .custom-select .select__menu::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+  }
+
+  .custom-select .select__menu::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1 !important;
+    border-radius: 9999px !important;
+  }
+
+  .custom-select .select__menu::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .custom-select .select__menu::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Alternative selectors for react-select */
+  .select__menu {
+    scrollbar-width: thin !important;
+    scrollbar-color: #cbd5e1 transparent !important;
+  }
+
+  .select__menu::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+  }
+
+  .select__menu::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1 !important;
+    border-radius: 9999px !important;
+  }
+
+  .select__menu::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .select__menu::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Global scrollbar override for all dropdowns */
+  [class*="select__menu"] {
+    scrollbar-width: thin !important;
+    scrollbar-color: #cbd5e1 transparent !important;
+  }
+
+  [class*="select__menu"]::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+  }
+
+  [class*="select__menu"]::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1 !important;
+    border-radius: 9999px !important;
+  }
+
+  [class*="select__menu"]::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  [class*="select__menu"]::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
   .notification-dropdown {
     @apply absolute top-full right-0 bg-white rounded-xl shadow-lg border border-gray-200 z-50;
   }

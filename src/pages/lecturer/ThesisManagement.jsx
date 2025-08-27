@@ -10,6 +10,17 @@ const ThesisManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedYear, setSelectedYear] = useState("All");
   const [selectedApprovalStatus, setSelectedApprovalStatus] = useState("All");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("All");
+  const [selectedTopicStatus, setSelectedTopicStatus] = useState("All");
+  const [dateRange, setDateRange] = useState({ from: null, to: null });
+  const [advancedFilters, setAdvancedFilters] = useState({
+    topicCode: "",
+    description: "",
+    objectives: "",
+    methodology: "",
+    minStudents: "",
+    maxStudents: "",
+  });
 
   // States cho API
   const [topics, setTopics] = useState([]);
@@ -137,6 +148,20 @@ const ThesisManagement = () => {
           topicsData = [];
         }
 
+        // Kiểm tra xem có đề tài mới không
+        const currentTopicIds = new Set(topics.map((t) => t.topicId));
+        const newTopics = topicsData.filter(
+          (t) => !currentTopicIds.has(t.topicId)
+        );
+
+        if (newTopics.length > 0) {
+          console.log(
+            `Phát hiện ${newTopics.length} đề tài mới:`,
+            newTopics.map((t) => t.topicCode || t.title)
+          );
+          showToast(`Có ${newTopics.length} đề tài mới được cập nhật!`, "info");
+        }
+
         setTopics(topicsData);
         const serverTotal =
           typeof response?.data?.totalElements === "number"
@@ -168,6 +193,88 @@ const ThesisManagement = () => {
     }
   };
 
+  // Hàm filter topics với nhiều tiêu chí
+  const filterTopics = async (page = 0) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Tạo filter params
+      const filterParams = {
+        page: page,
+        size: pageSize,
+        searchPattern: searchTerm || undefined,
+        academicYearId:
+          selectedYear !== "All" ? parseInt(selectedYear) : undefined,
+        approvalStatus:
+          selectedApprovalStatus !== "All"
+            ? selectedApprovalStatus.toUpperCase()
+            : undefined,
+        difficultyLevel:
+          selectedDifficulty !== "All"
+            ? selectedDifficulty.toUpperCase()
+            : undefined,
+        topicStatus:
+          selectedTopicStatus !== "All"
+            ? selectedTopicStatus.toUpperCase()
+            : undefined,
+        topicCode: advancedFilters.topicCode || undefined,
+        description: advancedFilters.description || undefined,
+        objectives: advancedFilters.objectives || undefined,
+        methodology: advancedFilters.methodology || undefined,
+        minStudents: advancedFilters.minStudents
+          ? parseInt(advancedFilters.minStudents)
+          : undefined,
+        maxStudents: advancedFilters.maxStudents
+          ? parseInt(advancedFilters.maxStudents)
+          : undefined,
+        createdFrom: dateRange.from
+          ? new Date(dateRange.from).toISOString()
+          : undefined,
+        createdTo: dateRange.to
+          ? new Date(dateRange.to).toISOString()
+          : undefined,
+        userRole: "TEACHER",
+        userId: null, // Sẽ được lấy từ JWT token
+      };
+
+      // Loại bỏ các giá trị undefined
+      Object.keys(filterParams).forEach((key) => {
+        if (filterParams[key] === undefined) {
+          delete filterParams[key];
+        }
+      });
+
+      const response = await topicService.filterTopics(filterParams);
+
+      if (response.success) {
+        const topicsData = response.data?.content || [];
+        setTopics(topicsData);
+        setTotalElements(response.data?.totalElements || 0);
+        setTotalPages(response.data?.totalPages || 1);
+        setCurrentPage(page);
+
+        // Load thông tin profile của người đề xuất
+        await loadSuggestedByProfiles(topicsData);
+
+        showToast("Filter topics thành công!", "success");
+      } else {
+        setError(response.message || "Không thể filter topics");
+        setTopics([]);
+        setTotalElements(0);
+        setTotalPages(1);
+      }
+    } catch (error) {
+      console.error("Lỗi khi filter topics:", error);
+      setError("Đã xảy ra lỗi khi filter topics");
+      setTopics([]);
+      setTotalElements(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Hàm load danh sách academic years từ API
   const loadAcademicYears = async () => {
     try {
@@ -176,11 +283,8 @@ const ThesisManagement = () => {
       if (response.success) {
         const years = response.data ?? [];
         setAcademicYears(years);
-        // Set default academic year nếu có và chưa được set
-        if (years.length > 0 && selectedYear === "All") {
-          const defaultYear = years[years.length - 1]; // Lấy năm mới nhất
-          setSelectedYear(defaultYear.id.toString());
-        }
+        // Luôn giữ selectedYear là "All" để hiển thị tất cả các năm học
+        // Không set default year mới nhất nữa
       } else {
         console.warn("Không thể tải danh sách năm học:", response.message);
       }
@@ -220,15 +324,117 @@ const ThesisManagement = () => {
       const isTopicEvent =
         detail?.entity === "TOPIC" ||
         detail?.topicChanged === true ||
-        /topic/i.test(String(detail?.type || ""));
+        /topic/i.test(String(detail?.type || "")) ||
+        detail?.type === "TOPIC_REGISTRATION" ||
+        detail?.type === "TOPIC_SUGGESTION" ||
+        detail?.type === "TOPIC_UPDATE" ||
+        detail?.action === "register" ||
+        detail?.action === "suggest" ||
+        detail?.action === "update";
+
       const now = Date.now();
       if (isTopicEvent && now - lastReloadRef.current > 2000) {
         lastReloadRef.current = now;
+        console.log("Nhận được thông báo thay đổi đề tài, reload danh sách...");
         await loadTopics();
       }
     };
     window.addEventListener("app:notification", handler);
     return () => window.removeEventListener("app:notification", handler);
+  }, []);
+
+  // Thêm polling tự động để kiểm tra thay đổi mỗi 30 giây
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      // Chỉ reload nếu user đang active và không có thay đổi gần đây
+      const now = Date.now();
+      if (now - lastReloadRef.current > 30000) {
+        // 30 giây
+        console.log("Tự động kiểm tra cập nhật đề tài...");
+        await loadTopics();
+        lastReloadRef.current = now;
+      }
+    }, 30000); // 30 giây
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Thêm polling nhanh hơn khi có thay đổi gần đây (10 giây)
+  useEffect(() => {
+    let fastInterval = null;
+
+    const startFastPolling = () => {
+      if (fastInterval) clearInterval(fastInterval);
+
+      fastInterval = setInterval(async () => {
+        const now = Date.now();
+        if (now - lastReloadRef.current > 10000) {
+          // 10 giây
+          console.log("Fast polling: kiểm tra cập nhật đề tài...");
+          await loadTopics();
+          lastReloadRef.current = now;
+        }
+      }, 10000); // 10 giây
+    };
+
+    // Bắt đầu fast polling khi component mount
+    startFastPolling();
+
+    return () => {
+      if (fastInterval) clearInterval(fastInterval);
+    };
+  }, []);
+
+  // Thêm listener cho visibility change (khi user chuyển tab)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (!document.hidden) {
+        const now = Date.now();
+        if (now - lastReloadRef.current > 15000) {
+          // 15 giây
+          console.log("Tab trở nên visible, reload danh sách đề tài...");
+          await loadTopics();
+          lastReloadRef.current = now;
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  // Reload khi user quay lại tab (focus)
+  useEffect(() => {
+    const handleFocus = async () => {
+      const now = Date.now();
+      if (now - lastReloadRef.current > 10000) {
+        // 10 giây
+        console.log("User quay lại tab, reload danh sách đề tài...");
+        await loadTopics();
+        lastReloadRef.current = now;
+        showToast("Đã cập nhật danh sách đề tài!", "info");
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  // Thêm listener cho online/offline events
+  useEffect(() => {
+    const handleOnline = async () => {
+      console.log("Kết nối mạng được khôi phục, reload danh sách đề tài...");
+      await loadTopics();
+      lastReloadRef.current = Date.now();
+      showToast(
+        "Kết nối mạng được khôi phục, đã cập nhật danh sách đề tài!",
+        "success"
+      );
+    };
+
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
   }, []);
 
   // Hàm xử lý khi tạo topic hoặc cập nhật topic thành công từ modal
@@ -242,6 +448,55 @@ const ThesisManagement = () => {
       console.error("Lỗi khi reload danh sách topics:", error);
     }
   };
+
+  // Hàm để force reload danh sách đề tài (có thể gọi từ bên ngoài)
+  const forceReloadTopics = async () => {
+    try {
+      console.log("Force reload danh sách đề tài...");
+      await loadTopics();
+      lastReloadRef.current = Date.now();
+    } catch (error) {
+      console.error("Lỗi khi force reload topics:", error);
+    }
+  };
+
+  // Expose function để component khác có thể gọi
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.forceReloadThesisManagement = forceReloadTopics;
+
+      // Thêm listener cho custom events từ các component khác
+      const handleCustomTopicEvent = async (event) => {
+        const { type, data } = event.detail || {};
+        console.log("Nhận được custom topic event:", type, data);
+
+        if (
+          type === "TOPIC_CHANGED" ||
+          type === "STUDENT_REGISTRATION" ||
+          type === "TOPIC_SUGGESTION"
+        ) {
+          const now = Date.now();
+          if (now - lastReloadRef.current > 1000) {
+            // 1 giây
+            console.log("Reload danh sách đề tài từ custom event...");
+            await loadTopics();
+            lastReloadRef.current = now;
+            showToast("Đã cập nhật danh sách đề tài từ thông báo!", "info");
+          }
+        }
+      };
+
+      window.addEventListener("thesis:topicChanged", handleCustomTopicEvent);
+
+      return () => {
+        delete window.forceReloadThesisManagement;
+        window.removeEventListener(
+          "thesis:topicChanged",
+          handleCustomTopicEvent
+        );
+      };
+    }
+  }, []);
 
   // Hàm đóng modal profile sinh viên
   const handleCloseStudentProfileModal = () => {
@@ -397,6 +652,19 @@ const ThesisManagement = () => {
     setSearchTerm("");
     setSelectedYear("All");
     setSelectedApprovalStatus("All");
+    setSelectedDifficulty("All");
+    setSelectedTopicStatus("All");
+    setDateRange({ from: null, to: null });
+    setAdvancedFilters({
+      topicCode: "",
+      description: "",
+      objectives: "",
+      methodology: "",
+      minStudents: "",
+      maxStudents: "",
+    });
+    // Reload topics sau khi clear filter
+    loadTopics(0);
   };
 
   // Đảm bảo topics luôn là array trước khi filter
@@ -433,9 +701,15 @@ const ThesisManagement = () => {
   // Reset về trang đầu tiên khi filter thay đổi
   useEffect(() => {
     setCurrentPage(0);
-    // Gọi API để lấy dữ liệu trang đầu tiên khi filter thay đổi
-    loadTopics(0);
-  }, [selectedYear, selectedApprovalStatus, searchTerm]);
+    // Gọi API filter khi filter thay đổi
+    filterTopics(0);
+  }, [
+    selectedYear,
+    selectedApprovalStatus,
+    selectedDifficulty,
+    selectedTopicStatus,
+    searchTerm,
+  ]);
 
   // Debug khi suggestedByProfiles thay đổi (loại bỏ log không cần thiết)
   useEffect(() => {
@@ -533,13 +807,6 @@ const ThesisManagement = () => {
       default:
         return "Tất cả trạng thái";
     }
-  };
-
-  // Helper: Rút gọn tiêu đề theo kích thước màn hình
-  const getTitleDisplay = (title) => {
-    if (!title) return "Chưa có tiêu đề";
-    const limit = window.innerWidth < 640 ? 30 : 50;
-    return title.length > limit ? title.substring(0, limit) + "..." : title;
   };
 
   // Hiển thị loading
@@ -751,112 +1018,232 @@ const ThesisManagement = () => {
           </div>
 
           {/* Bottom row - Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="w-full sm:w-40">
-              <Select
-                value={{
-                  value: selectedYear,
-                  label:
-                    selectedYear === "All"
-                      ? "Tất cả năm học"
-                      : getAcademicYearName(selectedYear),
-                }}
-                onChange={(opt) =>
-                  setSelectedYear(opt ? String(opt.value) : "All")
-                }
-                options={[
-                  { value: "All", label: "Tất cả năm học" },
-                  ...academicYears.map((y) => ({
-                    value: String(y.id),
-                    label: y.name,
-                  })),
-                ]}
-                isSearchable={false}
-                className="custom-select"
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    borderRadius: "8px",
-                    minHeight: "40px",
-                    fontSize: "0.95rem",
-                    borderColor: "#d1d5db",
-                    boxShadow: "none",
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    fontSize: "0.95rem",
-                    backgroundColor: getOptionBackgroundColor(state),
-                    color: state.isSelected ? "#fff" : "#111827",
-                    cursor: "pointer",
-                  }),
-                  singleValue: (base) => ({
-                    ...base,
-                    color: "#374151",
-                  }),
-                  menu: (base) => ({
-                    ...base,
-                    borderRadius: "8px",
-                    zIndex: 20,
-                  }),
-                }}
-              />
+          <div className="flex flex-col gap-4">
+            {/* Row 1: Basic filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="w-full sm:w-40">
+                <Select
+                  value={{
+                    value: selectedYear,
+                    label:
+                      selectedYear === "All"
+                        ? "Tất cả năm học"
+                        : getAcademicYearName(selectedYear),
+                  }}
+                  onChange={(opt) =>
+                    setSelectedYear(opt ? String(opt.value) : "All")
+                  }
+                  options={[
+                    { value: "All", label: "Tất cả năm học" },
+                    ...academicYears.map((y) => ({
+                      value: String(y.id),
+                      label: y.name,
+                    })),
+                  ]}
+                  isSearchable={true}
+                  className="custom-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      minHeight: "40px",
+                      fontSize: "0.95rem",
+                      borderColor: "#d1d5db",
+                      boxShadow: "none",
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      fontSize: "0.95rem",
+                      backgroundColor: getOptionBackgroundColor(state),
+                      color: state.isSelected ? "#fff" : "#111827",
+                      cursor: "pointer",
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: "#374151",
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      zIndex: 20,
+                      scrollbarWidth: "thin",
+                      scrollbarColor: "#cbd5e1 transparent",
+                    }),
+                  }}
+                />
+              </div>
+
+              <div className="w-full sm:w-40">
+                <Select
+                  value={{
+                    value: selectedApprovalStatus,
+                    label: getApprovalFilterLabel(selectedApprovalStatus),
+                  }}
+                  onChange={(opt) =>
+                    setSelectedApprovalStatus(opt ? String(opt.value) : "All")
+                  }
+                  options={[
+                    { value: "All", label: "Tất cả trạng thái" },
+                    { value: "pending", label: "Chờ duyệt" },
+                    { value: "approved", label: "Đã duyệt" },
+                    { value: "rejected", label: "Bị từ chối" },
+                    { value: "available", label: "Còn trống" },
+                    { value: "active", label: "Hoạt động" },
+                    { value: "inactive", label: "Ngừng hoạt động" },
+                  ]}
+                  isSearchable={false}
+                  className="custom-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      minHeight: "40px",
+                      fontSize: "0.95rem",
+                      borderColor: "#d1d5db",
+                      boxShadow: "none",
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      fontSize: "0.95rem",
+                      backgroundColor: getOptionBackgroundColor(state),
+                      color: state.isSelected ? "#fff" : "#111827",
+                      cursor: "pointer",
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: "#374151",
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      zIndex: 20,
+                      scrollbarWidth: "thin",
+                      scrollbarColor: "#cbd5e1 transparent",
+                    }),
+                  }}
+                />
+              </div>
+
+              <div className="w-full sm:w-40">
+                <Select
+                  value={{
+                    value: selectedDifficulty,
+                    label:
+                      selectedDifficulty === "All"
+                        ? "Tất cả độ khó"
+                        : selectedDifficulty,
+                  }}
+                  onChange={(opt) =>
+                    setSelectedDifficulty(opt ? String(opt.value) : "All")
+                  }
+                  options={[
+                    { value: "All", label: "Tất cả độ khó" },
+                    { value: "EASY", label: "Dễ" },
+                    { value: "MEDIUM", label: "Trung bình" },
+                    { value: "HARD", label: "Khó" },
+                  ]}
+                  isSearchable={false}
+                  className="custom-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      minHeight: "40px",
+                      fontSize: "0.95rem",
+                      borderColor: "#d1d5db",
+                      boxShadow: "none",
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      fontSize: "0.95rem",
+                      backgroundColor: getOptionBackgroundColor(state),
+                      color: state.isSelected ? "#fff" : "#111827",
+                      cursor: "pointer",
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: "#374151",
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      zIndex: 20,
+                      scrollbarWidth: "thin",
+                      scrollbarColor: "#cbd5e1 transparent",
+                    }),
+                  }}
+                />
+              </div>
+
+              <div className="w-full sm:w-40">
+                <Select
+                  value={{
+                    value: selectedTopicStatus,
+                    label:
+                      selectedTopicStatus === "All"
+                        ? "Tất cả trạng thái đề tài"
+                        : selectedTopicStatus,
+                  }}
+                  onChange={(opt) =>
+                    setSelectedTopicStatus(opt ? String(opt.value) : "All")
+                  }
+                  options={[
+                    { value: "All", label: "Tất cả trạng thái đề tài" },
+                    { value: "ACTIVE", label: "Hoạt động" },
+                    { value: "INACTIVE", label: "Ngừng hoạt động" },
+                    { value: "ARCHIVED", label: "Lưu trữ" },
+                    { value: "DELETED", label: "Đã xóa" },
+                  ]}
+                  isSearchable={false}
+                  className="custom-select"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      minHeight: "40px",
+                      fontSize: "0.95rem",
+                      borderColor: "#d1d5db",
+                      boxShadow: "none",
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      fontSize: "0.95rem",
+                      backgroundColor: getOptionBackgroundColor(state),
+                      color: state.isSelected ? "#fff" : "#111827",
+                      cursor: "pointer",
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: "#374151",
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      borderRadius: "8px",
+                      zIndex: 20,
+                      scrollbarWidth: "thin",
+                      scrollbarColor: "#cbd5e1 transparent",
+                    }),
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="w-full sm:w-40">
-              <Select
-                value={{
-                  value: selectedApprovalStatus,
-                  label: getApprovalFilterLabel(selectedApprovalStatus),
-                }}
-                onChange={(opt) =>
-                  setSelectedApprovalStatus(opt ? String(opt.value) : "All")
-                }
-                options={[
-                  { value: "All", label: "Tất cả trạng thái" },
-                  { value: "pending", label: "Chờ duyệt" },
-                  { value: "approved", label: "Đã duyệt" },
-                  { value: "rejected", label: "Bị từ chối" },
-                  { value: "available", label: "Còn trống" },
-                  { value: "active", label: "Hoạt động" },
-                  { value: "inactive", label: "Ngừng hoạt động" },
-                ]}
-                isSearchable={false}
-                className="custom-select"
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    borderRadius: "8px",
-                    minHeight: "40px",
-                    fontSize: "0.95rem",
-                    borderColor: "#d1d5db",
-                    boxShadow: "none",
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    fontSize: "0.95rem",
-                    backgroundColor: getOptionBackgroundColor(state),
-                    color: state.isSelected ? "#fff" : "#111827",
-                    cursor: "pointer",
-                  }),
-                  singleValue: (base) => ({
-                    ...base,
-                    color: "#374151",
-                  }),
-                  menu: (base) => ({
-                    ...base,
-                    borderRadius: "8px",
-                    zIndex: 20,
-                  }),
-                }}
-              />
-            </div>
+            {/* Row 2: Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                className="px-4 h-10 bg-secondary hover:bg-secondary-hover text-white font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto flex items-center justify-center"
+                onClick={() => filterTopics(0)}
+              >
+                Áp dụng bộ lọc
+              </button>
 
-            <button
-              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto"
-              onClick={clearFilters}
-            >
-              Xóa bộ lọc
-            </button>
+              <button
+                className="px-4 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto flex items-center justify-center"
+                onClick={clearFilters}
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -870,7 +1257,7 @@ const ThesisManagement = () => {
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
                   Mã đề tài
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] sm:min-w-[200px]">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] sm:min-w-[200px] lg:min-w-[250px] xl:min-w-[300px]">
                   Tiêu đề
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] hidden md:table-cell">
@@ -885,7 +1272,7 @@ const ThesisManagement = () => {
                 <th className="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] hidden xl:table-cell">
                   Trạng thái đề tài
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
+                <th className="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] sm:min-w-[150px]">
                   Hành động
                 </th>
               </tr>
@@ -922,7 +1309,7 @@ const ThesisManagement = () => {
                             className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors duration-200 text-sm"
                           />
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 sm:px-6 py-4">
                           <input
                             type="text"
                             name="title"
@@ -1007,7 +1394,7 @@ const ThesisManagement = () => {
                           </select>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center gap-1 sm:gap-2">
+                          <div className="flex items-center justify-center gap-1 sm:gap-2 min-h-[40px]">
                             {/* Button Chấp nhận - chỉ hiển thị khi status là pending */}
                             {isPendingStatus(
                               editRowData.approvalStatus,
@@ -1081,13 +1468,15 @@ const ThesisManagement = () => {
                             {topic.topicCode || "Chưa có"}
                           </span>
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <span
-                            className="font-medium text-gray-900 max-w-[150px] sm:max-w-[200px] block"
-                            title={topic.title || "Chưa có tiêu đề"}
-                          >
-                            {getTitleDisplay(topic.title)}
-                          </span>
+                        <td className="px-3 sm:px-6 py-4">
+                          <div className="max-w-[150px] sm:max-w-[200px] lg:max-w-[250px] xl:max-w-[300px]">
+                            <span
+                              className="font-medium text-gray-900 block truncate cursor-help"
+                              title={topic.title || "Chưa có tiêu đề"}
+                            >
+                              {topic.title || "Chưa có tiêu đề"}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                           <div className="text-sm">
@@ -1180,9 +1569,7 @@ const ThesisManagement = () => {
                           </span>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            {/* Bỏ log debug không cần thiết */}
-
+                          <div className="flex items-center justify-center gap-1 sm:gap-2 min-h-[40px]">
                             {/* Button Chấp nhận - chỉ hiển thị khi status là pending */}
                             {isPendingStatus(
                               topic.approvalStatus,

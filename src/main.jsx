@@ -30,6 +30,7 @@ import StudentChat from "./pages/student/Chat.jsx";
 import LecturerChat from "./pages/lecturer/Chat.jsx";
 import StudentProfile from "./pages/student/StudentProfile.jsx";
 import MyThesis from "./pages/student/MyThesis.jsx";
+import AssignmentsDetail from "./pages/student/AssignmentsDetail.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
 import ThesisTopicsManagement from "./pages/admin/ThesisTopicsManagement.jsx";
@@ -141,6 +142,7 @@ createRoot(document.getElementById("root")).render(
                   element={<StudentNotifications />}
                 />
                 <Route path="my-thesis" element={<MyThesis />} />
+                <Route path="assignments" element={<AssignmentsDetail />} />
                 {/* Có thể thêm các route con khác cho student ở đây */}
               </Route>
 

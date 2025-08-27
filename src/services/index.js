@@ -5,6 +5,7 @@ export { default as userService } from "./user.service";
 export { default as topicService } from "./topic.service";
 export { default as registrationService } from "./registration.service";
 export { default as notificationService } from "./notification.service";
+export { default as assignmentService } from "./assignment.service";
 export {
   suggestTopicForStudent,
   getStudentSuggestedTopics,

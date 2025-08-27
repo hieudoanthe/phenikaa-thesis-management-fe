@@ -6,6 +6,7 @@ import {
   getAllTeachers,
 } from "../../services/suggest.service";
 import userService from "../../services/user.service";
+import { assignmentService } from "../../services";
 
 /**
  * Trang theo dõi trạng thái đề tài của sinh viên
@@ -29,6 +30,10 @@ const MyThesis = () => {
   const [suggestedByProfiles, setSuggestedByProfiles] = useState({});
   const [suggestedForProfiles, setSuggestedForProfiles] = useState({});
   const [teacherProfiles, setTeacherProfiles] = useState({});
+  // Assignments/Tasks theo đề tài
+  const [assignments, setAssignments] = useState([]);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [assignError, setAssignError] = useState("");
 
   // Hàm lấy trạng thái hiển thị
   const getStatusDisplay = (status) => {
@@ -116,6 +121,45 @@ const MyThesis = () => {
   // Hàm chọn đề tài để xem chi tiết
   const handleThesisSelect = (thesis) => {
     setSelectedThesis(thesis);
+    // Fetch assignments for this topic
+    if (thesis?.topicId) {
+      loadAssignmentsForTopic(thesis.topicId);
+    } else {
+      setAssignments([]);
+    }
+  };
+
+  // Lấy assignments theo topicId
+  const loadAssignmentsForTopic = async (topicId) => {
+    try {
+      setAssignLoading(true);
+      setAssignError("");
+      const res = await assignmentService.getAssignmentsByTopic(topicId);
+      if (res.success) {
+        setAssignments(Array.isArray(res.data) ? res.data : []);
+      } else {
+        setAssignments([]);
+        setAssignError(res.message || "Không thể tải nhiệm vụ");
+      }
+    } catch (e) {
+      setAssignments([]);
+      setAssignError("Có lỗi khi tải nhiệm vụ");
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  // Cập nhật hoàn thành task
+  const handleCompleteTask = async (taskId) => {
+    try {
+      const payload = { status: 3, progress: 100 };
+      const res = await assignmentService.updateTask(taskId, payload);
+      if (res.success && selectedThesis?.topicId) {
+        await loadAssignmentsForTopic(selectedThesis.topicId);
+      }
+    } catch (e) {
+      // noop; có thể thêm toast nếu cần
+    }
   };
 
   // Hàm mở chat với giảng viên
@@ -503,6 +547,137 @@ const MyThesis = () => {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Danh sách Assignment/Task */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-base font-semibold text-gray-900 m-0">
+                      Nhiệm vụ được giao
+                    </h4>
+                    {selectedThesis?.topicId && (
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/student/assignments?topicId=${selectedThesis.topicId}`
+                          )
+                        }
+                        className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
+                      >
+                        Xem chi tiết →
+                      </button>
+                    )}
+                  </div>
+                  {assignLoading ? (
+                    <p className="text-sm text-gray-500 m-0">
+                      Đang tải nhiệm vụ...
+                    </p>
+                  ) : assignError ? (
+                    <p className="text-sm text-red-600 m-0">{assignError}</p>
+                  ) : assignments.length === 0 ? (
+                    <p className="text-sm text-gray-500 m-0">
+                      Chưa có assignment nào.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {assignments.map((a) => (
+                        <div
+                          key={a.assignmentId}
+                          className="border border-gray-200 rounded-md p-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">
+                                {a.title}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                Hạn chót: {a.dueDate || "Không có"}
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              Tiến độ:{" "}
+                              {Array.isArray(a.tasks) && a.tasks.length > 0
+                                ? Math.round(
+                                    a.tasks.reduce(
+                                      (s, t) =>
+                                        s +
+                                        (typeof t.progress === "number"
+                                          ? t.progress
+                                          : 0),
+                                      0
+                                    ) / a.tasks.length
+                                  )
+                                : 0}
+                              %
+                            </div>
+                          </div>
+                          {/* tasks */}
+                          <div className="mt-3 space-y-2">
+                            {(a.tasks || []).map((t) => {
+                              const isCompleted =
+                                t.status === 3 || t.status === "Hoàn thành";
+                              const currentUserId = getUserIdFromToken();
+                              const isMine = t.assignedTo === currentUserId;
+                              return (
+                                <div
+                                  key={t.taskId}
+                                  className="flex items-center justify-between bg-gray-50 rounded p-2 border border-gray-200"
+                                >
+                                  <div className="min-w-0">
+                                    <div className="text-sm font-medium text-gray-800 truncate">
+                                      {t.taskName}
+                                    </div>
+                                    <div className="text-[11px] text-gray-600">
+                                      Hạn: {t.endDate || "Không có"} • Trạng
+                                      thái:{" "}
+                                      {t.status === 3
+                                        ? "Hoàn thành"
+                                        : t.status === 2
+                                        ? "Đang thực hiện"
+                                        : "Đang chờ xử lý"}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-emerald-500"
+                                        style={{
+                                          width: `${
+                                            typeof t.progress === "number"
+                                              ? t.progress
+                                              : 0
+                                          }%`,
+                                        }}
+                                      ></div>
+                                    </div>
+                                    <span className="text-xs text-gray-700 w-8 text-right">
+                                      {typeof t.progress === "number"
+                                        ? t.progress
+                                        : 0}
+                                      %
+                                    </span>
+                                    <button
+                                      disabled={!isMine || isCompleted}
+                                      onClick={() =>
+                                        handleCompleteTask(t.taskId)
+                                      }
+                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                                        isMine && !isCompleted
+                                          ? "bg-emerald-500 text-white hover:bg-emerald-600 border-emerald-600"
+                                          : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                      }`}
+                                    >
+                                      Hoàn thành
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <button

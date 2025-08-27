@@ -48,9 +48,21 @@ export const API_ENDPOINTS = {
   APPROVE_TOPIC: "/api/thesis-service/teacher/approve-topic",
   REJECT_TOPIC: "/api/thesis-service/teacher/reject-topic",
 
-    // Approved Topics Management
-    GET_APPROVED_TOPICS_PAGED:
-      "/api/thesis-service/teacher/approved-topics/paged",
+  // Topic Filtering and Search
+  FILTER_TOPICS: "/api/thesis-service/teacher/filter-theses",
+  SEARCH_TOPICS: "/api/thesis-service/teacher/search-theses",
+  GET_TOPICS_BY_SUPERVISOR: "/api/thesis-service/teacher/theses-by-supervisor",
+  GET_TOPICS_BY_ACADEMIC_YEAR:
+    "/api/thesis-service/teacher/theses-by-academic-year",
+  GET_TOPICS_BY_DIFFICULTY: "/api/thesis-service/teacher/theses-by-difficulty",
+  GET_TOPICS_BY_TOPIC_STATUS:
+    "/api/thesis-service/teacher/theses-by-topic-status",
+  GET_TOPICS_BY_APPROVAL_STATUS:
+    "/api/thesis-service/teacher/theses-by-approval-status",
+
+  // Approved Topics Management
+  GET_APPROVED_TOPICS_PAGED:
+    "/api/thesis-service/teacher/approved-topics/paged",
   GET_APPROVED_TOPICS_COUNT:
     "/api/thesis-service/teacher/approved-topics/count",
   GET_TOPIC_STATUS: "/api/thesis-service/teacher/topic-status/{topicId}",
@@ -82,6 +94,15 @@ export const API_ENDPOINTS = {
   // Teacher Profile
   GET_TEACHER_PROFILE: "/api/profile-service/teacher/get-profile/{userId}",
   UPDATE_TEACHER_PROFILE: "/api/profile-service/teacher/update-profile-teacher",
+
+  // Assign Service
+  GET_ASSIGNMENTS_BY_TOPIC: "/api/assign-service/topic/{topicId}",
+  CREATE_ASSIGNMENT: "/api/assign-service",
+  UPDATE_ASSIGNMENT: "/api/assign-service/{assignmentId}",
+  CREATE_TASK: "/api/assign-service/{assignmentId}/tasks",
+  UPDATE_TASK: "/api/assign-service/tasks/{taskId}",
+  DELETE_TASK: "/api/assign-service/tasks/{taskId}",
+  DELETE_ASSIGNMENT: "/api/assign-service/{assignmentId}",
 };
 
 // WebSocket Endpoints

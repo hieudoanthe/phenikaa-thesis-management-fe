@@ -331,6 +331,181 @@ class TopicService {
       };
     }
   }
+
+  /**
+   * Filter topics với nhiều tiêu chí
+   * @param {Object} filterParams - Tham số filter
+   * @returns {Promise<Object>} - Danh sách topics đã filter
+   */
+  async filterTopics(filterParams = {}) {
+    try {
+      const response = await apiPost(API_ENDPOINTS.FILTER_TOPICS, filterParams);
+      return {
+        success: true,
+        data: response,
+        message: "Filter topics thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi filter topics:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Filter topics thất bại",
+      };
+    }
+  }
+
+  /**
+   * Tìm kiếm topics theo pattern
+   * @param {string} searchPattern - Pattern tìm kiếm
+   * @returns {Promise<Object>} - Danh sách topics tìm được
+   */
+  async searchTopics(searchPattern) {
+    try {
+      const response = await apiGet(
+        `${API_ENDPOINTS.SEARCH_TOPICS}?searchPattern=${encodeURIComponent(
+          searchPattern
+        )}`
+      );
+      return {
+        success: true,
+        data: response,
+        message: "Tìm kiếm topics thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi tìm kiếm topics:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Tìm kiếm topics thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy topics theo supervisor
+   * @param {number} supervisorId - ID supervisor
+   * @returns {Promise<Object>} - Danh sách topics
+   */
+  async getTopicsBySupervisor(supervisorId) {
+    try {
+      const response = await apiGet(
+        `${API_ENDPOINTS.GET_TOPICS_BY_SUPERVISOR}?supervisorId=${supervisorId}`
+      );
+      return {
+        success: true,
+        data: response,
+        message: "Lấy topics theo supervisor thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy topics theo supervisor:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy topics theo supervisor thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy topics theo năm học
+   * @param {number} academicYearId - ID năm học
+   * @returns {Promise<Object>} - Danh sách topics
+   */
+  async getTopicsByAcademicYear(academicYearId) {
+    try {
+      const response = await apiGet(
+        `${API_ENDPOINTS.GET_TOPICS_BY_ACADEMIC_YEAR}?academicYearId=${academicYearId}`
+      );
+      return {
+        success: true,
+        data: response,
+        message: "Lấy topics theo năm học thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy topics theo năm học:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy topics theo năm học thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy topics theo độ khó
+   * @param {string} difficultyLevel - Độ khó
+   * @returns {Promise<Object>} - Danh sách topics
+   */
+  async getTopicsByDifficulty(difficultyLevel) {
+    try {
+      const response = await apiGet(
+        `${API_ENDPOINTS.GET_TOPICS_BY_DIFFICULTY}?difficultyLevel=${difficultyLevel}`
+      );
+      return {
+        success: true,
+        data: response,
+        message: "Lấy topics theo độ khó thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy topics theo độ khó:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy topics theo độ khó thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy topics theo trạng thái đề tài
+   * @param {string} topicStatus - Trạng thái đề tài
+   * @returns {Promise<Object>} - Danh sách topics
+   */
+  async getTopicsByTopicStatus(topicStatus) {
+    try {
+      const response = await apiGet(
+        `${API_ENDPOINTS.GET_TOPICS_BY_TOPIC_STATUS}?topicStatus=${topicStatus}`
+      );
+      return {
+        success: true,
+        data: response,
+        message: "Lấy topics theo trạng thái đề tài thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy topics theo trạng thái đề tài:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy topics theo trạng thái đề tài thất bại",
+      };
+    }
+  }
+
+  /**
+   * Lấy topics theo trạng thái phê duyệt
+   * @param {string} approvalStatus - Trạng thái phê duyệt
+   * @returns {Promise<Object>} - Danh sách topics
+   */
+  async getTopicsByApprovalStatus(approvalStatus) {
+    try {
+      const response = await apiGet(
+        `${API_ENDPOINTS.GET_TOPICS_BY_APPROVAL_STATUS}?approvalStatus=${approvalStatus}`
+      );
+      return {
+        success: true,
+        data: response,
+        message: "Lấy topics theo trạng thái phê duyệt thành công",
+      };
+    } catch (error) {
+      console.error("Lỗi khi lấy topics theo trạng thái phê duyệt:", error);
+      return {
+        success: false,
+        error: error.message,
+        message: "Lấy topics theo trạng thái phê duyệt thất bại",
+      };
+    }
+  }
 }
 
 export default new TopicService();
