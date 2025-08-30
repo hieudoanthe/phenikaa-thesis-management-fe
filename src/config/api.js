@@ -20,8 +20,8 @@ export const API_ENDPOINTS = {
   REFRESH: "/api/auth/refresh-token",
 
   // Academic Year Management
-  ACADEMIC_YEAR_LIST: "/academic-config/list-academic-year",
-  ACADEMIC_YEAR_DETAIL: "/academic-config/get-academic-year",
+  ACADEMIC_YEAR_LIST: "/api/academic-config-service/list-academic-year",
+  ACADEMIC_YEAR_DETAIL: "/api/academic-config-service/get-academic-year",
 
   /**
    * Admin Permission
@@ -103,6 +103,28 @@ export const API_ENDPOINTS = {
   UPDATE_TASK: "/api/assign-service/tasks/{taskId}",
   DELETE_TASK: "/api/assign-service/tasks/{taskId}",
   DELETE_ASSIGNMENT: "/api/assign-service/{assignmentId}",
+
+  /**
+   * Registration Period Management
+   */
+  // Registration Period
+  GET_CURRENT_REGISTRATION_PERIOD: "/api/thesis-service/admin/current",
+  GET_REGISTRATION_PERIODS: "/api/thesis-service/admin",
+  GET_REGISTRATION_PERIODS_BY_ACADEMIC_YEAR:
+    "/api/thesis-service/admin/academic-year/{academicYearId}",
+  CREATE_REGISTRATION_PERIOD: "/api/thesis-service/admin",
+  START_REGISTRATION_PERIOD: "/api/thesis-service/admin/{periodId}/start",
+  CLOSE_REGISTRATION_PERIOD: "/api/thesis-service/admin/{periodId}/close",
+
+  // Lecturer Capacity
+  GET_LECTURER_CAPACITY:
+    "/api/thesis-service/admin/lecturer-capacity/{lecturerId}/{periodId}",
+  UPDATE_LECTURER_CAPACITY: "/api/thesis-service/admin/lecturer-capacity",
+
+  // Academic Year
+  GET_ACTIVE_ACADEMIC_YEAR: "/api/academic-config-service/active",
+  GET_ACADEMIC_YEARS: "/api/academic-config-service/list-academic-year",
+  ACTIVATE_ACADEMIC_YEAR: "/api/academic-config-service/{yearId}/activate",
 };
 
 // WebSocket Endpoints

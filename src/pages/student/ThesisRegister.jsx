@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { suggestTopicForStudent } from "../../services/suggest.service";
 import { userService } from "../../services";
 import { toast } from "react-toastify";
+import registrationPeriodService from "../../services/registrationPeriod.service";
+import lecturerCapacityService from "../../services/lecturerCapacity.service";
 
 const initialForm = {
   tieuDe: "",
@@ -60,57 +62,118 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
   const [loadingLecturers, setLoadingLecturers] = useState(false);
   const [errorLecturers, setErrorLecturers] = useState("");
 
-  // Gọi API lấy danh sách giảng viên khi component mount
+  // State cho đợt đăng ký
+  const [currentPeriod, setCurrentPeriod] = useState(null);
+  const [periodLoading, setPeriodLoading] = useState(false);
+
+  // Kiểm tra đợt đăng ký khi component mount
   useEffect(() => {
-    const fetchLecturers = async () => {
-      setLoadingLecturers(true);
-      setErrorLecturers("");
-      try {
-        const response = await userService.getAllTeachers();
+    if (isOpen) {
+      checkRegistrationPeriod();
+    }
+  }, [isOpen]);
 
-        // Chuyển đổi dữ liệu từ API sang format phù hợp với UI
-        // Tổng chỉ tiêu giảng viên (cấu hình tạm thời ở FE, nên đưa về từ BE nếu có)
-        const TOTAL_TEACHER_CAPACITY = 15;
-
-        const formattedLecturers =
-          response?.map((teacher) => {
-            const max = Number.isFinite(teacher?.maxStudents)
-              ? teacher.maxStudents
-              : teacher?.maxStudents ?? 0;
-            return {
-              id: teacher.userId,
-              name: teacher.fullName || "Chưa có tên",
-              email: teacher.phoneNumber || "Chưa có thông tin liên lạc",
-              avatar:
-                teacher.avt ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  teacher.fullName || "GV"
-                )}&background=random`,
-              specialization: teacher.specialization || "Chưa có chuyên ngành",
-              department: teacher.department || "Chưa có khoa",
-              assigned: 0,
-              max: max,
-              accepted: Math.max(
-                0,
-                TOTAL_TEACHER_CAPACITY - (Number.isFinite(max) ? max : 0)
-              ),
-              status: max > 0 ? "Available" : "Unavailable",
-            };
-          }) || [];
-
-        setLecturers(formattedLecturers);
-      } catch (err) {
-        console.error("Lỗi khi lấy danh sách giảng viên:", err);
-        setErrorLecturers(
-          "Không thể tải danh sách giảng viên. Vui lòng thử lại sau."
-        );
-      } finally {
-        setLoadingLecturers(false);
+  const checkRegistrationPeriod = async () => {
+    setPeriodLoading(true);
+    try {
+      const periodResult = await registrationPeriodService.getCurrentPeriod();
+      if (periodResult.success && periodResult.data) {
+        setCurrentPeriod(periodResult.data);
+      } else {
+        setCurrentPeriod(null);
       }
-    };
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra đợt đăng ký:", error);
+      setCurrentPeriod(null);
+    } finally {
+      setPeriodLoading(false);
+    }
+  };
 
-    fetchLecturers();
-  }, []);
+  // Gọi API lấy danh sách giảng viên khi có đợt đăng ký
+  useEffect(() => {
+    if (currentPeriod) {
+      const fetchLecturers = async () => {
+        setLoadingLecturers(true);
+        setErrorLecturers("");
+        try {
+          const response = await userService.getAllTeachers();
+
+          // Chuyển đổi dữ liệu từ API sang format phù hợp với UI
+          // Lấy capacity thực tế từ LecturerCapacity nếu có đợt đăng ký
+          const formattedLecturers = await Promise.all(
+            response?.map(async (teacher) => {
+              let capacity = null;
+              let remainingSlots = 0;
+
+              // Nếu có đợt đăng ký, lấy capacity thực tế
+              if (currentPeriod) {
+                try {
+                  const capacityResult =
+                    await lecturerCapacityService.getLecturerCapacity(
+                      teacher.userId,
+                      currentPeriod.periodId
+                    );
+                  if (capacityResult.success && capacityResult.data) {
+                    capacity = capacityResult.data;
+                    remainingSlots = Math.max(
+                      0,
+                      capacity.maxStudents - capacity.currentStudents
+                    );
+                  }
+                } catch (error) {
+                  console.error(
+                    `Lỗi khi lấy capacity cho lecturer ${teacher.userId}:`,
+                    error
+                  );
+                }
+              }
+
+              // Nếu không có capacity, sử dụng giá trị mặc định
+              if (!capacity) {
+                remainingSlots = currentPeriod
+                  ? currentPeriod.maxStudentsPerLecturer
+                  : 15;
+              }
+
+              return {
+                id: teacher.userId,
+                name: teacher.fullName || "Chưa có tên",
+                email: teacher.phoneNumber || "Chưa có thông tin liên lạc",
+                avatar:
+                  teacher.avt ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    teacher.fullName || "GV"
+                  )}&background=random`,
+                specialization:
+                  teacher.specialization || "Chưa có chuyên ngành",
+                department: teacher.department || "Chưa có khoa",
+                remainingSlots: remainingSlots,
+                maxStudents: capacity
+                  ? capacity.maxStudents
+                  : currentPeriod
+                  ? currentPeriod.maxStudentsPerLecturer
+                  : 15,
+                currentStudents: capacity ? capacity.currentStudents : 0,
+                status: remainingSlots > 0 ? "Available" : "Unavailable",
+              };
+            }) || []
+          );
+
+          setLecturers(formattedLecturers);
+        } catch (err) {
+          console.error("Lỗi khi lấy danh sách giảng viên:", err);
+          setErrorLecturers(
+            "Không thể tải danh sách giảng viên. Vui lòng thử lại sau."
+          );
+        } finally {
+          setLoadingLecturers(false);
+        }
+      };
+
+      fetchLecturers();
+    }
+  }, [currentPeriod]);
 
   // Xử lý thay đổi trường nhập liệu
   const handleChange = (e) => {
@@ -203,283 +266,336 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
             </span>
           </div>
 
-          {/* Form Fields - Single Column Layout */}
-          <div
-            className={`space-y-4 mb-4 transition-all duration-300 ${
-              showLecturerList ? "opacity-40" : "opacity-100"
-            }`}
-          >
-            {/* Tên đề tài */}
-            <div className="relative">
-              <input
-                id="tieuDe"
-                type="text"
-                name="tieuDe"
-                placeholder=" "
-                value={form.tieuDe}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
-              />
-              <label
-                htmlFor="tieuDe"
-                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Tên đề tài <span className="text-red-500">*</span>
-              </label>
+          {/* Hiển thị thông tin đợt đăng ký */}
+          {currentPeriod && (
+            <div className="period-info bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                    Đợt đăng ký: {currentPeriod.periodName}
+                  </h3>
+                  <p className="text-blue-700 text-sm">
+                    Thời gian:{" "}
+                    {new Date(currentPeriod.startDate).toLocaleDateString(
+                      "vi-VN"
+                    )}{" "}
+                    -{" "}
+                    {new Date(currentPeriod.endDate).toLocaleDateString(
+                      "vi-VN"
+                    )}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-blue-600">
+                    {new Date(currentPeriod.endDate).getTime() > Date.now()
+                      ? "Đang diễn ra"
+                      : "Đã kết thúc"}
+                  </div>
+                </div>
+              </div>
             </div>
+          )}
 
-            {/* Mô tả đề tài */}
-            <div className="relative">
-              <textarea
-                id="moTa"
-                name="moTa"
-                placeholder=" "
-                value={form.moTa}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                rows={3}
-              />
-              <label
-                htmlFor="moTa"
-                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Mô tả đề tài <span className="text-red-500">*</span>
-              </label>
+          {/* Hiển thị cảnh báo khi không có đợt đăng ký */}
+          {!currentPeriod && !periodLoading && (
+            <div className="no-period-warning bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <div className="text-yellow-800 text-center">
+                <h3 className="text-lg font-semibold mb-2">
+                  Không có đợt đăng ký nào đang diễn ra
+                </h3>
+                <p>
+                  Vui lòng chờ đến đợt đăng ký tiếp theo để có thể đề xuất đề
+                  tài.
+                </p>
+              </div>
             </div>
+          )}
 
-            {/* Mục tiêu */}
-            <div className="relative">
-              <textarea
-                id="mucTieu"
-                name="mucTieu"
-                placeholder=" "
-                value={form.mucTieu}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                rows={3}
-              />
-              <label
-                htmlFor="mucTieu"
-                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Mục tiêu <span className="text-red-500">*</span>
-              </label>
-            </div>
-
-            {/* Phương pháp thực hiện */}
-            <div className="relative">
-              <textarea
-                id="phuongPhap"
-                name="phuongPhap"
-                placeholder=" "
-                value={form.phuongPhap}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                rows={3}
-              />
-              <label
-                htmlFor="phuongPhap"
-                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Phương pháp thực hiện <span className="text-red-500">*</span>
-              </label>
-            </div>
-
-            {/* Kết quả dự kiến */}
-            <div className="relative">
-              <textarea
-                id="ketQuaDuKien"
-                name="ketQuaDuKien"
-                placeholder=" "
-                value={form.ketQuaDuKien}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                rows={3}
-              />
-              <label
-                htmlFor="ketQuaDuKien"
-                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Kết quả dự kiến <span className="text-red-500">*</span>
-              </label>
-            </div>
-
-            {/* Lý do đề xuất */}
-            <div className="relative">
-              <textarea
-                id="lyDo"
-                name="lyDo"
-                placeholder=" "
-                value={form.lyDo}
-                onChange={handleChange}
-                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
-                required
-                rows={3}
-              />
-              <label
-                htmlFor="lyDo"
-                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Lý do đề xuất <span className="text-red-500">*</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Lecturer Autocomplete - Full Width */}
-          <div className="relative mb-4">
-            <div className="relative">
-              <input
-                id="lecturer-search"
-                type="text"
-                placeholder=" "
-                value={searchQuery}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSearchQuery(value);
-                  setShowLecturerList(true);
-
-                  // Nếu xóa hết input, reset giảng viên đã chọn
-                  if (!value.trim()) {
-                    setForm((prev) => ({ ...prev, giangVien: null }));
-                  }
-                }}
-                onKeyDown={(e) => {
-                  // Xử lý phím Enter để chọn giảng viên đầu tiên
-                  if (
-                    e.key === "Enter" &&
-                    showLecturerList &&
-                    filteredLecturers.length > 0
-                  ) {
-                    e.preventDefault();
-                    const firstLecturer = filteredLecturers[0];
-                    handleLecturerSelect(firstLecturer);
-                  }
-                  // Xử lý phím Escape để đóng dropdown
-                  if (e.key === "Escape") {
-                    setShowLecturerList(false);
-                  }
-                }}
-                onFocus={() => setShowLecturerList(true)}
-                ref={searchInputRef}
-                className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
-              />
-              <label
-                htmlFor="lecturer-search"
-                className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Giảng viên hướng dẫn mong muốn{" "}
-                <span className="text-red-500">*</span>
-              </label>
-
-              {/* Lecturer Dropdown */}
-              {showLecturerList && (
-                <div
-                  ref={dropdownRef}
-                  className="absolute left-0 right-0 bottom-full mb-6 bg-white border border-gray-300 rounded-lg shadow-xl z-20 max-h-96 overflow-hidden"
+          {/* Form đề xuất đề tài - chỉ hiển thị khi có đợt đăng ký */}
+          {currentPeriod && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Tên đề tài */}
+              <div className="relative">
+                <input
+                  id="tieuDe"
+                  type="text"
+                  name="tieuDe"
+                  placeholder=" "
+                  value={form.tieuDe}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
+                />
+                <label
+                  htmlFor="tieuDe"
+                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
                 >
-                  {/* Search Header removed as requested */}
+                  Tên đề tài <span className="text-red-500">*</span>
+                </label>
+              </div>
 
-                  {/* Lecturer List */}
-                  <div className="max-h-72 overflow-y-auto">
-                    {loadingLecturers ? (
-                      <div className="p-3 text-center text-gray-500">
-                        <div className="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                        <span className="ml-2 text-sm">
-                          Đang tải danh sách giảng viên...
-                        </span>
-                      </div>
-                    ) : errorLecturers ? (
-                      <div className="p-3 text-center text-red-500 text-sm">
-                        {errorLecturers}
-                      </div>
-                    ) : filteredLecturers.length > 0 ? (
-                      <>
-                        {/* First 8 results always visible */}
-                        {filteredLecturers.slice(0, 8).map((l) => (
-                          <div
-                            key={l.id}
-                            className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-150 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
-                              form.giangVien?.id === l.id ? "bg-blue-100" : ""
-                            }`}
-                            onClick={() => handleLecturerSelect(l)}
-                          >
-                            <img
-                              src={l.avatar}
-                              alt={l.name}
-                              className="w-8 h-8 rounded-full object-cover bg-gray-200 flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-blue-900 text-sm truncate">
-                                {l.name}
-                              </div>
-                              <div className="text-gray-600 text-xs truncate">
-                                {l.email}
-                              </div>
-                              <div className="text-gray-500 text-xs truncate">
-                                {l.department} • {l.specialization}
-                              </div>
-                            </div>
-                            <span
-                              className={`text-xs font-semibold rounded-lg px-2 py-1 flex-shrink-0 ${
-                                l.max > 0
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {l.max === 0
-                                ? "Đã đủ"
-                                : `Đã nhận (${l.accepted})`}
+              {/* Mô tả đề tài */}
+              <div className="relative">
+                <textarea
+                  id="moTa"
+                  name="moTa"
+                  placeholder=" "
+                  value={form.moTa}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  rows={3}
+                />
+                <label
+                  htmlFor="moTa"
+                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Mô tả đề tài <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Mục tiêu */}
+              <div className="relative">
+                <textarea
+                  id="mucTieu"
+                  name="mucTieu"
+                  placeholder=" "
+                  value={form.mucTieu}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  rows={3}
+                />
+                <label
+                  htmlFor="mucTieu"
+                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Mục tiêu <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Phương pháp thực hiện */}
+              <div className="relative">
+                <textarea
+                  id="phuongPhap"
+                  name="phuongPhap"
+                  placeholder=" "
+                  value={form.phuongPhap}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  rows={3}
+                />
+                <label
+                  htmlFor="phuongPhap"
+                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Phương pháp thực hiện <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Kết quả dự kiến */}
+              <div className="relative">
+                <textarea
+                  id="ketQuaDuKien"
+                  name="ketQuaDuKien"
+                  placeholder=" "
+                  value={form.ketQuaDuKien}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  rows={3}
+                />
+                <label
+                  htmlFor="ketQuaDuKien"
+                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Kết quả dự kiến <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Lý do đề xuất */}
+              <div className="relative">
+                <textarea
+                  id="lyDo"
+                  name="lyDo"
+                  placeholder=" "
+                  value={form.lyDo}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  required
+                  rows={3}
+                />
+                <label
+                  htmlFor="lyDo"
+                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Lý do đề xuất <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              {/* Lecturer Autocomplete - Full Width */}
+              <div className="relative mb-4">
+                <div className="relative">
+                  <input
+                    id="lecturer-search"
+                    type="text"
+                    placeholder=" "
+                    value={searchQuery}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSearchQuery(value);
+                      setShowLecturerList(true);
+
+                      // Nếu xóa hết input, reset giảng viên đã chọn
+                      if (!value.trim()) {
+                        setForm((prev) => ({ ...prev, giangVien: null }));
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      // Xử lý phím Enter để chọn giảng viên đầu tiên
+                      if (
+                        e.key === "Enter" &&
+                        showLecturerList &&
+                        filteredLecturers.length > 0
+                      ) {
+                        e.preventDefault();
+                        const firstLecturer = filteredLecturers[0];
+                        handleLecturerSelect(firstLecturer);
+                      }
+                      // Xử lý phím Escape để đóng dropdown
+                      if (e.key === "Escape") {
+                        setShowLecturerList(false);
+                      }
+                    }}
+                    onFocus={() => setShowLecturerList(true)}
+                    ref={searchInputRef}
+                    className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
+                  />
+                  <label
+                    htmlFor="lecturer-search"
+                    className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                  >
+                    Giảng viên hướng dẫn mong muốn{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+
+                  {/* Lecturer Dropdown */}
+                  {showLecturerList && (
+                    <div
+                      ref={dropdownRef}
+                      className="absolute left-0 right-0 bottom-full mb-6 bg-white border border-gray-300 rounded-lg shadow-xl z-20 max-h-96 overflow-hidden"
+                    >
+                      {/* Search Header removed as requested */}
+
+                      {/* Lecturer List */}
+                      <div className="max-h-72 overflow-y-auto">
+                        {loadingLecturers ? (
+                          <div className="p-3 text-center text-gray-500">
+                            <div className="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                            <span className="ml-2 text-sm">
+                              Đang tải danh sách giảng viên...
                             </span>
                           </div>
-                        ))}
+                        ) : errorLecturers ? (
+                          <div className="p-3 text-center text-red-500 text-sm">
+                            {errorLecturers}
+                          </div>
+                        ) : filteredLecturers.length > 0 ? (
+                          <>
+                            {/* First 8 results always visible */}
+                            {filteredLecturers.slice(0, 8).map((l) => (
+                              <div
+                                key={l.id}
+                                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-150 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
+                                  form.giangVien?.id === l.id
+                                    ? "bg-blue-100"
+                                    : ""
+                                }`}
+                                onClick={() => handleLecturerSelect(l)}
+                              >
+                                <img
+                                  src={l.avatar}
+                                  alt={l.name}
+                                  className="w-8 h-8 rounded-full object-cover bg-gray-200 flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-blue-900 text-sm truncate">
+                                    {l.name}
+                                  </div>
+                                  <div className="text-gray-600 text-xs truncate">
+                                    {l.email}
+                                  </div>
+                                  <div className="text-gray-500 text-xs truncate">
+                                    {l.department} • {l.specialization}
+                                  </div>
+                                </div>
+                                <span
+                                  className={`text-xs font-semibold rounded-lg px-2 py-1 flex-shrink-0 ${
+                                    l.remainingSlots > 0
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {l.remainingSlots === 0
+                                    ? "Đã đủ"
+                                    : `Còn ${l.remainingSlots} chỗ`}
+                                </span>
+                              </div>
+                            ))}
 
-                        {/* Show more results if available */}
-                        {filteredLecturers.length > 8 && (
-                          <div className="border-t border-gray-200 p-3 bg-gray-50">
-                            <div className="text-center text-xs text-gray-600">
-                              Hiển thị 8/{filteredLecturers.length} kết quả
-                            </div>
-                            <div className="text-center text-xs text-gray-500 mt-1">
-                              {filteredLecturers.length > 8 && (
-                                <span>💡 Gõ thêm để tìm chính xác hơn</span>
-                              )}
-                            </div>
+                            {/* Show more results if available */}
+                            {filteredLecturers.length > 8 && (
+                              <div className="border-t border-gray-200 p-3 bg-gray-50">
+                                <div className="text-center text-xs text-gray-600">
+                                  Hiển thị 8/{filteredLecturers.length} kết quả
+                                </div>
+                                <div className="text-center text-xs text-gray-500 mt-1">
+                                  {filteredLecturers.length > 8 && (
+                                    <span>💡 Gõ thêm để tìm chính xác hơn</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="p-3 text-center text-gray-500 italic text-sm">
+                            {searchQuery
+                              ? "Không tìm thấy giảng viên"
+                              : "Không có giảng viên nào"}
                           </div>
                         )}
-                      </>
-                    ) : (
-                      <div className="p-3 text-center text-gray-500 italic text-sm">
-                        {searchQuery
-                          ? "Không tìm thấy giảng viên"
-                          : "Không có giảng viên nào"}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Footer removed as requested */}
+                      {/* Footer removed as requested */}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="bg-orange-500 text-white border-none rounded-lg py-3 text-base font-semibold mt-2 cursor-pointer transition-all duration-200 shadow-md hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed"
-            disabled={loading}
-            onClick={handleSubmit}
-          >
-            {loading ? (
-              <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            ) : (
-              "Gửi đề xuất"
-            )}
-          </button>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="bg-orange-500 text-white border-none rounded-lg py-3 text-base font-semibold mt-2 cursor-pointer transition-all duration-200 shadow-md hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed"
+                disabled={loading}
+                onClick={handleSubmit}
+              >
+                {loading ? (
+                  <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  "Gửi đề xuất"
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Loading state */}
+          {periodLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-600">Đang kiểm tra đợt đăng ký...</p>
+            </div>
+          )}
         </div>
 
         {/* Lecturer Preview Card */}

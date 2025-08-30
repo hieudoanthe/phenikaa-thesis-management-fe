@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/common/design-tokens.css";
 import "../../styles/pages/admin/academic_year_management.css";
+import academicYearService from "../../services/academicYear.service";
+import { toast } from "react-toastify";
 
 const AcademicYearManagement = () => {
   const [academicYears, setAcademicYears] = useState([]);
@@ -11,37 +13,6 @@ const AcademicYearManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  // Dữ liệu mẫu cho demo
-  const mockData = [
-    {
-      id: 1,
-      yearName: "2023-2024 Academic Year",
-      startDate: "2023-08-01",
-      endDate: "2024-07-31",
-      status: "active",
-      createdAt: "2023-05-15",
-      isCurrent: true,
-    },
-    {
-      id: 2,
-      yearName: "2022-2023 Academic Year",
-      startDate: "2022-08-01",
-      endDate: "2023-07-31",
-      status: "inactive",
-      createdAt: "2022-05-10",
-      isCurrent: false,
-    },
-    {
-      id: 3,
-      yearName: "2021-2022 Academic Year",
-      startDate: "2021-08-01",
-      endDate: "2022-07-31",
-      status: "inactive",
-      createdAt: "2021-05-15",
-      isCurrent: false,
-    },
-  ];
-
   useEffect(() => {
     loadAcademicYears();
   }, []);
@@ -49,25 +20,20 @@ const AcademicYearManagement = () => {
   const loadAcademicYears = async () => {
     try {
       setLoading(true);
-      // Sử dụng dữ liệu mẫu cho demo
-      setAcademicYears(mockData);
+      const result = await academicYearService.getAllAcademicYears();
+      if (result.success) {
+        console.log("Academic years data:", result.data); // Debug log
+        setAcademicYears(result.data || []);
 
-      // Tìm năm học hiện tại
-      const current = mockData.find((year) => year.isCurrent);
-      setCurrentYear(current);
-
-      // TODO: Gọi API thực tế khi có backend
-      // const result = await AcademicYearService.getAcademicYearList();
-      // if (result.success) {
-      //   setAcademicYears(result.data);
-      //   const current = result.data.find(year => year.isCurrent);
-      //   setCurrentYear(current);
-      // }
+        // Tìm năm học đang active
+        const activeYear = result.data.find((year) => (year.status || 0) === 1);
+        setCurrentYear(activeYear);
+      } else {
+        toast.error(result.message || "Không thể tải danh sách năm học");
+      }
     } catch (error) {
       console.error("Lỗi khi tải danh sách năm học:", error);
-      if (window.addToast) {
-        window.addToast("Lỗi khi tải danh sách năm học!", "error");
-      }
+      toast.error("Lỗi khi tải danh sách năm học!");
     } finally {
       setLoading(false);
     }
@@ -75,24 +41,21 @@ const AcademicYearManagement = () => {
 
   const handleStatusToggle = async (yearId, newStatus) => {
     try {
-      // TODO: Gọi API để cập nhật trạng thái
-      setAcademicYears((prev) =>
-        prev.map((year) =>
-          year.id === yearId ? { ...year, status: newStatus } : year
-        )
-      );
-
-      if (window.addToast) {
-        window.addToast(
-          `Đã ${newStatus === "active" ? "kích hoạt" : "vô hiệu hóa"} năm học!`,
-          "success"
-        );
+      if (newStatus === "active") {
+        const result = await academicYearService.activateAcademicYear(yearId);
+        if (result.success) {
+          toast.success("Đã kích hoạt năm học thành công!");
+          loadAcademicYears(); // Reload để cập nhật trạng thái
+        } else {
+          toast.error(result.message || "Không thể kích hoạt năm học");
+        }
+      } else {
+        // TODO: Implement deactivate nếu cần
+        toast.info("Chức năng vô hiệu hóa năm học sẽ được thêm sau");
       }
     } catch (error) {
       console.error("Lỗi khi cập nhật trạng thái:", error);
-      if (window.addToast) {
-        window.addToast("Lỗi khi cập nhật trạng thái!", "error");
-      }
+      toast.error("Lỗi khi cập nhật trạng thái!");
     }
   };
 
@@ -105,7 +68,9 @@ const AcademicYearManagement = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa năm học này?")) {
       try {
         // TODO: Gọi API để xóa
-        setAcademicYears((prev) => prev.filter((year) => year.id !== yearId));
+        setAcademicYears((prev) =>
+          prev.filter((year) => year.academicYearId !== yearId)
+        );
 
         if (window.addToast) {
           window.addToast("Đã xóa năm học thành công!", "success");
@@ -129,11 +94,29 @@ const AcademicYearManagement = () => {
   };
 
   const getStatusText = (status) => {
-    return status === "active" ? "Active" : "Inactive";
+    switch (status) {
+      case 1:
+        return "Active";
+      case 0:
+        return "Inactive";
+      case 2:
+        return "Upcoming";
+      default:
+        return "Unknown";
+    }
   };
 
   const getStatusColor = (status) => {
-    return status === "active" ? "#10B981" : "#6B7280";
+    switch (status) {
+      case 1:
+        return "#10B981";
+      case 0:
+        return "#6B7280";
+      case 2:
+        return "#3B82F6";
+      default:
+        return "#6B7280";
+    }
   };
 
   // Tính toán phân trang
@@ -158,17 +141,15 @@ const AcademicYearManagement = () => {
         <div className="current-year-card">
           <div className="current-year-info">
             <div className="current-year-label">Current Academic Year</div>
-            <div className="current-year-name">
-              {currentYear.yearName.split(" ")[0]}
-            </div>
+            <div className="current-year-name">{currentYear.yearName}</div>
             <div className="current-year-status">
               <span className="status-dot active"></span>
               Active
             </div>
           </div>
           <div className="current-year-period">
-            {formatDate(currentYear.startDate)} -{" "}
-            {formatDate(currentYear.endDate)}
+            {currentYear.startDate ? formatDate(currentYear.startDate) : "N/A"}{" "}
+            - {currentYear.endDate ? formatDate(currentYear.endDate) : "N/A"}
           </div>
         </div>
       )}
@@ -198,72 +179,80 @@ const AcademicYearManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((year) => (
-                <tr
-                  key={year.id}
-                  className={year.isCurrent ? "current-year-row" : ""}
-                >
-                  <td className="year-name">{year.yearName}</td>
-                  <td>{formatDate(year.startDate)}</td>
-                  <td>{formatDate(year.endDate)}</td>
-                  <td>
-                    <div className="status-toggle">
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={year.status === "active"}
-                          onChange={(e) =>
-                            handleStatusToggle(
-                              year.id,
-                              e.target.checked ? "active" : "inactive"
-                            )
-                          }
-                        />
-                        <span
-                          className="slider"
-                          style={{
-                            backgroundColor: getStatusColor(year.status),
-                          }}
-                        ></span>
-                      </label>
-                      <span className="status-text">
-                        {getStatusText(year.status)}
-                      </span>
-                    </div>
-                  </td>
-                  <td>{formatDate(year.createdAt)}</td>
-                  <td className="actions">
-                    <button
-                      className="action-btn edit-btn"
-                      onClick={() => handleEdit(year)}
-                      title="Chỉnh sửa"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
+              {currentItems
+                .filter((year) => year && year.academicYearId) // Sử dụng academicYearId
+                .map((year) => (
+                  <tr
+                    key={year.academicYearId}
+                    className={
+                      (year.status || 0) === 1 ? "current-year-row" : ""
+                    }
+                  >
+                    <td className="year-name">{year.yearName}</td>
+                    <td>
+                      {year.startDate ? formatDate(year.startDate) : "N/A"}
+                    </td>
+                    <td>{year.endDate ? formatDate(year.endDate) : "N/A"}</td>
+                    <td>
+                      <div className="status-toggle">
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={(year.status || 0) === 1}
+                            onChange={(e) =>
+                              handleStatusToggle(
+                                year.academicYearId,
+                                e.target.checked ? "active" : "inactive"
+                              )
+                            }
+                          />
+                          <span
+                            className="slider"
+                            style={{
+                              backgroundColor: getStatusColor(year.status || 0),
+                            }}
+                          ></span>
+                        </label>
+                        <span className="status-text">
+                          {getStatusText(year.status || 0)}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      {year.createdAt ? formatDate(year.createdAt) : "N/A"}
+                    </td>
+                    <td className="actions">
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleEdit(year)}
+                        title="Chỉnh sửa"
                       >
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                      </svg>
-                    </button>
-                    <button
-                      className="action-btn delete-btn"
-                      onClick={() => handleDelete(year.id)}
-                      title="Xóa"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                      </button>
+                      <button
+                        className="action-btn delete-btn"
+                        onClick={() => handleDelete(year.academicYearId)}
+                        title="Xóa"
                       >
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -330,10 +319,12 @@ const AcademicYearModal = ({ isOpen, onClose, editingYear, onSave }) => {
   useEffect(() => {
     if (editingYear) {
       setFormData({
-        yearName: editingYear.yearName,
-        startDate: editingYear.startDate,
-        endDate: editingYear.endDate,
-        status: editingYear.status,
+        yearName: editingYear.yearName || "",
+        startDate: editingYear.startDate
+          ? editingYear.startDate.split("T")[0]
+          : "",
+        endDate: editingYear.endDate ? editingYear.endDate.split("T")[0] : "",
+        status: editingYear.status === 1 ? "active" : "inactive",
       });
     } else {
       setFormData({

@@ -29,6 +29,8 @@ const TopicRegistration = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [topicsPerPage] = useState(10);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [currentPeriod, setCurrentPeriod] = useState(null);
+  const [periodLoading, setPeriodLoading] = useState(false);
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -36,12 +38,24 @@ const TopicRegistration = () => {
       setError("");
       try {
         const res = await registrationService.getAvailableTopicList();
-        if (Array.isArray(res)) {
-          setTopics(res);
+
+        if (res.noActivePeriod) {
+          setError(res.message);
+          setTopics([]);
+          return;
+        }
+
+        if (Array.isArray(res.data)) {
+          setTopics(res.data);
         } else if (res.success) {
           setTopics(res.data || []);
         } else {
           setError(res.message || "Không thể tải danh sách đề tài");
+        }
+
+        // Lưu thông tin đợt đăng ký hiện tại
+        if (res.currentPeriod) {
+          setCurrentPeriod(res.currentPeriod);
         }
       } catch (err) {
         setError("Đã xảy ra lỗi khi tải danh sách đề tài");
@@ -129,13 +143,68 @@ const TopicRegistration = () => {
 
   return (
     <div className="max-w-full mx-auto p-3">
+      {/* Hiển thị thông tin đợt đăng ký hiện tại */}
+      {currentPeriod && (
+        <div className="current-period-info bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                Đợt đăng ký hiện tại: {currentPeriod.periodName}
+              </h3>
+              <p className="text-blue-700">
+                Thời gian:{" "}
+                {new Date(currentPeriod.startDate).toLocaleDateString("vi-VN")}{" "}
+                - {new Date(currentPeriod.endDate).toLocaleDateString("vi-VN")}
+              </p>
+              <p className="text-blue-700">
+                Trạng thái:{" "}
+                <span className="font-semibold">{currentPeriod.status}</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600">
+                {new Date(currentPeriod.endDate).getTime() > Date.now()
+                  ? "Đang diễn ra"
+                  : "Đã kết thúc"}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hiển thị thông báo khi không có đợt đăng ký */}
+      {error && error.includes("không có đợt đăng ký") && (
+        <div className="no-period-warning bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
+          <div className="text-yellow-800">
+            <h3 className="text-lg font-semibold mb-2">
+              Không có đợt đăng ký nào đang diễn ra
+            </h3>
+            <p>
+              Vui lòng chờ đến đợt đăng ký tiếp theo để có thể đăng ký đề tài.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Nút mở modal đề xuất đề tài */}
       <div className="flex justify-end mb-3">
         <button
-          type="button"
           onClick={() => setIsRegisterModalOpen(true)}
-          className="px-3 py-2 bg-orange-500 text-white rounded-md font-medium hover:bg-orange-600 transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
+          </svg>
           Đề xuất đề tài mới
         </button>
       </div>

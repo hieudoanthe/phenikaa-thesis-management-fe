@@ -1,14 +1,26 @@
 import { apiPost, apiGet } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
+import registrationPeriodService from "./registrationPeriod.service";
 
 // Gửi đề xuất đề tài cho sinh viên
 // data: { title, description, objectives, methodology, expectedOutcome, supervisorId, reason }
 export const suggestTopicForStudent = async (duLieuDeXuat) => {
   try {
-    // Gọi API gửi đề xuất đề tài
+    // Kiểm tra đợt đăng ký trước khi đề xuất
+    const currentPeriod = await registrationPeriodService.getCurrentPeriod();
+    if (!currentPeriod.success || !currentPeriod.data) {
+      throw new Error("Hiện tại không có đợt đăng ký nào đang diễn ra!");
+    }
+
+    // Thêm thông tin đợt đăng ký vào dữ liệu đề xuất
+    const dataWithPeriod = {
+      ...duLieuDeXuat,
+      registrationPeriodId: currentPeriod.data.periodId,
+    };
+
     const ketQua = await apiPost(
       API_ENDPOINTS.STUDENT_SUGGEST_TOPIC,
-      duLieuDeXuat
+      dataWithPeriod
     );
     return ketQua;
   } catch (error) {
