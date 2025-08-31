@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
-import "../../styles/common/design-tokens.css";
-import "../../styles/pages/admin/defense_sessions_schedule.css";
+import { evalService } from "../../services/evalService";
+import studentAssignmentService from "../../services/studentAssignment.service";
+import { toast } from "react-toastify";
 
 const DefenseSessionsSchedule = () => {
   const [selectedPeriod, setSelectedPeriod] = useState({
@@ -18,9 +19,24 @@ const DefenseSessionsSchedule = () => {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
+  const [schedules, setSchedules] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [formData, setFormData] = useState({
+    topic: "",
+    room: "",
+    date: "",
+    time: "09:00",
+    committeeMembers: [],
+    status: "PLANNING",
+  });
+  const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
+  const [isSessionDetailModalOpen, setIsSessionDetailModalOpen] =
+    useState(false);
+  const [availableStudents, setAvailableStudents] = useState([]);
+  const [assignedStudents, setAssignedStudents] = useState([]);
 
   // Dữ liệu mẫu cho demo
   const mockSessions = [
@@ -46,8 +62,9 @@ const DefenseSessionsSchedule = () => {
     },
   ];
 
-  // Tạo time slots từ 9:00 AM đến 5:00 PM
+  // Tạo time slots từ 8:00 AM đến 6:00 PM (chỉ giờ làm việc)
   const timeSlots = [
+    "8:00 AM",
     "9:00 AM",
     "10:00 AM",
     "11:00 AM",
@@ -57,9 +74,10 @@ const DefenseSessionsSchedule = () => {
     "3:00 PM",
     "4:00 PM",
     "5:00 PM",
+    "6:00 PM",
   ];
 
-  // Tạo days of week
+  // Tạo days of week (chỉ từ thứ 2 đến thứ 6)
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
   // Options cho react-select
@@ -76,48 +94,109 @@ const DefenseSessionsSchedule = () => {
   ];
 
   const statusOptions = [
-    { value: "All Status", label: "All Status" },
-    { value: "Upcoming", label: "Upcoming" },
-    { value: "In Progress", label: "In Progress" },
-    { value: "Completed", label: "Completed" },
+    { value: "PLANNING", label: "Planning" },
+    { value: "SCHEDULED", label: "Scheduled" },
+    { value: "IN_PROGRESS", label: "In Progress" },
+    { value: "COMPLETED", label: "Completed" },
   ];
 
   useEffect(() => {
-    loadSessions();
+    loadSchedules();
   }, []);
+
+  useEffect(() => {
+    if (schedules.length > 0) {
+      loadSessions();
+    }
+  }, [schedules]);
+
+  useEffect(() => {
+    if (selectedSchedule && selectedSchedule.value) {
+      loadSessionsBySchedule(selectedSchedule.value);
+    } else {
+      loadSessions();
+    }
+  }, [selectedSchedule]);
+
+  const loadSchedules = async () => {
+    try {
+      const data = await evalService.getAllDefenseSchedules();
+      const scheduleOptions = [
+        { value: null, label: "Tất cả lịch bảo vệ" },
+        ...data.map((schedule) => ({
+          value: schedule.scheduleId,
+          label: schedule.scheduleName,
+        })),
+      ];
+      setSchedules(scheduleOptions);
+
+      if (data.length > 0 && !selectedSchedule) {
+        setSelectedSchedule(scheduleOptions[0]); // Chọn "Tất cả lịch bảo vệ"
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách lịch bảo vệ:", error);
+      toast.error("Lỗi khi tải danh sách lịch bảo vệ");
+    }
+  };
+
+  const loadSessionsBySchedule = async (scheduleId) => {
+    try {
+      setLoading(true);
+      const data = await evalService.getSessionsBySchedule(scheduleId);
+      setSessions(data);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách session:", error);
+      toast.error("Lỗi khi tải danh sách session");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSessions = async () => {
     try {
       setLoading(true);
-      // Sử dụng dữ liệu mẫu cho demo
-      setSessions(mockSessions);
+      const data = await evalService.getAllDefenseSessions();
+      console.log("Loaded sessions data:", data);
+      setSessions(data);
     } catch (error) {
       console.error("Lỗi khi tải danh sách session:", error);
-      if (window.addToast) {
-        window.addToast("Lỗi khi tải danh sách session!", "error");
-      }
+      toast.error("Lỗi khi tải danh sách session");
     } finally {
       setLoading(false);
     }
   };
 
   const getSessionForTimeSlot = (day, time) => {
-    return sessions.find(
-      (session) => session.day === day && session.time === time
-    );
-  };
+    return sessions.find((session) => {
+      if (!session.defenseDate) return false;
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "upcoming":
-        return "var(--color-info-light)";
-      case "completed":
-        return "var(--color-gray-100)";
-      case "in-progress":
-        return "var(--color-warning-light)";
-      default:
-        return "var(--color-gray-100)";
-    }
+      const sessionDate = new Date(session.defenseDate);
+      const dayOfWeek = sessionDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const sessionDay = dayNames[dayOfWeek];
+
+      // Chỉ hiển thị session cho thứ 2-6
+      if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+
+      // Kiểm tra ngày trong tuần
+      if (sessionDay !== day) return false;
+
+      // Kiểm tra thời gian (nếu có startTime)
+      if (session.startTime) {
+        const startTime = new Date(session.startTime);
+        const hours = startTime.getHours();
+        const minutes = startTime.getMinutes();
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const displayHours = hours % 12 || 12;
+        const sessionTimeString = `${displayHours}:${minutes
+          .toString()
+          .padStart(2, "0")} ${ampm}`;
+
+        return sessionTimeString === time;
+      }
+
+      return false;
+    });
   };
 
   const getStatusTextColor = (status) => {
@@ -141,164 +220,490 @@ const DefenseSessionsSchedule = () => {
     setIsModalOpen(false);
   };
 
-  const handleModalSubmit = (formData) => {
-    // TODO: Gọi API để tạo lịch bảo vệ
+  const handleModalSubmit = async (formData) => {
+    try {
+      if (!selectedSchedule) {
+        toast.error("Vui lòng chọn lịch bảo vệ trước");
+        return;
+      }
 
-    // Thêm session mới vào danh sách (demo)
-    const newSession = {
-      id: Date.now(),
-      day: new Date(formData.date).toLocaleDateString("en-US", {
-        weekday: "short",
-      }),
-      time: formData.time,
-      status: formData.status,
-      room: formData.room,
-      topic: formData.topic,
-      committeeMembers: formData.committeeMembers.length,
-      date: formData.date,
-    };
+      // Tạo defenseDate từ ngày và giờ được chọn, đảm bảo không có giờ hiện tại
+      const dateString = formData.date + "T" + formData.time + ":00";
+      const defenseDateTime = new Date(dateString);
 
-    setSessions([...sessions, newSession]);
+      // Tạo ISO string với timezone offset để giữ nguyên giờ local
+      const timezoneOffset = defenseDateTime.getTimezoneOffset() * 60000; // Convert to milliseconds
+      const localDateTime = new Date(
+        defenseDateTime.getTime() - timezoneOffset
+      );
+      const isoString = localDateTime.toISOString().slice(0, 16); // Remove seconds and timezone
 
-    if (window.addToast) {
-      window.addToast("Tạo lịch bảo vệ thành công!", "success");
+      // Tạo ISO string với timezone offset để giữ nguyên giờ local
+
+      const sessionData = {
+        scheduleId: selectedSchedule.value,
+        sessionName: formData.topic,
+        defenseDate: formData.date, // Chỉ gửi ngày, không có giờ
+        startTime: isoString, // Gửi thời gian đã được điều chỉnh timezone
+        endTime: isoString, // Gửi thời gian đã được điều chỉnh timezone
+        location: formData.room,
+        maxStudents: 10,
+        status: formData.status,
+        notes: `Committee: ${formData.committeeMembers.length} members`,
+      };
+
+      await evalService.createDefenseSession(sessionData);
+      toast.success("Tạo buổi bảo vệ thành công!");
+
+      // Reload sessions
+      if (selectedSchedule) {
+        loadSessionsBySchedule(selectedSchedule.value);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tạo buổi bảo vệ:", error);
+      toast.error("Lỗi khi tạo buổi bảo vệ");
     }
   };
 
   const handleExport = () => {
     // TODO: Export dữ liệu
-    if (window.addToast) {
-      window.addToast("Chức năng export sẽ được phát triển!", "info");
+    toast.info("Chức năng export sẽ được phát triển!");
+  };
+
+  const handleSessionClick = (session) => {
+    setSelectedSessionDetail(session);
+    setIsSessionDetailModalOpen(true);
+    // Load danh sách sinh viên có sẵn và đã được gán
+    Promise.all([
+      loadAvailableStudents(),
+      loadAssignedStudents(session.sessionId),
+    ]).catch((error) => {
+      console.error("Lỗi khi tải dữ liệu sinh viên:", error);
+      toast.error("Có lỗi xảy ra khi tải dữ liệu sinh viên");
+    });
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case "PLANNING":
+        return "Lập kế hoạch";
+      case "SCHEDULED":
+        return "Sắp diễn ra";
+      case "IN_PROGRESS":
+        return "Đang diễn ra";
+      case "COMPLETED":
+        return "Hoàn thành";
+      default:
+        return "Lập kế hoạch";
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "PLANNING":
+        return "#7c3aed"; // purple-600
+      case "SCHEDULED":
+        return "#2563eb"; // blue-600
+      case "IN_PROGRESS":
+        return "#d97706"; // amber-600
+      case "COMPLETED":
+        return "#059669"; // emerald-600
+      default:
+        return "#6b7280"; // gray-500
+    }
+  };
+
+  const handleStatusChange = async (sessionId, newStatus) => {
+    try {
+      // Cập nhật trạng thái trong backend
+      await evalService.updateDefenseSessionStatus(sessionId, newStatus);
+
+      // Cập nhật trạng thái trong state local
+      setSessions((prevSessions) =>
+        prevSessions.map((session) =>
+          session.sessionId === sessionId
+            ? { ...session, status: newStatus }
+            : session
+        )
+      );
+
+      toast.success(
+        `Đã cập nhật trạng thái thành: ${getStatusLabel(newStatus)}`
+      );
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trạng thái:", error);
+      toast.error("Lỗi khi cập nhật trạng thái");
+    }
+  };
+
+  // Function để load danh sách sinh viên có sẵn
+  const loadAvailableStudents = async () => {
+    try {
+      setLoading(true);
+      const students = await studentAssignmentService.getAvailableStudents();
+      setAvailableStudents(students);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách sinh viên:", error);
+      toast.error("Lỗi khi tải danh sách sinh viên");
+      // Fallback to empty array
+      setAvailableStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function để load danh sách sinh viên đã được gán
+  const loadAssignedStudents = async (sessionId) => {
+    try {
+      setLoading(true);
+      const students = await studentAssignmentService.getAssignedStudents(
+        sessionId
+      );
+      setAssignedStudents(students);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách sinh viên đã gán:", error);
+      toast.error("Lỗi khi tải danh sách sinh viên đã gán");
+      // Fallback to empty array
+      setAssignedStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function để gán sinh viên vào buổi bảo vệ
+  const handleAssignStudent = async (studentId) => {
+    try {
+      if (!selectedSessionDetail) {
+        toast.error("Không tìm thấy thông tin buổi bảo vệ");
+        return;
+      }
+
+      // Gọi API để gán sinh viên
+      await studentAssignmentService.assignStudent(
+        selectedSessionDetail.sessionId,
+        studentId
+      );
+
+      // Cập nhật state local
+      const student = availableStudents.find((s) => s.studentId === studentId);
+      if (student) {
+        const newAssignedStudent = {
+          ...student,
+          defenseOrder: assignedStudents.length + 1,
+        };
+        setAssignedStudents([...assignedStudents, newAssignedStudent]);
+        setAvailableStudents(
+          availableStudents.filter((s) => s.studentId !== studentId)
+        );
+        toast.success(
+          `Đã gán sinh viên ${student.studentName} vào buổi bảo vệ`
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi khi gán sinh viên:", error);
+      toast.error("Lỗi khi gán sinh viên");
+    }
+  };
+
+  // Function để hủy gán sinh viên
+  const handleUnassignStudent = async (studentId) => {
+    try {
+      if (!selectedSessionDetail) {
+        toast.error("Không tìm thấy thông tin buổi bảo vệ");
+        return;
+      }
+
+      // Gọi API để hủy gán sinh viên
+      await studentAssignmentService.unassignStudent(
+        selectedSessionDetail.sessionId,
+        studentId
+      );
+
+      // Cập nhật state local
+      const student = assignedStudents.find((s) => s.studentId === studentId);
+      if (student) {
+        setAssignedStudents(
+          assignedStudents.filter((s) => s.studentId !== studentId)
+        );
+        setAvailableStudents([...availableStudents, student]);
+        toast.success(`Đã hủy gán sinh viên ${student.studentName}`);
+      }
+    } catch (error) {
+      console.error("Lỗi khi hủy gán sinh viên:", error);
+      toast.error("Lỗi khi hủy gán sinh viên");
+    }
+  };
+
+  // Helper functions for registration type display
+  const getRegistrationTypeLabel = (type) => {
+    switch (type) {
+      case "REGISTERED":
+        return "Đăng ký đề tài";
+      case "SUGGESTED":
+        return "Đề xuất đề tài";
+      default:
+        return "N/A";
+    }
+  };
+
+  const getRegistrationTypeColor = (type) => {
+    switch (type) {
+      case "REGISTERED":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "SUGGESTED":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   if (loading) {
     return (
-      <div className="defense-sessions-loading">
-        <div className="loading-spinner"></div>
-        <p>Đang tải dữ liệu...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="defense-sessions-schedule">
-      {/* Header Section */}
-      <div className="schedule-header">
-        <div className="header-filters">
-          <div className="filter-group">
-            <Select
-              value={selectedPeriod}
-              onChange={setSelectedPeriod}
-              options={periodOptions}
-              className="react-select-container"
-              classNamePrefix="react-select"
-              placeholder="Select Period"
-              isSearchable={false}
-            />
-          </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Lịch Bảo Vệ Đề Tài
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Quản lý và lập lịch các buổi bảo vệ đề tài
+              </p>
+            </div>
 
-          <div className="filter-group">
-            <Select
-              value={selectedDepartment}
-              onChange={setSelectedDepartment}
-              options={departmentOptions}
-              className="react-select-container"
-              classNamePrefix="react-select"
-              placeholder="Select Department"
-              isSearchable={false}
-            />
-          </div>
+            {/* Schedule Selection */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="min-w-[200px]">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn Lịch Bảo Vệ
+                </label>
+                <Select
+                  value={selectedSchedule}
+                  onChange={setSelectedSchedule}
+                  options={schedules}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Chọn lịch bảo vệ"
+                  isSearchable={false}
+                />
+              </div>
 
-          <div className="filter-group">
-            <Select
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              options={statusOptions}
-              className="react-select-container"
-              classNamePrefix="react-select"
-              placeholder="Select Status"
-              isSearchable={false}
-            />
-          </div>
-        </div>
-
-        <div className="header-actions">
-          <div className="search-container">
-            <svg
-              className="search-icon"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search sessions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-          </div>
-
-          <div className="view-toggle">
-            <button
-              className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
-              onClick={() => setViewMode("grid")}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="currentColor"
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                onClick={() => setIsModalOpen(true)}
               >
-                <path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" />
-              </svg>
-            </button>
-            <button
-              className={`view-btn ${viewMode === "list" ? "active" : ""}`}
-              onClick={() => setViewMode("list")}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-              </svg>
-            </button>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Thêm Buổi Bảo Vệ
+              </button>
+            </div>
           </div>
 
-          <button className="export-btn" onClick={handleExport}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-            </svg>
-            Export
-          </button>
+          {/* Filters and Actions */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="min-w-[200px]">
+                <Select
+                  value={selectedSchedule}
+                  onChange={setSelectedSchedule}
+                  options={schedules}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Chọn lịch bảo vệ"
+                  isSearchable={false}
+                />
+              </div>
 
-          <button
-            className="create-schedule-btn"
-            onClick={handleCreateSchedule}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-            </svg>
-            Create Schedule
-          </button>
+              <div className="min-w-[150px]">
+                <Select
+                  value={selectedPeriod}
+                  onChange={setSelectedPeriod}
+                  options={periodOptions}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Chọn kỳ"
+                  isSearchable={false}
+                />
+              </div>
+
+              <div className="min-w-[180px]">
+                <Select
+                  value={selectedDepartment}
+                  onChange={setSelectedDepartment}
+                  options={departmentOptions}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Chọn khoa"
+                  isSearchable={false}
+                />
+              </div>
+
+              <div className="min-w-[150px]">
+                <Select
+                  value={selectedStatus}
+                  onChange={setSelectedStatus}
+                  options={statusOptions}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Chọn trạng thái"
+                  isSearchable={false}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg
+                    className="h-5 w-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm buổi bảo vệ..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                <button
+                  className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                    viewMode === "grid"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                  onClick={() => setViewMode("grid")}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z" />
+                  </svg>
+                </button>
+                <button
+                  className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                    viewMode === "list"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                  onClick={() => setViewMode("list")}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+                  </svg>
+                </button>
+              </div>
+
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                onClick={() => {
+                  if (selectedSchedule && selectedSchedule.value) {
+                    loadSessionsBySchedule(selectedSchedule.value);
+                  } else {
+                    loadSessions();
+                  }
+                }}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Làm mới
+              </button>
+
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                onClick={handleExport}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                  />
+                </svg>
+                Xuất dữ liệu
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Calendar Grid */}
-      <div className="calendar-container">
-        <div className="calendar-grid">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Lịch Bảo Vệ Theo Tuần
+          </h2>
+          <p className="text-gray-600">
+            Xem lịch bảo vệ theo từng ngày và khung giờ
+          </p>
+        </div>
+
+        <div className="grid grid-cols-6 gap-0 overflow-x-auto">
           {/* Time column */}
-          <div className="time-column">
-            <div className="time-header"></div>
+          <div className="sticky left-0 bg-gray-50">
+            <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-r border-gray-300">
+              Thời gian
+            </div>
             {timeSlots.map((time, index) => (
-              <div key={index} className="time-slot">
+              <div
+                key={index}
+                className="h-24 flex items-center justify-center text-sm text-gray-600 bg-gray-50 border-b border-r border-gray-300 px-2"
+              >
                 {time}
               </div>
             ))}
@@ -306,49 +711,127 @@ const DefenseSessionsSchedule = () => {
 
           {/* Day columns */}
           {weekDays.map((day, dayIndex) => (
-            <div key={dayIndex} className="day-column">
-              <div className="day-header">{day}</div>
+            <div key={dayIndex} className="min-w-[200px]">
+              <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-gray-300">
+                {day}
+              </div>
               {timeSlots.map((time, timeIndex) => {
                 const session = getSessionForTimeSlot(day, time);
                 return (
-                  <div key={timeIndex} className="calendar-cell">
+                  <div
+                    key={timeIndex}
+                    className="h-24 border-b border-gray-300 p-1"
+                  >
                     {session && (
                       <div
-                        className="session-card"
-                        style={{
-                          backgroundColor: getStatusColor(session.status),
-                        }}
+                        className={`h-full rounded-lg p-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          session.status === "PLANNING"
+                            ? "bg-purple-50 border border-purple-200 hover:bg-purple-100"
+                            : session.status === "SCHEDULED"
+                            ? "bg-blue-50 border border-blue-200 hover:bg-blue-100"
+                            : session.status === "COMPLETED"
+                            ? "bg-green-50 border border-green-200 hover:bg-green-100"
+                            : session.status === "IN_PROGRESS"
+                            ? "bg-yellow-50 border border-yellow-200 hover:bg-yellow-100"
+                            : "bg-gray-50 border border-gray-200 hover:bg-gray-100"
+                        }`}
+                        onClick={() => handleSessionClick(session)}
+                        title={`${session.sessionName} - ${session.location}`}
                       >
-                        <div className="session-status">
-                          {session.status === "upcoming"
-                            ? "UPCOMING"
-                            : session.status === "completed"
-                            ? "COMPLETED"
-                            : "IN PROGRESS"}
+                        <div className="text-gray-900 font-semibold text-xs mb-1 truncate leading-tight">
+                          {session.sessionName}
                         </div>
-                        <div className="session-time">{session.time}</div>
-                        <div className="session-location">
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                          </svg>
-                          {session.room}
+                        <div className="text-gray-600 text-xs mb-1 font-medium">
+                          {session.startTime
+                            ? new Date(session.startTime).toLocaleTimeString(
+                                "vi-VN",
+                                { hour: "2-digit", minute: "2-digit" }
+                              )
+                            : "N/A"}
                         </div>
-                        <div className="session-topic">{session.topic}</div>
-                        <div className="session-committee">
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-3.7 4.99c-.56.76-.56 1.76 0 2.52l3.7 4.99c.47.63 1.21 1 2.01 1h1.54c.8 0 1.54-.37 2.01-1L20.5 22H16z" />
-                          </svg>
-                          {session.committeeMembers} Committee Members
+                        <div className="text-gray-500 text-xs truncate leading-tight mb-1">
+                          📍 {session.location || "N/A"}
+                        </div>
+                        <div
+                          className="mt-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Select
+                            value={{
+                              value: session.status,
+                              label: getStatusLabel(session.status),
+                            }}
+                            onChange={(option) =>
+                              handleStatusChange(
+                                session.sessionId,
+                                option.value
+                              )
+                            }
+                            options={[
+                              { value: "PLANNING", label: "Lập kế hoạch" },
+                              { value: "SCHEDULED", label: "Sắp diễn ra" },
+                              { value: "IN_PROGRESS", label: "Đang diễn ra" },
+                              { value: "COMPLETED", label: "Hoàn thành" },
+                            ]}
+                            className="text-xs"
+                            classNamePrefix="react-select"
+                            isSearchable={false}
+                            menuPlacement="auto"
+                            styles={{
+                              control: (provided) => ({
+                                ...provided,
+                                minHeight: "16px",
+                                height: "16px",
+                                fontSize: "8px",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                boxShadow: "none",
+                                cursor: "pointer",
+                              }),
+                              valueContainer: (provided) => ({
+                                ...provided,
+                                padding: "0 2px",
+                                height: "16px",
+                              }),
+                              input: (provided) => ({
+                                ...provided,
+                                margin: "0px",
+                                fontSize: "8px",
+                              }),
+                              option: (provided) => ({
+                                ...provided,
+                                fontSize: "8px",
+                                padding: "2px 4px",
+                                cursor: "pointer",
+                              }),
+                              menu: (provided) => ({
+                                ...provided,
+                                fontSize: "8px",
+                                zIndex: 9999,
+                                minWidth: "70px",
+                              }),
+                              singleValue: (provided) => ({
+                                ...provided,
+                                fontSize: "8px",
+                                color: getStatusColor(session.status),
+                                fontWeight: "500",
+                              }),
+                              indicatorsContainer: (provided) => ({
+                                ...provided,
+                                height: "16px",
+                              }),
+                              indicatorSeparator: (provided) => ({
+                                ...provided,
+                                display: "none",
+                              }),
+                              dropdownIndicator: (provided) => ({
+                                ...provided,
+                                padding: "0 2px",
+                                height: "16px",
+                                width: "12px",
+                              }),
+                            }}
+                          />
                         </div>
                       </div>
                     )}
@@ -361,52 +844,93 @@ const DefenseSessionsSchedule = () => {
       </div>
 
       {/* Summary Footer */}
-      <div className="summary-footer">
-        <div className="summary-card">
-          <div className="summary-icon calendar">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
-            </svg>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Thống Kê Tổng Quan
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-8 h-8 text-blue-600"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-blue-900">
+                  {sessions.length}
+                </div>
+                <div className="text-sm text-blue-700">Tổng số buổi bảo vệ</div>
+              </div>
+            </div>
           </div>
-          <div className="summary-content">
-            <div className="summary-number">24</div>
-            <div className="summary-label">Total Sessions</div>
-          </div>
-        </div>
 
-        <div className="summary-card">
-          <div className="summary-icon clock">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
-            </svg>
+          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-8 h-8 text-yellow-600"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-yellow-900">
+                  {
+                    sessions.filter(
+                      (s) => s.status === "PLANNING" || s.status === "SCHEDULED"
+                    ).length
+                  }
+                </div>
+                <div className="text-sm text-yellow-700">Sắp diễn ra</div>
+              </div>
+            </div>
           </div>
-          <div className="summary-content">
-            <div className="summary-number">12</div>
-            <div className="summary-label">Upcoming</div>
-          </div>
-        </div>
 
-        <div className="summary-card">
-          <div className="summary-icon chart">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-            </svg>
+          <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-8 h-8 text-orange-600"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-orange-900">
+                  {sessions.filter((s) => s.status === "IN_PROGRESS").length}
+                </div>
+                <div className="text-sm text-orange-700">Đang diễn ra</div>
+              </div>
+            </div>
           </div>
-          <div className="summary-content">
-            <div className="summary-number">4</div>
-            <div className="summary-label">In Progress</div>
-          </div>
-        </div>
 
-        <div className="summary-card">
-          <div className="summary-icon person">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </div>
-          <div className="summary-content">
-            <div className="summary-number">8</div>
-            <div className="summary-label">Completed</div>
+          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-8 h-8 text-green-600"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <div className="text-2xl font-bold text-green-900">
+                  {sessions.filter((s) => s.status === "COMPLETED").length}
+                </div>
+                <div className="text-sm text-green-700">Đã hoàn thành</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -417,6 +941,18 @@ const DefenseSessionsSchedule = () => {
         onClose={handleModalClose}
         onSubmit={handleModalSubmit}
       />
+
+      {/* Session Detail Modal */}
+      {isSessionDetailModalOpen && selectedSessionDetail && (
+        <SessionDetailModal
+          session={selectedSessionDetail}
+          assignedStudents={assignedStudents}
+          availableStudents={availableStudents}
+          onAssignStudent={handleAssignStudent}
+          onUnassignStudent={handleUnassignStudent}
+          onClose={() => setIsSessionDetailModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
@@ -425,14 +961,36 @@ const DefenseSessionsSchedule = () => {
 const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     date: "",
-    time: "",
+    time: "09:00", // Giờ mặc định 9:00 AM
     room: "",
     topic: "",
     committeeMembers: [],
-    status: "upcoming",
+    status: "PLANNING", // Status mặc định
   });
 
   const [selectedTeachers, setSelectedTeachers] = useState([]);
+
+  // Function kiểm tra ngày có phải là thứ 2-6 không
+  const isWeekday = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    return day >= 1 && day <= 5; // Chỉ thứ 2-6 (Monday-Friday)
+  };
+
+  // Function lấy tên ngày trong tuần
+  const getDayName = (dateString) => {
+    const date = new Date(dateString);
+    const dayNames = [
+      "Chủ nhật",
+      "Thứ 2",
+      "Thứ 3",
+      "Thứ 4",
+      "Thứ 5",
+      "Thứ 6",
+      "Thứ 7",
+    ];
+    return dayNames[date.getDay()];
+  };
 
   // Mock data cho teachers
   const teacherOptions = [
@@ -450,22 +1008,35 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
   ];
 
   const timeOptions = [
+    { value: "08:00", label: "08:00 AM" },
     { value: "09:00", label: "09:00 AM" },
     { value: "10:00", label: "10:00 AM" },
     { value: "11:00", label: "11:00 AM" },
+    { value: "12:00", label: "12:00 PM" },
+    { value: "13:00", label: "01:00 PM" },
     { value: "14:00", label: "02:00 PM" },
     { value: "15:00", label: "03:00 PM" },
     { value: "16:00", label: "04:00 PM" },
+    { value: "17:00", label: "05:00 PM" },
+    { value: "18:00", label: "06:00 PM" },
   ];
 
   const statusOptions = [
-    { value: "upcoming", label: "Upcoming" },
-    { value: "in-progress", label: "In Progress" },
-    { value: "completed", label: "Completed" },
+    { value: "PLANNING", label: "Planning" },
+    { value: "SCHEDULED", label: "Scheduled" },
+    { value: "IN_PROGRESS", label: "In Progress" },
+    { value: "COMPLETED", label: "Completed" },
   ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Kiểm tra ngày có phải là thứ 2-6 không
+    if (!isWeekday(formData.date)) {
+      toast.error("Chỉ được phép tạo buổi bảo vệ từ thứ 2 đến thứ 6!");
+      return;
+    }
+
     onSubmit({
       ...formData,
       committeeMembers: selectedTeachers,
@@ -476,11 +1047,11 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
   const handleClose = () => {
     setFormData({
       date: "",
-      time: "",
+      time: "09:00", // Reset về giờ mặc định
       room: "",
       topic: "",
       committeeMembers: [],
-      status: "upcoming",
+      status: "PLANNING", // Reset về status mặc định
     });
     setSelectedTeachers([]);
     onClose();
@@ -489,21 +1060,39 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="create-schedule-modal">
-        <div className="modal-header">
-          <h3>Tạo lịch bảo vệ mới</h3>
-          <button className="close-btn" onClick={handleClose}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900">
+            Tạo Buổi Bảo Vệ Mới
+          </h3>
+          <button
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            onClick={handleClose}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="date-input">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-2"
+                htmlFor="date-input"
+              >
                 Ngày *
               </label>
               <input
@@ -513,16 +1102,44 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })
                 }
-                className="form-input"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="dd/mm/yyyy"
                 required
               />
+              {formData.date && (
+                <div
+                  className={`mt-2 text-sm px-3 py-2 rounded-lg border ${
+                    isWeekday(formData.date)
+                      ? "text-blue-600 bg-blue-50 border-blue-200"
+                      : "text-red-600 bg-red-50 border-red-200"
+                  }`}
+                >
+                  <svg
+                    className="w-4 h-4 inline mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                  </svg>
+                  <strong>Ngày đã chọn:</strong> {formData.date} (
+                  {getDayName(formData.date)})
+                  <br />
+                  <strong>Giờ mặc định:</strong> {formData.time}
+                  {!isWeekday(formData.date) && (
+                    <span className="font-medium text-red-700">
+                      <br />
+                      ⚠️ Chỉ được phép tạo buổi bảo vệ từ thứ 2 đến thứ 6!
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="time-select">
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-2"
+                htmlFor="time-select"
+              >
                 Thời gian *
               </label>
               <Select
@@ -542,9 +1159,12 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="room-select">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-2"
+                htmlFor="room-select"
+              >
                 Phòng *
               </label>
               <Select
@@ -562,11 +1182,12 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 isSearchable={false}
               />
             </div>
-          </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="status-select">
+            <div>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-2"
+                htmlFor="status-select"
+              >
                 Trạng thái *
               </label>
               <Select
@@ -586,53 +1207,341 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="topic-textarea">
-                Chủ đề bảo vệ *
-              </label>
-              <textarea
-                id="topic-textarea"
-                value={formData.topic}
-                onChange={(e) =>
-                  setFormData({ ...formData, topic: e.target.value })
-                }
-                className="form-textarea"
-                placeholder="Nhập chủ đề bảo vệ..."
-                rows="3"
-                required
-              />
-            </div>
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700 mb-2"
+              htmlFor="topic-textarea"
+            >
+              Chủ đề bảo vệ *
+            </label>
+            <textarea
+              id="topic-textarea"
+              value={formData.topic}
+              onChange={(e) =>
+                setFormData({ ...formData, topic: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Nhập chủ đề bảo vệ..."
+              rows="3"
+              required
+            />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label" htmlFor="committee-select">
-                Thành viên hội đồng *
-              </label>
-              <Select
-                inputId="committee-select"
-                value={selectedTeachers}
-                onChange={setSelectedTeachers}
-                options={teacherOptions}
-                className="react-select-container"
-                classNamePrefix="react-select"
-                placeholder="Chọn thành viên hội đồng"
-                isMulti
-                isSearchable={true}
-              />
-            </div>
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700 mb-2"
+              htmlFor="committee-select"
+            >
+              Thành viên hội đồng *
+            </label>
+            <Select
+              inputId="committee-select"
+              value={selectedTeachers}
+              onChange={setSelectedTeachers}
+              options={teacherOptions}
+              className="react-select-container"
+              classNamePrefix="react-select"
+              placeholder="Chọn thành viên hội đồng"
+              isMulti
+              isSearchable={true}
+            />
           </div>
 
-          <div className="modal-actions">
-            <button type="button" className="cancel-btn" onClick={handleClose}>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors duration-200"
+              onClick={handleClose}
+            >
               Hủy
             </button>
-            <button type="submit" className="submit-btn">
-              Tạo lịch bảo vệ
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200"
+            >
+              Tạo buổi bảo vệ
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Session Detail Modal Component
+const SessionDetailModal = ({
+  session,
+  assignedStudents,
+  availableStudents,
+  onAssignStudent,
+  onUnassignStudent,
+  onClose,
+}) => {
+  if (!session) return null;
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case "PLANNING":
+        return "Lập kế hoạch";
+      case "SCHEDULED":
+        return "Sắp diễn ra";
+      case "IN_PROGRESS":
+        return "Đang diễn ra";
+      case "COMPLETED":
+        return "Hoàn thành";
+      default:
+        return "Lập kế hoạch";
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 className="text-xl font-semibold text-gray-900">
+            Chi tiết Buổi Bảo Vệ: {session.sessionName}
+          </h3>
+          <button
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            onClick={onClose}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Session Information */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-700">
+                Tên buổi bảo vệ:
+              </p>
+              <p className="text-lg font-bold text-gray-900">
+                {session.sessionName}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700">Ngày bảo vệ:</p>
+              <p className="text-lg font-bold text-gray-900">
+                {session.defenseDate}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700">Thời gian:</p>
+              <p className="text-lg font-bold text-gray-900">
+                {session.startTime
+                  ? new Date(session.startTime).toLocaleTimeString("vi-VN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "N/A"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700">Phòng:</p>
+              <p className="text-lg font-bold text-gray-900">
+                {session.location}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700">Trạng thái:</p>
+              <p
+                className={`text-lg font-bold ${
+                  session.status === "PLANNING"
+                    ? "text-purple-600"
+                    : session.status === "SCHEDULED"
+                    ? "text-blue-600"
+                    : session.status === "IN_PROGRESS"
+                    ? "text-orange-600"
+                    : "text-green-600"
+                }`}
+              >
+                {getStatusLabel(session.status)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700">
+                Số sinh viên tối đa:
+              </p>
+              <p className="text-lg font-bold text-gray-900">
+                {session.maxStudents}
+              </p>
+            </div>
+          </div>
+
+          {/* Student Management Section */}
+          <div className="border-t border-gray-200 pt-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+              Quản lý Sinh viên
+            </h4>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Assigned Students */}
+              <div>
+                <h5 className="text-md font-medium text-gray-900 mb-3">
+                  Sinh viên đã gán ({assignedStudents.length}/
+                  {session.maxStudents})
+                </h5>
+                {assignedStudents.length === 0 ? (
+                  <p className="text-gray-600 italic">
+                    Chưa có sinh viên nào được gán.
+                  </p>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {assignedStudents.map((student) => (
+                      <div
+                        key={student.studentId}
+                        className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                              Thứ tự: {student.defenseOrder || "N/A"}
+                            </span>
+                            {student.registrationType && (
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full border ${getRegistrationTypeColor(
+                                  student.registrationType
+                                )}`}
+                              >
+                                {getRegistrationTypeLabel(
+                                  student.registrationType
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {student.studentName}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            MSSV: {student.studentCode}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Chuyên ngành: {student.major}
+                          </p>
+                          <p className="text-xs text-gray-700 font-medium">
+                            {student.topicTitle}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => onUnassignStudent(student.studentId)}
+                          className="text-red-600 hover:text-red-700 transition-colors duration-200 ml-2"
+                          title="Hủy gán sinh viên"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Available Students */}
+              <div>
+                <h5 className="text-md font-medium text-gray-900 mb-3">
+                  Sinh viên có sẵn ({availableStudents.length})
+                </h5>
+                {availableStudents.length === 0 ? (
+                  <p className="text-gray-600 italic">
+                    Không có sinh viên nào có sẵn.
+                  </p>
+                ) : (
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {availableStudents.map((student) => (
+                      <div
+                        key={student.studentId}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            {student.registrationType && (
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full border ${getRegistrationTypeColor(
+                                  student.registrationType
+                                )}`}
+                              >
+                                {getRegistrationTypeLabel(
+                                  student.registrationType
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {student.studentName}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            MSSV: {student.studentCode}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Chuyên ngành: {student.major}
+                          </p>
+                          <p className="text-xs text-gray-700 font-medium">
+                            {student.topicTitle}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => onAssignStudent(student.studentId)}
+                          className="text-blue-600 hover:text-blue-700 transition-colors duration-200 ml-2"
+                          title="Gán sinh viên vào buổi bảo vệ"
+                          disabled={
+                            assignedStudents.length >= session.maxStudents
+                          }
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors duration-200"
+          >
+            Đóng
+          </button>
+        </div>
       </div>
     </div>
   );

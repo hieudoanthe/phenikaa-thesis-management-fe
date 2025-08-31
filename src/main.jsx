@@ -36,7 +36,9 @@ import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
 import ThesisTopicsManagement from "./pages/admin/ThesisTopicsManagement.jsx";
 import AcademicYearManagement from "./pages/admin/AcademicYearManagement.jsx";
 import DefenseSessionsSchedule from "./pages/admin/DefenseSessionsSchedule.jsx";
+import DefenseScheduleManagement from "./pages/admin/DefenseScheduleManagement.jsx";
 import RegistrationPeriodManagement from "./pages/admin/RegistrationPeriodManagement.jsx";
+import StudentPeriodManagement from "./pages/admin/StudentPeriodManagement.jsx";
 // Import CSS
 import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -186,11 +188,19 @@ createRoot(document.getElementById("root")).render(
                 />
                 <Route
                   path="defense-schedule"
+                  element={<DefenseScheduleManagement />}
+                />
+                <Route
+                  path="defense-sessions"
                   element={<DefenseSessionsSchedule />}
                 />
                 <Route
                   path="registration-period"
                   element={<RegistrationPeriodManagement />}
+                />
+                <Route
+                  path="student-period"
+                  element={<StudentPeriodManagement />}
                 />
                 <Route
                   path="statistics"

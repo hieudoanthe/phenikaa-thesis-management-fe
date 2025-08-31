@@ -56,10 +56,20 @@ const AdminLayout = () => {
           title: "Quản lý đợt đăng ký",
           subtitle: "Quản lý các đợt đăng ký đề tài luận văn",
         };
+      case "/admin/student-period":
+        return {
+          title: "Quản lý sinh viên theo đợt",
+          subtitle: "Xem và quản lý danh sách sinh viên đăng ký đề tài theo từng đợt",
+        };
       case "/admin/defense-schedule":
         return {
-          title: "Lịch bảo vệ",
-          subtitle: "Quản lý lịch trình bảo vệ luận văn",
+          title: "Quản lý lịch bảo vệ",
+          subtitle: "Tạo và quản lý lịch trình bảo vệ luận văn",
+        };
+      case "/admin/defense-sessions":
+        return {
+          title: "Quản lý buổi bảo vệ",
+          subtitle: "Quản lý các buổi bảo vệ trong lịch trình",
         };
       case "/admin/statistics":
         return {

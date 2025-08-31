@@ -125,6 +125,43 @@ export const API_ENDPOINTS = {
   GET_ACTIVE_ACADEMIC_YEAR: "/api/academic-config-service/active",
   GET_ACADEMIC_YEARS: "/api/academic-config-service/list-academic-year",
   ACTIVATE_ACADEMIC_YEAR: "/api/academic-config-service/{yearId}/activate",
+
+  /**
+   * Evaluation Service (Defense Schedule Management)
+   */
+  // Defense Schedules
+  GET_DEFENSE_SCHEDULES: "/api/eval-service/admin/schedules",
+  GET_DEFENSE_SCHEDULE_BY_ID: "/api/eval-service/admin/schedules/{scheduleId}",
+  CREATE_DEFENSE_SCHEDULE: "/api/eval-service/admin/schedules",
+  UPDATE_DEFENSE_SCHEDULE: "/api/eval-service/admin/schedules/{scheduleId}",
+  DELETE_DEFENSE_SCHEDULE: "/api/eval-service/admin/schedules/{scheduleId}",
+  ACTIVATE_DEFENSE_SCHEDULE:
+    "/api/eval-service/admin/schedules/{scheduleId}/activate",
+  DEACTIVATE_DEFENSE_SCHEDULE:
+    "/api/eval-service/admin/schedules/{scheduleId}/deactivate",
+
+  // Defense Sessions
+  GET_DEFENSE_SESSIONS: "/api/eval-service/admin/sessions",
+  GET_DEFENSE_SESSION_BY_ID: "/api/eval-service/admin/sessions/{sessionId}",
+  CREATE_DEFENSE_SESSION: "/api/eval-service/admin/sessions",
+  UPDATE_DEFENSE_SESSION: "/api/eval-service/admin/sessions/{sessionId}",
+  DELETE_DEFENSE_SESSION: "/api/eval-service/admin/sessions/{sessionId}",
+  GET_SESSIONS_BY_SCHEDULE:
+    "/api/eval-service/admin/sessions/schedule/{scheduleId}",
+  GET_AVAILABLE_SESSIONS: "/api/eval-service/admin/sessions/available",
+  UPDATE_SESSION_STATUS: "/api/eval-service/admin/sessions/{sessionId}/status",
+
+  // Student Assignment
+  ASSIGN_STUDENTS_TO_SESSIONS: "/api/eval-service/admin/student-assignment",
+
+  // Student Period Management
+  GET_STUDENTS_BY_PERIOD: "/api/thesis-service/student-period/{periodId}",
+  GET_REGISTERED_STUDENTS_BY_PERIOD:
+    "/api/thesis-service/student-period/registered/{periodId}",
+  GET_SUGGESTED_STUDENTS_BY_PERIOD:
+    "/api/thesis-service/student-period/suggested/{periodId}",
+  GET_ALL_STUDENTS_BY_PERIOD:
+    "/api/thesis-service/student-period/all/{periodId}",
 };
 
 // WebSocket Endpoints

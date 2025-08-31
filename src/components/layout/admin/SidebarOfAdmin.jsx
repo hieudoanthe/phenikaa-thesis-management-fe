@@ -58,8 +58,18 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
         </svg>
       ),
-      text: "Lịch bảo vệ",
-      tooltip: "Lịch bảo vệ",
+      text: "Quản lý lịch bảo vệ",
+      tooltip: "Quản lý lịch bảo vệ",
+    },
+    {
+      path: "/admin/defense-sessions",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+        </svg>
+      ),
+      text: "Quản lý buổi bảo vệ",
+      tooltip: "Quản lý buổi bảo vệ",
     },
     {
       path: "/admin/academic-year",
@@ -96,6 +106,23 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
       ),
       text: "Quản lý đợt đăng ký",
       tooltip: "Quản lý đợt đăng ký",
+    },
+    {
+      path: "/admin/student-period",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="currentColor"
+          className="bi bi-people-fill"
+          viewBox="0 0 16 16"
+        >
+          <path d="M7 14s-1 0-1-1 1-4 7-4 7 3 7 4-1 1-1 1H7Zm4-6a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216ZM4.5 8a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" />
+        </svg>
+      ),
+      text: "Quản lý sinh viên theo đợt",
+      tooltip: "Quản lý sinh viên theo đợt",
     },
     {
       path: "/admin/statistics",
