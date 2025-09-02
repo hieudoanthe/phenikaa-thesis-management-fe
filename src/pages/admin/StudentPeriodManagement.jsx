@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import studentAssignmentService from "../../services/studentAssignment.service";
 import { API_ENDPOINTS } from "../../config/api";
 import { apiGet } from "../../services/mainHttpClient";
+import { useNavigate } from "react-router-dom";
 
 const StudentPeriodManagement = () => {
   const [selectedPeriod, setSelectedPeriod] = useState(null);
@@ -15,9 +16,25 @@ const StudentPeriodManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Load danh sách đợt đăng ký
+  // State cho việc gán sinh viên vào buổi bảo vệ
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [availableSessions, setAvailableSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [assigningStudent, setAssigningStudent] = useState(false);
+  const [assignedStudents, setAssignedStudents] = useState(new Map()); // Map lưu thông tin sinh viên đã gán
+
+  // State cho việc quản lý giảng viên
+  const [teachersMap, setTeachersMap] = useState(new Map());
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
+
+  const navigate = useNavigate();
+
+  // Load danh sách đợt đăng ký và giảng viên
   useEffect(() => {
     loadPeriods();
+    loadTeachers();
   }, []);
 
   // Load sinh viên khi chọn đợt
@@ -26,6 +43,35 @@ const StudentPeriodManagement = () => {
       loadStudentsByPeriod(selectedPeriod.value);
     }
   }, [selectedPeriod, viewType]);
+
+  // Kiểm tra assignment status khi students thay đổi
+  useEffect(() => {
+    const checkAllStudentAssignments = async () => {
+      if (students.length === 0) return;
+
+      const newAssignedStudents = new Map();
+
+      await Promise.all(
+        students.map(async (student) => {
+          try {
+            const assignment = await checkStudentAssignment(student.studentId);
+            if (assignment) {
+              newAssignedStudents.set(student.studentId, assignment);
+            }
+          } catch (error) {
+            console.error(
+              `Lỗi khi kiểm tra assignment cho sinh viên ${student.studentId}:`,
+              error
+            );
+          }
+        })
+      );
+
+      setAssignedStudents(newAssignedStudents);
+    };
+
+    checkAllStudentAssignments();
+  }, [students]);
 
   const loadPeriods = async () => {
     try {
@@ -56,6 +102,31 @@ const StudentPeriodManagement = () => {
     }
   };
 
+  const loadTeachers = async () => {
+    try {
+      setLoadingTeachers(true);
+      const teachers = await apiGet(API_ENDPOINTS.GET_ALL_TEACHERS);
+
+      if (teachers && Array.isArray(teachers)) {
+        const teachersMapData = new Map();
+        teachers.forEach((teacher) => {
+          teachersMapData.set(teacher.userId, {
+            fullName: teacher.fullName || `Giảng viên ${teacher.userId}`,
+            specialization: teacher.specialization || "Chưa có chuyên ngành",
+            department: teacher.department || "Chưa có khoa",
+            email: teacher.phoneNumber || "Chưa có thông tin liên lạc",
+          });
+        });
+        setTeachersMap(teachersMapData);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách giảng viên:", error);
+      toast.error("Không thể tải danh sách giảng viên");
+    } finally {
+      setLoadingTeachers(false);
+    }
+  };
+
   const loadStudentsByPeriod = async (periodId) => {
     try {
       setLoading(true);
@@ -80,7 +151,7 @@ const StudentPeriodManagement = () => {
           break;
       }
 
-      // Lấy thông tin profile cho từng sinh viên
+      // Lấy thông tin profile cho từng sinh viên và giảng viên
       setLoadingProfiles(true);
       const studentsWithProfiles = await Promise.all(
         studentsData.map(async (student) => {
@@ -88,6 +159,14 @@ const StudentPeriodManagement = () => {
             const profile = await studentAssignmentService.getStudentProfile(
               student.studentId
             );
+
+            // Lấy thông tin giảng viên hướng dẫn
+            const teacherInfo = teachersMap.get(student.supervisorId) || {
+              fullName: `Giảng viên ${student.supervisorId}`,
+              specialization: "Chưa có chuyên ngành",
+              department: "Chưa có khoa",
+            };
+
             return {
               ...student,
               fullName:
@@ -99,17 +178,41 @@ const StudentPeriodManagement = () => {
                 profile?.userId ||
                 student.studentId.toString(),
               major: profile?.major || "CNTT",
+              teacherInfo: teacherInfo,
+              // Đảm bảo các trường cần thiết cho việc gán vào buổi bảo vệ
+              topicId: student.topicId,
+              topicTitle: student.topicTitle || "N/A",
+              topicCode: student.topicCode || "N/A",
+              supervisorId: student.supervisorId,
+              registrationType: student.registrationType || "N/A",
+              suggestionStatus: student.suggestionStatus || null,
             };
           } catch (error) {
             console.warn(
               `Không thể lấy profile cho sinh viên ${student.studentId}:`,
               error
             );
+
+            // Lấy thông tin giảng viên hướng dẫn
+            const teacherInfo = teachersMap.get(student.supervisorId) || {
+              fullName: `Giảng viên ${student.supervisorId}`,
+              specialization: "Chưa có chuyên ngành",
+              department: "Chưa có khoa",
+            };
+
             return {
               ...student,
               fullName: `Sinh viên ${student.studentId}`,
               studentCode: student.studentId.toString(),
               major: "CNTT",
+              teacherInfo: teacherInfo,
+              // Đảm bảo các trường cần thiết cho việc gán vào buổi bảo vệ
+              topicId: student.topicId,
+              topicTitle: student.topicTitle || "N/A",
+              topicCode: student.topicCode || "N/A",
+              supervisorId: student.supervisorId,
+              registrationType: student.registrationType || "N/A",
+              suggestionStatus: student.suggestionStatus || null,
             };
           }
         })
@@ -136,6 +239,7 @@ const StudentPeriodManagement = () => {
   };
 
   const handleRefresh = () => {
+    loadTeachers(); // Reload thông tin giảng viên
     if (selectedPeriod) {
       loadStudentsByPeriod(selectedPeriod.value);
     }
@@ -216,6 +320,249 @@ const StudentPeriodManagement = () => {
     { value: "PENDING", label: "Chờ duyệt" },
     { value: "REJECTED", label: "Từ chối" },
   ];
+
+  // ========== STUDENT ASSIGNMENT FUNCTIONS ==========
+
+  /**
+   * Kiểm tra sinh viên đã được gán vào buổi bảo vệ nào chưa
+   */
+  const checkStudentAssignment = async (studentId) => {
+    try {
+      // Lấy tất cả buổi bảo vệ có sẵn
+      const availableSessions =
+        await studentAssignmentService.getAvailableSessions();
+
+      // Kiểm tra từng buổi bảo vệ để tìm sinh viên
+      for (const session of availableSessions) {
+        try {
+          const assignedStudents =
+            await studentAssignmentService.getAssignedStudents(
+              session.sessionId
+            );
+          const studentAssignment = assignedStudents.find(
+            (student) => student.studentId === studentId
+          );
+          if (studentAssignment) {
+            return {
+              sessionId: session.sessionId,
+              sessionName: session.sessionName,
+              location: session.location,
+              defenseDate: session.defenseDate,
+              startTime: session.startTime,
+              endTime: session.endTime,
+              defenseOrder: studentAssignment.defenseOrder,
+            };
+          }
+        } catch (error) {
+          console.warn(
+            `Không thể kiểm tra buổi bảo vệ ${session.sessionId}:`,
+            error
+          );
+          continue;
+        }
+      }
+
+      return null; // Không tìm thấy assignment
+    } catch (error) {
+      console.error(
+        `Lỗi khi kiểm tra assignment cho sinh viên ${studentId}:`,
+        error
+      );
+      return null;
+    }
+  };
+
+  /**
+   * Xử lý khi click nút "Hủy gán"
+   */
+  const handleUnassignStudent = async (student) => {
+    try {
+      const assignment = assignedStudents.get(student.studentId);
+      if (!assignment) {
+        toast.error("Không tìm thấy thông tin gán của sinh viên");
+        return;
+      }
+
+      const result = await studentAssignmentService.unassignStudent(
+        assignment.sessionId,
+        student.studentId
+      );
+
+      if (result.success) {
+        toast.success("Hủy gán sinh viên thành công!");
+
+        // Cập nhật state
+        const newAssignedStudents = new Map(assignedStudents);
+        newAssignedStudents.delete(student.studentId);
+        setAssignedStudents(newAssignedStudents);
+
+        // Reload danh sách sinh viên
+        if (selectedPeriod) {
+          loadStudentsByPeriod(selectedPeriod.value);
+        }
+      } else {
+        toast.error(result.message || "Không thể hủy gán sinh viên");
+      }
+    } catch (error) {
+      console.error("Lỗi khi hủy gán sinh viên:", error);
+      toast.error("Lỗi khi hủy gán sinh viên");
+    }
+  };
+
+  /**
+   * Xử lý khi click nút "Gán vào lịch"
+   */
+  const handleAssignToSession = async (student) => {
+    try {
+      console.log("Opening assignment modal for student:", student);
+      setSelectedStudent(student);
+      setSelectedSessionId(null); // Reset selectedSessionId
+      setLoadingSessions(true);
+
+      // Lấy danh sách buổi bảo vệ có thể gán thêm sinh viên
+      const sessions = await studentAssignmentService.getAvailableSessions();
+      console.log("Available sessions from API:", sessions);
+
+      if (!sessions || sessions.length === 0) {
+        console.warn("Không có buổi bảo vệ nào có sẵn");
+        toast.warning("Không có buổi bảo vệ nào có sẵn để gán sinh viên");
+        setAvailableSessions([]);
+        return;
+      }
+
+      // Đảm bảo dữ liệu có cấu trúc đúng
+      const formattedSessions = sessions.map((session) => {
+        console.log("Processing session:", session);
+        const formatted = {
+          sessionId: session.sessionId || session.id,
+          sessionName:
+            session.sessionName ||
+            session.name ||
+            `Buổi ${session.sessionId || session.id}`,
+          defenseDate: session.defenseDate || session.date,
+          location: session.location || session.room || "N/A",
+          maxStudents: session.maxStudents || 10,
+          currentStudents: session.currentStudents || 0,
+        };
+        console.log("Formatted session:", formatted);
+        return formatted;
+      });
+
+      console.log("Formatted sessions:", formattedSessions);
+      setAvailableSessions(formattedSessions);
+
+      setShowAssignmentModal(true);
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách buổi bảo vệ:", error);
+      toast.error("Không thể lấy danh sách buổi bảo vệ");
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  /**
+   * Xử lý khi gán sinh viên vào buổi bảo vệ
+   */
+  const handleAssignStudent = async () => {
+    console.log("handleAssignStudent called with:", {
+      selectedStudent,
+      selectedSessionId,
+    });
+
+    if (!selectedStudent || !selectedSessionId) {
+      console.log("Validation failed:", {
+        selectedStudent: !!selectedStudent,
+        selectedSessionId: !!selectedSessionId,
+      });
+      toast.error("Vui lòng chọn sinh viên và buổi bảo vệ");
+      return;
+    }
+
+    try {
+      setAssigningStudent(true);
+
+      const studentData = {
+        studentId: selectedStudent.studentId,
+        topicId: selectedStudent.topicId,
+        supervisorId: selectedStudent.supervisorId,
+        studentName: selectedStudent.fullName,
+        studentMajor: selectedStudent.major,
+        topicTitle: selectedStudent.topicTitle,
+      };
+
+      const result = await studentAssignmentService.assignStudent(
+        selectedSessionId,
+        studentData
+      );
+
+      if (result.success) {
+        toast.success("Gán sinh viên vào buổi bảo vệ thành công!");
+
+        // Cập nhật state assignedStudents ngay lập tức
+        const selectedSession = availableSessions.find(
+          (s) => s.sessionId === selectedSessionId
+        );
+        if (selectedSession) {
+          const newAssignedStudents = new Map(assignedStudents);
+          newAssignedStudents.set(selectedStudent.studentId, {
+            sessionId: selectedSessionId,
+            sessionName: selectedSession.sessionName,
+            location: selectedSession.location,
+            defenseDate: selectedSession.defenseDate,
+          });
+          setAssignedStudents(newAssignedStudents);
+        }
+
+        setShowAssignmentModal(false);
+        setSelectedStudent(null);
+        setSelectedSessionId(null);
+
+        // Reload danh sách sinh viên
+        if (selectedPeriod) {
+          loadStudentsByPeriod(selectedPeriod.value);
+        }
+      } else {
+        toast.error(
+          result.message || "Không thể gán sinh viên vào buổi bảo vệ"
+        );
+      }
+    } catch (error) {
+      console.error("Lỗi khi gán sinh viên:", error);
+      toast.error("Lỗi khi gán sinh viên vào buổi bảo vệ");
+    } finally {
+      setAssigningStudent(false);
+    }
+  };
+
+  /**
+   * Đóng modal gán sinh viên
+   */
+  const handleCloseAssignmentModal = () => {
+    console.log("Closing assignment modal, resetting states");
+    setShowAssignmentModal(false);
+    setSelectedStudent(null);
+    setSelectedSessionId(null);
+    setAvailableSessions([]);
+  };
+
+  /**
+   * Xử lý khi click nút "Xem chi tiết" - chuyển sang trang Quản lý buổi bảo vệ
+   */
+  const handleViewDetails = (student) => {
+    // Chuyển sang trang Quản lý buổi bảo vệ với URL parameters
+    navigate(
+      `/admin/defense-sessions?viewStudent=${
+        student.studentId
+      }&studentName=${encodeURIComponent(student.fullName)}`,
+      {
+        state: {
+          viewStudentDetails: true,
+          studentId: student.studentId,
+          studentName: student.fullName,
+        },
+      }
+    );
+  };
 
   if (loading && students.length === 0) {
     return (
@@ -574,20 +921,45 @@ const StudentPeriodManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
                           <div className="font-medium">
-                            GVHD: {student.supervisorId || "N/A"}
+                            {student.teacherInfo?.fullName ||
+                              `Giảng viên ${student.supervisorId}` ||
+                              "N/A"}
                           </div>
                           <div className="text-gray-500 text-xs">
-                            ID: {student.supervisorId || "N/A"}
+                            Chuyên ngành:{" "}
+                            {student.teacherInfo?.specialization || "N/A"}
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            Khoa: {student.teacherInfo?.department || "N/A"}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-3">
+                        <button
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                          onClick={() => handleViewDetails(student)}
+                        >
                           Xem chi tiết
                         </button>
-                        <button className="text-green-600 hover:text-green-900">
-                          Gán vào lịch
-                        </button>
+                        {assignedStudents.has(student.studentId) ? (
+                          <button
+                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleUnassignStudent(student)}
+                            title={`Đã gán vào: ${
+                              assignedStudents.get(student.studentId)
+                                ?.sessionName || "N/A"
+                            }`}
+                          >
+                            Hủy gán
+                          </button>
+                        ) : (
+                          <button
+                            className="text-green-600 hover:text-green-900"
+                            onClick={() => handleAssignToSession(student)}
+                          >
+                            Gán vào lịch
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -597,6 +969,152 @@ const StudentPeriodManagement = () => {
           )}
         </div>
       </div>
+
+      {/* Modal Gán sinh viên vào buổi bảo vệ */}
+      {showAssignmentModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Gán sinh viên vào buổi bảo vệ
+                </h3>
+                <button
+                  onClick={handleCloseAssignmentModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {selectedStudent && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Thông tin sinh viên:
+                  </h4>
+                  <div className="text-sm text-gray-600">
+                    <p>
+                      <span className="font-medium">Tên:</span>{" "}
+                      {selectedStudent.fullName}
+                    </p>
+                    <p>
+                      <span className="font-medium">Mã SV:</span>{" "}
+                      {selectedStudent.studentCode}
+                    </p>
+                    <p>
+                      <span className="font-medium">Ngành:</span>{" "}
+                      {selectedStudent.major}
+                    </p>
+                    <p>
+                      <span className="font-medium">Đề tài:</span>{" "}
+                      {selectedStudent.topicTitle}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn buổi bảo vệ:
+                </label>
+                {loadingSessions ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Đang tải danh sách buổi bảo vệ...
+                    </p>
+                  </div>
+                ) : availableSessions.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Không có buổi bảo vệ nào có sẵn
+                  </p>
+                ) : (
+                  <Select
+                    key={`session-select-${availableSessions.length}`}
+                    value={(() => {
+                      const found = availableSessions.find(
+                        (s) => s.sessionId === selectedSessionId
+                      );
+                      console.log("Select value found:", found);
+                      console.log("Looking for sessionId:", selectedSessionId);
+                      console.log("Available sessions:", availableSessions);
+                      return found;
+                    })()}
+                    onChange={(option) => {
+                      console.log("Selected session option:", option);
+                      console.log("Option value:", option?.value);
+                      console.log("Option sessionId:", option?.sessionId);
+                      setSelectedSessionId(option?.value || option?.sessionId);
+                      console.log(
+                        "Set selectedSessionId to:",
+                        option?.value || option?.sessionId
+                      );
+                    }}
+                    options={availableSessions.map((session) => {
+                      console.log("Mapping session:", session);
+                      return {
+                        value: session.sessionId,
+                        label: `${session.sessionName} - ${
+                          session.location
+                        } (${new Date(session.defenseDate).toLocaleDateString(
+                          "vi-VN"
+                        )})`,
+                      };
+                    })}
+                    placeholder="Chọn buổi bảo vệ..."
+                    className="w-full"
+                    isClearable={true}
+                    isSearchable={true}
+                  />
+                )}
+              </div>
+
+              {/* Debug info */}
+              <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                <p>
+                  <strong>Debug Info:</strong>
+                </p>
+                <p>selectedSessionId: {selectedSessionId || "null"}</p>
+                <p>assigningStudent: {assigningStudent ? "true" : "false"}</p>
+                <p>availableSessions count: {availableSessions.length}</p>
+                <p>
+                  Button disabled:{" "}
+                  {!selectedSessionId || assigningStudent ? "true" : "false"}
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={handleCloseAssignmentModal}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAssignStudent}
+                  disabled={!selectedSessionId || assigningStudent}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={`selectedSessionId: ${selectedSessionId}, assigningStudent: ${assigningStudent}`}
+                >
+                  {assigningStudent ? "Đang gán..." : "Gán sinh viên"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

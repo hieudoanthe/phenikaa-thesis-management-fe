@@ -1,4 +1,4 @@
-import { apiGet } from "./mainHttpClient";
+import { apiGet, apiPost, apiDelete } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
 
 /**
@@ -274,15 +274,12 @@ const studentAssignmentService = {
         return [];
       }
 
-      // TODO: Implement API call to get assigned students for a specific session
-      // Hiện tại trả về mảng rỗng, cần implement API backend
       const response = await apiGet(
-        `/api/eval-service/admin/sessions/${sessionId}/students`
+        API_ENDPOINTS.GET_ASSIGNED_STUDENTS.replace("{sessionId}", sessionId)
       );
       return response || [];
     } catch (error) {
       console.error("Lỗi khi lấy danh sách sinh viên đã gán:", error);
-      // Trả về mảng rỗng nếu có lỗi
       return [];
     }
   },
@@ -290,19 +287,25 @@ const studentAssignmentService = {
   /**
    * Gán sinh viên vào buổi bảo vệ
    * @param {number} sessionId - ID của buổi bảo vệ
-   * @param {number} studentId - ID của sinh viên
+   * @param {Object} studentData - Dữ liệu sinh viên cần gán
    * @returns {Promise<Object>} Kết quả gán
    */
-  assignStudent: async (sessionId, studentId) => {
+  assignStudent: async (sessionId, studentData) => {
     try {
-      if (!sessionId || !studentId) {
-        throw new Error("sessionId và studentId phải được cung cấp");
+      if (!sessionId || !studentData) {
+        throw new Error("sessionId và studentData phải được cung cấp");
       }
 
-      // TODO: Implement API call to assign student to session
-      const response = await apiGet(
-        `/api/eval-service/admin/sessions/${sessionId}/assign-student/${studentId}`
+      const url = API_ENDPOINTS.ASSIGN_STUDENT_TO_SESSION.replace(
+        "{sessionId}",
+        sessionId
       );
+      console.log("Calling API:", url);
+      console.log("With data:", studentData);
+
+      const response = await apiPost(url, studentData);
+      console.log("API response:", response);
+
       return response;
     } catch (error) {
       console.error("Lỗi khi gán sinh viên:", error);
@@ -322,13 +325,34 @@ const studentAssignmentService = {
         throw new Error("sessionId và studentId phải được cung cấp");
       }
 
-      // TODO: Implement API call to unassign student from session
-      const response = await apiGet(
-        `/api/eval-service/admin/sessions/${sessionId}/unassign-student/${studentId}`
+      const response = await apiDelete(
+        API_ENDPOINTS.UNASSIGN_STUDENT_FROM_SESSION.replace(
+          "{sessionId}",
+          sessionId
+        ).replace("{studentId}", studentId)
       );
+
       return response;
     } catch (error) {
       console.error("Lỗi khi hủy gán sinh viên:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách buổi bảo vệ có thể gán thêm sinh viên
+   * @returns {Promise<Array>} Danh sách buổi bảo vệ có sẵn
+   */
+  getAvailableSessions: async () => {
+    try {
+      console.log(
+        "Calling GET_AVAILABLE_SESSIONS:",
+        API_ENDPOINTS.GET_AVAILABLE_SESSIONS
+      );
+      const response = await apiGet(API_ENDPOINTS.GET_AVAILABLE_SESSIONS);
+      return response || [];
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách buổi bảo vệ có sẵn:", error);
       throw error;
     }
   },

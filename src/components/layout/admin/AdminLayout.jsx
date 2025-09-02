@@ -31,11 +31,7 @@ const AdminLayout = () => {
           title: "Quản lý người dùng",
           subtitle: "Quản lý tài khoản sinh viên, giảng viên và admin",
         };
-      case "/admin/topic-management":
-        return {
-          title: "Quản lý đề tài",
-          subtitle: "Quản lý và phê duyệt các đề tài luận văn",
-        };
+
       case "/admin/groups":
         return {
           title: "Quản lý nhóm",
@@ -59,7 +55,8 @@ const AdminLayout = () => {
       case "/admin/student-period":
         return {
           title: "Quản lý sinh viên theo đợt",
-          subtitle: "Xem và quản lý danh sách sinh viên đăng ký đề tài theo từng đợt",
+          subtitle:
+            "Xem và quản lý danh sách sinh viên đăng ký đề tài theo từng đợt",
         };
       case "/admin/defense-schedule":
         return {

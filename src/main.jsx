@@ -33,7 +33,7 @@ import MyThesis from "./pages/student/MyThesis.jsx";
 import AssignmentsDetail from "./pages/student/AssignmentsDetail.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
-import ThesisTopicsManagement from "./pages/admin/ThesisTopicsManagement.jsx";
+
 import AcademicYearManagement from "./pages/admin/AcademicYearManagement.jsx";
 import DefenseSessionsSchedule from "./pages/admin/DefenseSessionsSchedule.jsx";
 import DefenseScheduleManagement from "./pages/admin/DefenseScheduleManagement.jsx";
@@ -159,10 +159,7 @@ createRoot(document.getElementById("root")).render(
                 }
               >
                 <Route path="dashboard" element={<Dashboard />} />
-                <Route
-                  path="thesis-topics-management"
-                  element={<ThesisTopicsManagement />}
-                />
+
                 <Route
                   path="academic-year"
                   element={<AcademicYearManagement />}

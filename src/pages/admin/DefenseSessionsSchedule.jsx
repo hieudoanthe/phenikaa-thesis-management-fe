@@ -3,6 +3,7 @@ import Select from "react-select";
 import { evalService } from "../../services/evalService";
 import studentAssignmentService from "../../services/studentAssignment.service";
 import { toast } from "react-toastify";
+import { useLocation } from "react-router-dom"; // Import useLocation
 
 const DefenseSessionsSchedule = () => {
   const [selectedPeriod, setSelectedPeriod] = useState({
@@ -37,6 +38,8 @@ const DefenseSessionsSchedule = () => {
     useState(false);
   const [availableStudents, setAvailableStudents] = useState([]);
   const [assignedStudents, setAssignedStudents] = useState([]);
+
+  const location = useLocation(); // Get location object
 
   // Dữ liệu mẫu cho demo
   const mockSessions = [
@@ -103,6 +106,101 @@ const DefenseSessionsSchedule = () => {
   useEffect(() => {
     loadSchedules();
   }, []);
+
+  // Xử lý URL parameters khi component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentIdFromUrl = urlParams.get("viewStudent");
+    const studentNameFromUrl = urlParams.get("studentName");
+
+    if (studentIdFromUrl && studentNameFromUrl) {
+      // Tìm buổi bảo vệ có chứa sinh viên này
+      const findSessionWithStudent = async () => {
+        try {
+          // Đợi cho đến khi sessions được load
+          if (sessions.length === 0) {
+            await loadSessions();
+          }
+
+          // Tìm buổi bảo vệ có chứa sinh viên
+          for (const session of sessions) {
+            const assignedStudents =
+              await studentAssignmentService.getAssignedStudents(
+                session.sessionId
+              );
+            const studentFound = assignedStudents.find(
+              (s) => s.studentId === parseInt(studentIdFromUrl)
+            );
+
+            if (studentFound) {
+              // Mở popup hiển thị thông tin buổi bảo vệ
+              setSelectedSessionDetail(session);
+              setIsSessionDetailModalOpen(true);
+
+              // Load danh sách sinh viên đã được gán
+              loadAssignedStudents(session.sessionId).catch((error) => {
+                console.error("Lỗi khi tải dữ liệu sinh viên:", error);
+              });
+
+              // Xóa URL parameters để tránh mở lại popup khi refresh
+              window.history.replaceState(
+                {},
+                document.title,
+                "/admin/defense-sessions"
+              );
+              break;
+            }
+          }
+        } catch (error) {
+          console.error("Lỗi khi tìm buổi bảo vệ:", error);
+          toast.error("Không thể tìm thông tin buổi bảo vệ");
+        }
+      };
+
+      findSessionWithStudent();
+    }
+  }, [sessions]);
+
+  // Xử lý state từ navigation (khi chuyển từ trang StudentPeriodManagement)
+  useEffect(() => {
+    if (location.state?.viewStudentDetails) {
+      const { studentId, studentName } = location.state;
+
+      // Tìm buổi bảo vệ có chứa sinh viên này
+      const findSessionWithStudent = async () => {
+        try {
+          // Lấy tất cả buổi bảo vệ
+          const allSessions = await evalService.getAllDefenseSessions();
+
+          // Tìm buổi bảo vệ có chứa sinh viên
+          for (const session of allSessions) {
+            const assignedStudents =
+              await studentAssignmentService.getAssignedStudents(
+                session.sessionId
+              );
+            const studentFound = assignedStudents.find(
+              (s) => s.studentId === studentId
+            );
+
+            if (studentFound) {
+              // Mở popup hiển thị thông tin buổi bảo vệ
+              setSelectedSessionDetail(session);
+              setIsSessionDetailModalOpen(true);
+              break;
+            }
+          }
+        } catch (error) {
+          console.error("Lỗi khi tìm buổi bảo vệ:", error);
+          toast.error("Không thể tìm thông tin buổi bảo vệ");
+        }
+      };
+
+      findSessionWithStudent();
+
+      // Xóa state để tránh mở lại popup khi refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (schedules.length > 0) {
@@ -273,13 +371,9 @@ const DefenseSessionsSchedule = () => {
   const handleSessionClick = (session) => {
     setSelectedSessionDetail(session);
     setIsSessionDetailModalOpen(true);
-    // Load danh sách sinh viên có sẵn và đã được gán
-    Promise.all([
-      loadAvailableStudents(),
-      loadAssignedStudents(session.sessionId),
-    ]).catch((error) => {
+    // Load danh sách sinh viên đã được gán
+    loadAssignedStudents(session.sessionId).catch((error) => {
       console.error("Lỗi khi tải dữ liệu sinh viên:", error);
-      toast.error("Có lỗi xảy ra khi tải dữ liệu sinh viên");
     });
   };
 
@@ -1387,7 +1481,7 @@ const SessionDetailModal = ({
               Quản lý Sinh viên
             </h4>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {/* Assigned Students */}
               <div>
                 <h5 className="text-md font-medium text-gray-900 mb-3">
@@ -1451,77 +1545,6 @@ const SessionDetailModal = ({
                               strokeLinejoin="round"
                               strokeWidth={2}
                               d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Available Students */}
-              <div>
-                <h5 className="text-md font-medium text-gray-900 mb-3">
-                  Sinh viên có sẵn ({availableStudents.length})
-                </h5>
-                {availableStudents.length === 0 ? (
-                  <p className="text-gray-600 italic">
-                    Không có sinh viên nào có sẵn.
-                  </p>
-                ) : (
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {availableStudents.map((student) => (
-                      <div
-                        key={student.studentId}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {student.registrationType && (
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full border ${getRegistrationTypeColor(
-                                  student.registrationType
-                                )}`}
-                              >
-                                {getRegistrationTypeLabel(
-                                  student.registrationType
-                                )}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {student.studentName}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            MSSV: {student.studentCode}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            Chuyên ngành: {student.major}
-                          </p>
-                          <p className="text-xs text-gray-700 font-medium">
-                            {student.topicTitle}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => onAssignStudent(student.studentId)}
-                          className="text-blue-600 hover:text-blue-700 transition-colors duration-200 ml-2"
-                          title="Gán sinh viên vào buổi bảo vệ"
-                          disabled={
-                            assignedStudents.length >= session.maxStudents
-                          }
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                             />
                           </svg>
                         </button>

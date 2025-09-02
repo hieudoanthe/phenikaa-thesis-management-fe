@@ -148,7 +148,6 @@ export const API_ENDPOINTS = {
   DELETE_DEFENSE_SESSION: "/api/eval-service/admin/sessions/{sessionId}",
   GET_SESSIONS_BY_SCHEDULE:
     "/api/eval-service/admin/sessions/schedule/{scheduleId}",
-  GET_AVAILABLE_SESSIONS: "/api/eval-service/admin/sessions/available",
   UPDATE_SESSION_STATUS: "/api/eval-service/admin/sessions/{sessionId}/status",
 
   // Student Assignment
@@ -162,6 +161,15 @@ export const API_ENDPOINTS = {
     "/api/thesis-service/student-period/suggested/{periodId}",
   GET_ALL_STUDENTS_BY_PERIOD:
     "/api/thesis-service/student-period/all/{periodId}",
+
+  // Student Assignment to Defense Sessions
+  ASSIGN_STUDENT_TO_SESSION:
+    "/api/eval-service/admin/sessions/{sessionId}/students",
+  UNASSIGN_STUDENT_FROM_SESSION:
+    "/api/eval-service/admin/sessions/{sessionId}/students/{studentId}",
+  GET_ASSIGNED_STUDENTS:
+    "/api/eval-service/admin/sessions/{sessionId}/students",
+  GET_AVAILABLE_SESSIONS: "/api/eval-service/admin/sessions/available",
 };
 
 // WebSocket Endpoints
