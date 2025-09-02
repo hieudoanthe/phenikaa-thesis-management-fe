@@ -4,19 +4,16 @@ import { evalService } from "../../services/evalService";
 import studentAssignmentService from "../../services/studentAssignment.service";
 import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom"; // Import useLocation
+import userService from "../../services/user.service";
 
 const DefenseSessionsSchedule = () => {
   const [selectedPeriod, setSelectedPeriod] = useState({
     value: "This Week",
-    label: "This Week",
-  });
-  const [selectedDepartment, setSelectedDepartment] = useState({
-    value: "All Departments",
-    label: "All Departments",
+    label: "Tuần này",
   });
   const [selectedStatus, setSelectedStatus] = useState({
-    value: "All Status",
-    label: "All Status",
+    value: "all",
+    label: "Tất cả trạng thái",
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grid");
@@ -38,6 +35,7 @@ const DefenseSessionsSchedule = () => {
     useState(false);
   const [availableStudents, setAvailableStudents] = useState([]);
   const [assignedStudents, setAssignedStudents] = useState([]);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const location = useLocation(); // Get location object
 
@@ -65,6 +63,36 @@ const DefenseSessionsSchedule = () => {
     },
   ];
 
+  // Hiển thị nút quay về đầu trang khi scroll
+  useEffect(() => {
+    const mainEl = document.querySelector("main");
+    const container = mainEl || window;
+
+    const getScrollTop = () =>
+      container === window
+        ? window.pageYOffset || document.documentElement.scrollTop
+        : container.scrollTop;
+
+    const handleScroll = () => {
+      setShowBackToTop(getScrollTop() > 200);
+    };
+
+    const target = container === window ? window : container;
+    target.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => target.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleBackToTop = () => {
+    const mainEl = document.querySelector("main");
+    const container = mainEl || window;
+    if (container === window) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      container.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   // Tạo time slots từ 8:00 AM đến 6:00 PM (chỉ giờ làm việc)
   const timeSlots = [
     "8:00 AM",
@@ -85,22 +113,17 @@ const DefenseSessionsSchedule = () => {
 
   // Options cho react-select
   const periodOptions = [
-    { value: "This Week", label: "This Week" },
-    { value: "Next Week", label: "Next Week" },
-    { value: "This Month", label: "This Month" },
-  ];
-
-  const departmentOptions = [
-    { value: "All Departments", label: "All Departments" },
-    { value: "Computer Science", label: "Computer Science" },
-    { value: "Information Technology", label: "Information Technology" },
+    { value: "This Week", label: "Tuần này" },
+    { value: "Next Week", label: "Tuần tới" },
+    { value: "This Month", label: "Tháng này" },
   ];
 
   const statusOptions = [
-    { value: "PLANNING", label: "Planning" },
-    { value: "SCHEDULED", label: "Scheduled" },
-    { value: "IN_PROGRESS", label: "In Progress" },
-    { value: "COMPLETED", label: "Completed" },
+    { value: "all", label: "Tất cả trạng thái" },
+    { value: "PLANNING", label: "Lập kế hoạch" },
+    { value: "SCHEDULED", label: "Sắp diễn ra" },
+    { value: "IN_PROGRESS", label: "Đang diễn ra" },
+    { value: "COMPLETED", label: "Hoàn thành" },
   ];
 
   useEffect(() => {
@@ -224,6 +247,8 @@ const DefenseSessionsSchedule = () => {
         ...data.map((schedule) => ({
           value: schedule.scheduleId,
           label: schedule.scheduleName,
+          startDate: schedule.startDate,
+          endDate: schedule.endDate,
         })),
       ];
       setSchedules(scheduleOptions);
@@ -553,33 +578,40 @@ const DefenseSessionsSchedule = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
+          <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+        </div>
       </div>
     );
   }
 
+  // Apply simple filters for list view
+  const filteredSessions = sessions.filter((s) => {
+    const matchesSearch = searchQuery
+      ? (s.sessionName || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        (s.location || "").toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    const matchesStatus =
+      selectedStatus && selectedStatus.value && selectedStatus.value !== "all"
+        ? s.status === selectedStatus.value
+        : true;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Lịch Bảo Vệ Đề Tài
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Quản lý và lập lịch các buổi bảo vệ đề tài
-              </p>
-            </div>
-
             {/* Schedule Selection */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <div className="min-w-[200px]">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chọn Lịch Bảo Vệ
-                </label>
+                {/* Removed visible label to align select with button */}
                 <Select
                   value={selectedSchedule}
                   onChange={setSelectedSchedule}
@@ -592,7 +624,7 @@ const DefenseSessionsSchedule = () => {
               </div>
 
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                className="bg-[#ea580c] hover:brightness-95 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
                 onClick={() => setIsModalOpen(true)}
               >
                 <svg
@@ -608,7 +640,7 @@ const DefenseSessionsSchedule = () => {
                     d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                   />
                 </svg>
-                Thêm Buổi Bảo Vệ
+                Thêm buổi bảo vệ
               </button>
             </div>
           </div>
@@ -616,18 +648,6 @@ const DefenseSessionsSchedule = () => {
           {/* Filters and Actions */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div className="flex flex-wrap gap-4">
-              <div className="min-w-[200px]">
-                <Select
-                  value={selectedSchedule}
-                  onChange={setSelectedSchedule}
-                  options={schedules}
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                  placeholder="Chọn lịch bảo vệ"
-                  isSearchable={false}
-                />
-              </div>
-
               <div className="min-w-[150px]">
                 <Select
                   value={selectedPeriod}
@@ -636,18 +656,6 @@ const DefenseSessionsSchedule = () => {
                   className="react-select-container"
                   classNamePrefix="react-select"
                   placeholder="Chọn kỳ"
-                  isSearchable={false}
-                />
-              </div>
-
-              <div className="min-w-[180px]">
-                <Select
-                  value={selectedDepartment}
-                  onChange={setSelectedDepartment}
-                  options={departmentOptions}
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                  placeholder="Chọn khoa"
                   isSearchable={false}
                 />
               </div>
@@ -727,32 +735,6 @@ const DefenseSessionsSchedule = () => {
               </div>
 
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
-                onClick={() => {
-                  if (selectedSchedule && selectedSchedule.value) {
-                    loadSessionsBySchedule(selectedSchedule.value);
-                  } else {
-                    loadSessions();
-                  }
-                }}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                Làm mới
-              </button>
-
-              <button
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
                 onClick={handleExport}
               >
@@ -776,166 +758,211 @@ const DefenseSessionsSchedule = () => {
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Lịch Bảo Vệ Theo Tuần
-          </h2>
-          <p className="text-gray-600">
-            Xem lịch bảo vệ theo từng ngày và khung giờ
-          </p>
-        </div>
+      {/* Content: Grid or List */}
+      {viewMode === "grid" ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Lịch Bảo Vệ Theo Tuần
+            </h2>
+            <p className="text-gray-600">
+              Xem lịch bảo vệ theo từng ngày và khung giờ
+            </p>
+          </div>
 
-        <div className="grid grid-cols-6 gap-0 overflow-x-auto">
-          {/* Time column */}
-          <div className="sticky left-0 bg-gray-50">
-            <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-r border-gray-300">
-              Thời gian
+          <div className="grid grid-cols-6 gap-0 overflow-x-auto">
+            {/* Time column */}
+            <div className="sticky left-0 bg-gray-50">
+              <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-r border-gray-300">
+                Thời gian
+              </div>
+              {timeSlots.map((time, index) => (
+                <div
+                  key={index}
+                  className="h-24 flex items-center justify-center text-sm text-gray-600 bg-gray-50 border-b border-r border-gray-300 px-2"
+                >
+                  {time}
+                </div>
+              ))}
             </div>
-            {timeSlots.map((time, index) => (
-              <div
-                key={index}
-                className="h-24 flex items-center justify-center text-sm text-gray-600 bg-gray-50 border-b border-r border-gray-300 px-2"
-              >
-                {time}
+
+            {/* Day columns */}
+            {weekDays.map((day, dayIndex) => (
+              <div key={dayIndex} className="min-w-[200px]">
+                <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-gray-300">
+                  {day}
+                </div>
+                {timeSlots.map((time, timeIndex) => {
+                  const session = getSessionForTimeSlot(day, time);
+                  return (
+                    <div
+                      key={timeIndex}
+                      className="h-24 border-b border-gray-300 p-1"
+                    >
+                      {session && (
+                        <div
+                          className={`h-full rounded-lg p-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                            session.status === "PLANNING"
+                              ? "bg-purple-50 border border-purple-200 hover:bg-purple-100"
+                              : session.status === "SCHEDULED"
+                              ? "bg-blue-50 border border-blue-200 hover:bg-blue-100"
+                              : session.status === "COMPLETED"
+                              ? "bg-green-50 border border-green-200 hover:bg-green-100"
+                              : session.status === "IN_PROGRESS"
+                              ? "bg-yellow-50 border border-yellow-200 hover:bg-yellow-100"
+                              : "bg-gray-50 border border-gray-200 hover:bg-gray-100"
+                          }`}
+                          onClick={() => handleSessionClick(session)}
+                          title={`${session.sessionName} - ${session.location}`}
+                        >
+                          <div className="text-gray-900 font-semibold text-xs mb-1 truncate leading-tight">
+                            {session.sessionName}
+                          </div>
+                          <div className="text-gray-600 text-xs mb-1 font-medium">
+                            {session.startTime
+                              ? new Date(session.startTime).toLocaleTimeString(
+                                  "vi-VN",
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )
+                              : "N/A"}
+                          </div>
+                          <div className="text-gray-500 text-xs truncate leading-tight mb-1">
+                            📍 {session.location || "N/A"}
+                          </div>
+                          <div
+                            className="mt-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Select
+                              value={{
+                                value: session.status,
+                                label: getStatusLabel(session.status),
+                              }}
+                              onChange={(option) =>
+                                handleStatusChange(
+                                  session.sessionId,
+                                  option.value
+                                )
+                              }
+                              options={[
+                                { value: "PLANNING", label: "Lập kế hoạch" },
+                                { value: "SCHEDULED", label: "Sắp diễn ra" },
+                                { value: "IN_PROGRESS", label: "Đang diễn ra" },
+                                { value: "COMPLETED", label: "Hoàn thành" },
+                              ]}
+                              className="text-xs"
+                              classNamePrefix="react-select"
+                              isSearchable={false}
+                              menuPlacement="auto"
+                              styles={{
+                                control: (provided) => ({
+                                  ...provided,
+                                  minHeight: "16px",
+                                  height: "16px",
+                                  fontSize: "8px",
+                                  border: "none",
+                                  backgroundColor: "transparent",
+                                  boxShadow: "none",
+                                  cursor: "pointer",
+                                }),
+                                valueContainer: (provided) => ({
+                                  ...provided,
+                                  padding: "0 2px",
+                                  height: "16px",
+                                }),
+                                input: (provided) => ({
+                                  ...provided,
+                                  margin: "0px",
+                                  fontSize: "8px",
+                                }),
+                                option: (provided) => ({
+                                  ...provided,
+                                  fontSize: "8px",
+                                  padding: "2px 4px",
+                                  cursor: "pointer",
+                                }),
+                                menu: (provided) => ({
+                                  ...provided,
+                                  fontSize: "8px",
+                                  zIndex: 9999,
+                                  minWidth: "70px",
+                                }),
+                                singleValue: (provided) => ({
+                                  ...provided,
+                                  fontSize: "8px",
+                                  color: getStatusColor(session.status),
+                                  fontWeight: "500",
+                                }),
+                                indicatorsContainer: (provided) => ({
+                                  ...provided,
+                                  height: "16px",
+                                }),
+                                indicatorSeparator: (provided) => ({
+                                  ...provided,
+                                  display: "none",
+                                }),
+                                dropdownIndicator: (provided) => ({
+                                  ...provided,
+                                  padding: "0 2px",
+                                  height: "16px",
+                                  width: "12px",
+                                }),
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
-
-          {/* Day columns */}
-          {weekDays.map((day, dayIndex) => (
-            <div key={dayIndex} className="min-w-[200px]">
-              <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-gray-300">
-                {day}
-              </div>
-              {timeSlots.map((time, timeIndex) => {
-                const session = getSessionForTimeSlot(day, time);
-                return (
-                  <div
-                    key={timeIndex}
-                    className="h-24 border-b border-gray-300 p-1"
-                  >
-                    {session && (
-                      <div
-                        className={`h-full rounded-lg p-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                          session.status === "PLANNING"
-                            ? "bg-purple-50 border border-purple-200 hover:bg-purple-100"
-                            : session.status === "SCHEDULED"
-                            ? "bg-blue-50 border border-blue-200 hover:bg-blue-100"
-                            : session.status === "COMPLETED"
-                            ? "bg-green-50 border border-green-200 hover:bg-green-100"
-                            : session.status === "IN_PROGRESS"
-                            ? "bg-yellow-50 border border-yellow-200 hover:bg-yellow-100"
-                            : "bg-gray-50 border border-gray-200 hover:bg-gray-100"
-                        }`}
-                        onClick={() => handleSessionClick(session)}
-                        title={`${session.sessionName} - ${session.location}`}
-                      >
-                        <div className="text-gray-900 font-semibold text-xs mb-1 truncate leading-tight">
-                          {session.sessionName}
-                        </div>
-                        <div className="text-gray-600 text-xs mb-1 font-medium">
-                          {session.startTime
-                            ? new Date(session.startTime).toLocaleTimeString(
-                                "vi-VN",
-                                { hour: "2-digit", minute: "2-digit" }
-                              )
-                            : "N/A"}
-                        </div>
-                        <div className="text-gray-500 text-xs truncate leading-tight mb-1">
-                          📍 {session.location || "N/A"}
-                        </div>
-                        <div
-                          className="mt-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Select
-                            value={{
-                              value: session.status,
-                              label: getStatusLabel(session.status),
-                            }}
-                            onChange={(option) =>
-                              handleStatusChange(
-                                session.sessionId,
-                                option.value
-                              )
-                            }
-                            options={[
-                              { value: "PLANNING", label: "Lập kế hoạch" },
-                              { value: "SCHEDULED", label: "Sắp diễn ra" },
-                              { value: "IN_PROGRESS", label: "Đang diễn ra" },
-                              { value: "COMPLETED", label: "Hoàn thành" },
-                            ]}
-                            className="text-xs"
-                            classNamePrefix="react-select"
-                            isSearchable={false}
-                            menuPlacement="auto"
-                            styles={{
-                              control: (provided) => ({
-                                ...provided,
-                                minHeight: "16px",
-                                height: "16px",
-                                fontSize: "8px",
-                                border: "none",
-                                backgroundColor: "transparent",
-                                boxShadow: "none",
-                                cursor: "pointer",
-                              }),
-                              valueContainer: (provided) => ({
-                                ...provided,
-                                padding: "0 2px",
-                                height: "16px",
-                              }),
-                              input: (provided) => ({
-                                ...provided,
-                                margin: "0px",
-                                fontSize: "8px",
-                              }),
-                              option: (provided) => ({
-                                ...provided,
-                                fontSize: "8px",
-                                padding: "2px 4px",
-                                cursor: "pointer",
-                              }),
-                              menu: (provided) => ({
-                                ...provided,
-                                fontSize: "8px",
-                                zIndex: 9999,
-                                minWidth: "70px",
-                              }),
-                              singleValue: (provided) => ({
-                                ...provided,
-                                fontSize: "8px",
-                                color: getStatusColor(session.status),
-                                fontWeight: "500",
-                              }),
-                              indicatorsContainer: (provided) => ({
-                                ...provided,
-                                height: "16px",
-                              }),
-                              indicatorSeparator: (provided) => ({
-                                ...provided,
-                                display: "none",
-                              }),
-                              dropdownIndicator: (provided) => ({
-                                ...provided,
-                                padding: "0 2px",
-                                height: "16px",
-                                width: "12px",
-                              }),
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Danh sách buổi bảo vệ
+          </h2>
+          {filteredSessions.length === 0 ? (
+            <p className="text-gray-600">Không có buổi bảo vệ phù hợp.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSessions.map((session) => (
+                <div
+                  key={session.sessionId}
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleSessionClick(session)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="text-gray-900 font-semibold truncate pr-2">
+                      {session.sessionName}
+                    </div>
+                    <span className="text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-800 border border-gray-200">
+                      {getStatusLabel(session.status)}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">
+                    <strong>Ngày:</strong> {session.defenseDate || "N/A"}
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">
+                    <strong>Giờ:</strong>{" "}
+                    {session.startTime
+                      ? new Date(session.startTime).toLocaleTimeString(
+                          "vi-VN",
+                          { hour: "2-digit", minute: "2-digit" }
+                        )
+                      : "N/A"}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <strong>Phòng:</strong> {session.location || "N/A"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Summary Footer */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -1029,11 +1056,33 @@ const DefenseSessionsSchedule = () => {
         </div>
       </div>
 
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={handleBackToTop}
+          className="fixed bottom-6 right-6 z-50 p-3 rounded-lg bg-[#ea580c] text-white shadow-lg hover:brightness-95 transition-colors"
+          aria-label="Quay về đầu trang"
+        >
+          <svg
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+      )}
+
       {/* Create Schedule Modal */}
       <CreateScheduleModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onSubmit={handleModalSubmit}
+        selectedSchedule={selectedSchedule}
       />
 
       {/* Session Detail Modal */}
@@ -1052,7 +1101,12 @@ const DefenseSessionsSchedule = () => {
 };
 
 // Create Schedule Modal Component
-const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
+const CreateScheduleModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedSchedule,
+}) => {
   const [formData, setFormData] = useState({
     date: "",
     time: "09:00", // Giờ mặc định 9:00 AM
@@ -1063,6 +1117,31 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
   });
 
   const [selectedTeachers, setSelectedTeachers] = useState([]);
+  const [teacherOptions, setTeacherOptions] = useState([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
+
+  useEffect(() => {
+    const loadTeachers = async () => {
+      try {
+        setLoadingTeachers(true);
+        const teachers = await userService.getAllTeachers();
+        const options = Array.isArray(teachers)
+          ? teachers.map((t) => ({
+              value: t.userId,
+              label: t.fullName || `Giảng viên ${t.userId}`,
+            }))
+          : [];
+        setTeacherOptions(options);
+      } catch (e) {
+        console.error("Lỗi khi tải danh sách giảng viên:", e);
+        toast.error("Không thể tải danh sách giảng viên");
+        setTeacherOptions([]);
+      } finally {
+        setLoadingTeachers(false);
+      }
+    };
+    if (isOpen) loadTeachers();
+  }, [isOpen]);
 
   // Function kiểm tra ngày có phải là thứ 2-6 không
   const isWeekday = (dateString) => {
@@ -1070,6 +1149,28 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
     const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
     return day >= 1 && day <= 5; // Chỉ thứ 2-6 (Monday-Friday)
   };
+
+  // Giới hạn theo lịch bảo vệ được chọn
+  const scheduleStart =
+    selectedSchedule && selectedSchedule.startDate
+      ? new Date(selectedSchedule.startDate)
+      : null;
+  const scheduleEnd =
+    selectedSchedule && selectedSchedule.endDate
+      ? new Date(selectedSchedule.endDate)
+      : null;
+  const minDateStr = scheduleStart
+    ? new Date(
+        scheduleStart.getTime() - scheduleStart.getTimezoneOffset() * 60000
+      )
+        .toISOString()
+        .split("T")[0]
+    : "";
+  const maxDateStr = scheduleEnd
+    ? new Date(scheduleEnd.getTime() - scheduleEnd.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0]
+    : "";
 
   // Function lấy tên ngày trong tuần
   const getDayName = (dateString) => {
@@ -1085,14 +1186,6 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
     ];
     return dayNames[date.getDay()];
   };
-
-  // Mock data cho teachers
-  const teacherOptions = [
-    { value: "teacher1", label: "Dr. Nguyễn Văn A" },
-    { value: "teacher2", label: "Dr. Trần Thị B" },
-    { value: "teacher3", label: "Dr. Lê Văn C" },
-    { value: "teacher4", label: "Dr. Phạm Thị D" },
-  ];
 
   const roomOptions = [
     { value: "room301", label: "Room 301" },
@@ -1116,14 +1209,44 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
   ];
 
   const statusOptions = [
-    { value: "PLANNING", label: "Planning" },
-    { value: "SCHEDULED", label: "Scheduled" },
-    { value: "IN_PROGRESS", label: "In Progress" },
-    { value: "COMPLETED", label: "Completed" },
+    { value: "PLANNING", label: "Lập kế hoạch" },
+    { value: "SCHEDULED", label: "Sắp diễn ra" },
+    { value: "IN_PROGRESS", label: "Đang diễn ra" },
+    { value: "COMPLETED", label: "Hoàn thành" },
   ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Kiểm tra giới hạn theo lịch bảo vệ
+    if (!selectedSchedule || !selectedSchedule.value) {
+      toast.error("Vui lòng chọn lịch bảo vệ trước");
+      return;
+    }
+    if (scheduleStart && scheduleEnd) {
+      const chosen = new Date(formData.date);
+      const startOnly = new Date(
+        scheduleStart.getFullYear(),
+        scheduleStart.getMonth(),
+        scheduleStart.getDate()
+      );
+      const endOnly = new Date(
+        scheduleEnd.getFullYear(),
+        scheduleEnd.getMonth(),
+        scheduleEnd.getDate()
+      );
+      const chosenOnly = new Date(
+        chosen.getFullYear(),
+        chosen.getMonth(),
+        chosen.getDate()
+      );
+      if (chosenOnly < startOnly || chosenOnly > endOnly) {
+        toast.error(
+          "Ngày phải nằm trong khoảng thời gian của lịch bảo vệ đã chọn"
+        );
+        return;
+      }
+    }
 
     // Kiểm tra ngày có phải là thứ 2-6 không
     if (!isWeekday(formData.date)) {
@@ -1187,7 +1310,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 className="block text-sm font-medium text-gray-700 mb-2"
                 htmlFor="date-input"
               >
-                Ngày *
+                Ngày <span className="text-red-500">*</span>
               </label>
               <input
                 id="date-input"
@@ -1196,9 +1319,10 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, date: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="dd/mm/yyyy"
+                className="w-full h-12 px-4 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-[#ff6600] focus:ring-2 focus:ring-[rgba(255,102,0,0.1)] bg-white"
                 required
+                min={minDateStr || undefined}
+                max={maxDateStr || undefined}
               />
               {formData.date && (
                 <div
@@ -1217,8 +1341,6 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                   </svg>
                   <strong>Ngày đã chọn:</strong> {formData.date} (
                   {getDayName(formData.date)})
-                  <br />
-                  <strong>Giờ mặc định:</strong> {formData.time}
                   {!isWeekday(formData.date) && (
                     <span className="font-medium text-red-700">
                       <br />
@@ -1234,7 +1356,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 className="block text-sm font-medium text-gray-700 mb-2"
                 htmlFor="time-select"
               >
-                Thời gian *
+                Thời gian <span className="text-red-500">*</span>
               </label>
               <Select
                 inputId="time-select"
@@ -1249,6 +1371,27 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 classNamePrefix="react-select"
                 placeholder="Chọn thời gian"
                 isSearchable={false}
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: 48,
+                    height: 48,
+                    borderWidth: 2,
+                    borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 3px rgba(255,102,0,0.1)"
+                      : "none",
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                  }),
+                  indicatorsContainer: (base) => ({
+                    ...base,
+                    height: 48,
+                  }),
+                }}
               />
             </div>
           </div>
@@ -1259,7 +1402,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 className="block text-sm font-medium text-gray-700 mb-2"
                 htmlFor="room-select"
               >
-                Phòng *
+                Phòng <span className="text-red-500">*</span>
               </label>
               <Select
                 inputId="room-select"
@@ -1274,6 +1417,27 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 classNamePrefix="react-select"
                 placeholder="Chọn phòng"
                 isSearchable={false}
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: 48,
+                    height: 48,
+                    borderWidth: 2,
+                    borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 3px rgba(255,102,0,0.1)"
+                      : "none",
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                  }),
+                  indicatorsContainer: (base) => ({
+                    ...base,
+                    height: 48,
+                  }),
+                }}
               />
             </div>
 
@@ -1282,7 +1446,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 className="block text-sm font-medium text-gray-700 mb-2"
                 htmlFor="status-select"
               >
-                Trạng thái *
+                Trạng thái <span className="text-red-500">*</span>
               </label>
               <Select
                 inputId="status-select"
@@ -1297,28 +1461,51 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
                 classNamePrefix="react-select"
                 placeholder="Chọn trạng thái"
                 isSearchable={false}
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: 48,
+                    height: 48,
+                    borderWidth: 2,
+                    borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 3px rgba(255,102,0,0.1)"
+                      : "none",
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                  }),
+                  indicatorsContainer: (base) => ({
+                    ...base,
+                    height: 48,
+                  }),
+                }}
               />
             </div>
           </div>
 
           <div>
-            <label
-              className="block text-sm font-medium text-gray-700 mb-2"
-              htmlFor="topic-textarea"
-            >
-              Chủ đề bảo vệ *
-            </label>
-            <textarea
-              id="topic-textarea"
-              value={formData.topic}
-              onChange={(e) =>
-                setFormData({ ...formData, topic: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Nhập chủ đề bảo vệ..."
-              rows="3"
-              required
-            />
+            <div className="relative">
+              <textarea
+                id="topic-textarea"
+                placeholder=" "
+                value={formData.topic}
+                onChange={(e) =>
+                  setFormData({ ...formData, topic: e.target.value })
+                }
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-[#ff6600] focus:ring-2 focus:ring-[rgba(255,102,0,0.1)] bg-white peer"
+                rows="3"
+                required
+              />
+              <label
+                htmlFor="topic-textarea"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Chủ đề bảo vệ <span className="text-red-500">*</span>
+              </label>
+            </div>
           </div>
 
           <div>
@@ -1326,7 +1513,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
               className="block text-sm font-medium text-gray-700 mb-2"
               htmlFor="committee-select"
             >
-              Thành viên hội đồng *
+              Thành viên hội đồng <span className="text-red-500">*</span>
             </label>
             <Select
               inputId="committee-select"
@@ -1335,9 +1522,32 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
               options={teacherOptions}
               className="react-select-container"
               classNamePrefix="react-select"
-              placeholder="Chọn thành viên hội đồng"
+              placeholder={
+                loadingTeachers
+                  ? "Đang tải giảng viên..."
+                  : "Chọn thành viên hội đồng"
+              }
               isMulti
               isSearchable={true}
+              isLoading={loadingTeachers}
+              menuPlacement="auto"
+              maxMenuHeight={80}
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  minHeight: 48,
+                  borderWidth: 2,
+                  borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                  boxShadow: state.isFocused
+                    ? "0 0 0 3px rgba(255,102,0,0.1)"
+                    : "none",
+                }),
+                menuList: (base) => ({
+                  ...base,
+                  maxHeight: 80,
+                  overflowY: "auto",
+                }),
+              }}
             />
           </div>
 
@@ -1351,7 +1561,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onSubmit }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200"
+              className="px-4 py-2 bg-[#ea580c] hover:brightness-95 text-white rounded-lg font-medium transition-colors duration-200"
             >
               Tạo buổi bảo vệ
             </button>

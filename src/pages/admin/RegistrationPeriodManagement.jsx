@@ -144,15 +144,28 @@ const RegistrationPeriodManagement = () => {
     }
   };
 
+  const getStatusText = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return "Đang hoạt động";
+      case "UPCOMING":
+        return "Sắp diễn ra";
+      case "CLOSED":
+        return "Đã kết thúc";
+      case "CANCELLED":
+        return "Đã hủy";
+      default:
+        return status;
+    }
+  };
+
   return (
     <div className="registration-period-management p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Quản lý đợt đăng ký
-        </h1>
+        <div></div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          className="bg-[#ea580c] hover:brightness-95 text-white px-4 py-2 rounded-lg"
         >
           Tạo đợt đăng ký mới
         </button>
@@ -175,11 +188,8 @@ const RegistrationPeriodManagement = () => {
             </svg>
             <div>
               <h3 className="text-lg font-semibold text-green-800">
-                Năm học đang hoạt động: {activeAcademicYear.yearName}
+                Năm học hiện tại: {activeAcademicYear.yearName}
               </h3>
-              <p className="text-green-700">
-                ID: {activeAcademicYear.academicYearId}
-              </p>
             </div>
           </div>
         </div>
@@ -188,17 +198,6 @@ const RegistrationPeriodManagement = () => {
       {!activeAcademicYear && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <div className="flex items-center">
-            <svg
-              className="w-5 h-5 text-yellow-600 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
             <div>
               <h3 className="text-lg font-semibold text-yellow-800">
                 Chưa có năm học nào được kích hoạt
@@ -255,11 +254,11 @@ const RegistrationPeriodManagement = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-md ${getStatusColor(
                         period.status
                       )}`}
                     >
-                      {period.status}
+                      {getStatusText(period.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

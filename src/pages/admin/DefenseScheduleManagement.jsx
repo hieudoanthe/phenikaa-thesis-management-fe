@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { evalService } from "../../services/evalService";
 import { toast } from "react-toastify";
+import academicYearService from "../../services/academicYear.service";
+import Select from "react-select";
 
 const DefenseScheduleManagement = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const rootRef = useRef(null);
   const [formData, setFormData] = useState({
     scheduleName: "",
     academicYearId: "",
@@ -135,40 +139,63 @@ const DefenseScheduleManagement = () => {
 
     return (
       <span
-        className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}
+        className={`px-2 py-1 text-xs font-medium rounded-md ${config.color}`}
       >
         {config.text}
       </span>
     );
   };
 
+  // Hiển thị nút quay về đầu trang khi scroll
+  useEffect(() => {
+    const mainEl = document.querySelector("main");
+    const container = mainEl || window;
+
+    const getScrollTop = () =>
+      container === window
+        ? window.pageYOffset || document.documentElement.scrollTop
+        : container.scrollTop;
+
+    const handleScroll = () => {
+      setShowBackToTop(getScrollTop() > 10);
+    };
+
+    const target = container === window ? window : container;
+    target.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => target.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleBackToTop = () => {
+    const mainEl = document.querySelector("main");
+    const container = mainEl || window;
+    if (container === window) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      container.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
+          <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Quản lý lịch bảo vệ
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Quản lý các lịch bảo vệ đề tài tốt nghiệp
-          </p>
-        </div>
-
+    <div ref={rootRef} className="min-h-screen bg-gray-50 py-8">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
         {/* Actions */}
         <div className="mb-6 flex justify-between items-center">
           <div className="flex space-x-4">
             <button
               onClick={handleCreateSchedule}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              className="bg-[#ea580c] hover:brightness-95 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
             >
               <svg
                 className="w-5 h-5"
@@ -331,7 +358,7 @@ const DefenseScheduleManagement = () => {
             <div className="mt-6">
               <button
                 onClick={handleCreateSchedule}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="bg-[#ea580c] hover:brightness-95 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Tạo lịch bảo vệ
               </button>
@@ -339,6 +366,27 @@ const DefenseScheduleManagement = () => {
           </div>
         )}
       </div>
+
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={handleBackToTop}
+          className="fixed bottom-6 right-6 z-50 p-3 rounded-lg bg-[#ea580c] text-white shadow-lg hover:brightness-95 transition-colors"
+          aria-label="Quay về đầu trang"
+        >
+          <svg
+            className="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+      )}
 
       {/* Modal */}
       {isModalOpen && (
@@ -365,6 +413,8 @@ const ScheduleModal = ({
   editingSchedule,
 }) => {
   if (!isOpen) return null;
+
+  const todayStr = new Date().toISOString().split("T")[0];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -396,98 +446,216 @@ const ScheduleModal = ({
             </button>
           </div>
 
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const name = (formData.scheduleName || "").trim();
+              const yearId = formData.academicYearId;
+              const start = formData.startDate
+                ? new Date(formData.startDate)
+                : null;
+              const end = formData.endDate ? new Date(formData.endDate) : null;
+              const location = (formData.location || "").trim();
+              const description = (formData.description || "").trim();
+              const now = new Date();
+              const today = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate()
+              );
+
+              if (!name) {
+                alert("Vui lòng nhập tên lịch bảo vệ");
+                return;
+              }
+              if (!yearId && yearId !== 0) {
+                alert("Vui lòng chọn năm học");
+                return;
+              }
+              if (!start) {
+                alert("Vui lòng chọn ngày bắt đầu");
+                return;
+              }
+              if (!end) {
+                alert("Vui lòng chọn ngày kết thúc");
+                return;
+              }
+              if (!location) {
+                alert("Vui lòng nhập địa điểm");
+                return;
+              }
+              if (!description) {
+                alert("Vui lòng nhập mô tả");
+                return;
+              }
+              if (start < today) {
+                alert("Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại");
+                return;
+              }
+              if (end <= start) {
+                alert("Ngày kết thúc phải lớn hơn ngày bắt đầu");
+                return;
+              }
+
+              onSubmit(e);
+            }}
+            className="space-y-4"
+          >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tên lịch bảo vệ *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.scheduleName}
-                onChange={(e) =>
-                  setFormData({ ...formData, scheduleName: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập tên lịch bảo vệ"
-              />
+              <div className="relative">
+                <input
+                  id="scheduleName"
+                  type="text"
+                  placeholder=" "
+                  required
+                  value={formData.scheduleName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, scheduleName: e.target.value })
+                  }
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
+                />
+                <label
+                  htmlFor="scheduleName"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Tên lịch bảo vệ <span className="text-red-500">*</span>
+                </label>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Năm học ID
+              <label
+                htmlFor="academicYearId"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Năm học <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
+              <AcademicYearSelect
+                id="academicYearId"
                 value={formData.academicYearId}
-                onChange={(e) =>
-                  setFormData({ ...formData, academicYearId: e.target.value })
+                onChange={(val) =>
+                  setFormData({ ...formData, academicYearId: val })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập ID năm học"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ngày bắt đầu *
+                  Ngày bắt đầu <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   required
+                  min={todayStr}
                   value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    if (!newStart) {
+                      setFormData({ ...formData, startDate: "" });
+                      return;
+                    }
+                    const start = new Date(newStart);
+                    const now = new Date();
+                    const today = new Date(
+                      now.getFullYear(),
+                      now.getMonth(),
+                      now.getDate()
+                    );
+                    if (start < today) {
+                      alert(
+                        "Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại"
+                      );
+                      return;
+                    }
+                    const autoEnd = new Date(start);
+                    autoEnd.setDate(autoEnd.getDate() + 1);
+                    const autoEndStr = autoEnd.toISOString().split("T")[0];
+                    setFormData({
+                      ...formData,
+                      startDate: newStart,
+                      endDate:
+                        formData.endDate && new Date(formData.endDate) > start
+                          ? formData.endDate
+                          : autoEndStr,
+                    });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ngày kết thúc *
+                  Ngày kết thúc <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   required
+                  min={formData.startDate || todayStr}
                   value={formData.endDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newEnd = e.target.value;
+                    if (!newEnd) {
+                      setFormData({ ...formData, endDate: "" });
+                      return;
+                    }
+                    const start = formData.startDate
+                      ? new Date(formData.startDate)
+                      : null;
+                    const end = new Date(newEnd);
+                    if (start && end <= start) {
+                      alert("Ngày kết thúc phải lớn hơn ngày bắt đầu");
+                      return;
+                    }
+                    setFormData({ ...formData, endDate: newEnd });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Địa điểm
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập địa điểm"
-              />
+              <div className="relative">
+                <input
+                  id="location"
+                  type="text"
+                  placeholder=" "
+                  required
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
+                />
+                <label
+                  htmlFor="location"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Địa điểm <span className="text-red-500">*</span>
+                </label>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mô tả
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập mô tả"
-              />
+              <div className="relative">
+                <textarea
+                  id="description"
+                  placeholder=" "
+                  required
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
+                />
+                <label
+                  htmlFor="description"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Mô tả <span className="text-red-500">*</span>
+                </label>
+              </div>
             </div>
 
             <div className="flex space-x-3 pt-4">
@@ -500,7 +668,7 @@ const ScheduleModal = ({
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                className="flex-1 bg-[#ea580c] hover:brightness-95 text-white px-4 py-2 rounded-md font-medium transition-colors"
               >
                 {editingSchedule ? "Cập nhật" : "Tạo"}
               </button>
@@ -509,6 +677,60 @@ const ScheduleModal = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const AcademicYearSelect = ({ id, value, onChange }) => {
+  const [years, setYears] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const result = await academicYearService.getAllAcademicYears();
+        if (result.success && Array.isArray(result.data)) {
+          setYears(result.data);
+        } else {
+          setYears([]);
+        }
+      } catch (e) {
+        setYears([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const options = years.map((y) => ({
+    value: y.academicYearId,
+    label: y.yearName,
+  }));
+  const selected = options.find((o) => o.value === value) || null;
+
+  return (
+    <Select
+      inputId={id}
+      value={selected}
+      onChange={(opt) => onChange(opt ? opt.value : "")}
+      options={options}
+      isLoading={loading}
+      placeholder={loading ? "Đang tải..." : "Chọn năm học"}
+      isSearchable
+      classNamePrefix="react-select"
+      menuPortalTarget={document.body}
+      styles={{
+        control: (base) => ({
+          ...base,
+          borderRadius: 8,
+          minHeight: 40,
+          borderColor: "#d1d5db",
+        }),
+        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+        menu: (base) => ({ ...base, zIndex: 9999 }),
+      }}
+    />
   );
 };
 

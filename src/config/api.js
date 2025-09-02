@@ -21,7 +21,6 @@ export const API_ENDPOINTS = {
 
   // Academic Year Management
   ACADEMIC_YEAR_LIST: "/api/academic-config-service/list-academic-year",
-  ACADEMIC_YEAR_DETAIL: "/api/academic-config-service/get-academic-year",
 
   /**
    * Admin Permission

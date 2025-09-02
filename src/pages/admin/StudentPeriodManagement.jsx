@@ -37,12 +37,12 @@ const StudentPeriodManagement = () => {
     loadTeachers();
   }, []);
 
-  // Load sinh viên khi chọn đợt
+  // Load sinh viên khi chọn đợt và teachersMap đã sẵn sàng
   useEffect(() => {
-    if (selectedPeriod) {
+    if (selectedPeriod && !loadingTeachers) {
       loadStudentsByPeriod(selectedPeriod.value);
     }
-  }, [selectedPeriod, viewType]);
+  }, [selectedPeriod, viewType, loadingTeachers]);
 
   // Kiểm tra assignment status khi students thay đổi
   useEffect(() => {
@@ -151,6 +151,12 @@ const StudentPeriodManagement = () => {
           break;
       }
 
+      // Đảm bảo teachersMap đã được load trước khi xử lý sinh viên
+      if (teachersMap.size === 0) {
+        console.log("TeachersMap chưa được load, đang load lại...");
+        await loadTeachers();
+      }
+
       // Lấy thông tin profile cho từng sinh viên và giảng viên
       setLoadingProfiles(true);
       const studentsWithProfiles = await Promise.all(
@@ -160,7 +166,7 @@ const StudentPeriodManagement = () => {
               student.studentId
             );
 
-            // Lấy thông tin giảng viên hướng dẫn
+            // Lấy thông tin giảng viên hướng dẫn từ teachersMap
             const teacherInfo = teachersMap.get(student.supervisorId) || {
               fullName: `Giảng viên ${student.supervisorId}`,
               specialization: "Chưa có chuyên ngành",
@@ -193,7 +199,7 @@ const StudentPeriodManagement = () => {
               error
             );
 
-            // Lấy thông tin giảng viên hướng dẫn
+            // Lấy thông tin giảng viên hướng dẫn từ teachersMap
             const teacherInfo = teachersMap.get(student.supervisorId) || {
               fullName: `Giảng viên ${student.supervisorId}`,
               specialization: "Chưa có chuyên ngành",
@@ -566,10 +572,10 @@ const StudentPeriodManagement = () => {
 
   if (loading && students.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải danh sách sinh viên...</p>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
+          <p className="mt-4 text-gray-600">Đang tải danh sách sinh viên...</p>
         </div>
       </div>
     );
@@ -578,43 +584,6 @@ const StudentPeriodManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Quản lý Sinh viên theo Đợt Đăng ký
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Xem và quản lý danh sách sinh viên đăng ký đề tài theo từng đợt
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleRefresh}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading || loadingProfiles}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                Làm mới
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -860,24 +829,12 @@ const StudentPeriodManagement = () => {
                   {filteredStudents.map((student, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                              <span className="text-sm font-medium text-blue-600">
-                                {student.studentId}
-                              </span>
-                            </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {student.fullName}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {student.fullName}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Mã SV: {student.studentCode}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Ngành: {student.major}
-                            </div>
+                          <div className="text-sm text-gray-500">
+                            Ngành: {student.major}
                           </div>
                         </div>
                       </td>
@@ -896,7 +853,7 @@ const StudentPeriodManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getRegistrationTypeColor(
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-md border ${getRegistrationTypeColor(
                             student.registrationType
                           )}`}
                         >
@@ -906,14 +863,14 @@ const StudentPeriodManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {student.suggestionStatus ? (
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-md border ${getStatusColor(
                               student.suggestionStatus
                             )}`}
                           >
                             {getStatusLabel(student.suggestionStatus)}
                           </span>
                         ) : (
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full border bg-gray-100 text-gray-800 border-gray-200">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-md border bg-gray-100 text-gray-800 border-gray-200">
                             N/A
                           </span>
                         )}

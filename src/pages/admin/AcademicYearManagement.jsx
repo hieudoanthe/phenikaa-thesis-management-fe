@@ -127,9 +127,11 @@ const AcademicYearManagement = () => {
 
   if (loading) {
     return (
-      <div className="academic-year-loading">
-        <div className="loading-spinner"></div>
-        <p>Đang tải dữ liệu...</p>
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
+          <p className="mt-4 text-gray-600">Đang tải danh sách năm học...</p>
+        </div>
       </div>
     );
   }
