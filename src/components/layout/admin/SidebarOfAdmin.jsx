@@ -43,6 +43,44 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
     },
 
     {
+      path: "/admin/academic-year",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="currentColor"
+          className="bi bi-mortarboard-fill"
+          viewBox="0 0 16 16"
+        >
+          <path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917z" />
+          <path d="M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466z" />
+        </svg>
+      ),
+      text: "Quản lý năm học",
+      tooltip: "Quản lý năm học",
+    },
+
+    {
+      path: "/admin/registration-period",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="currentColor"
+          className="bi bi-calendar-event"
+          viewBox="0 0 16 16"
+        >
+          <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z" />
+          <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" />
+        </svg>
+      ),
+      text: "Quản lý đợt đăng ký",
+      tooltip: "Quản lý đợt đăng ký",
+    },
+
+    {
       path: "/admin/defense-schedule",
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -62,42 +100,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
       text: "Quản lý buổi bảo vệ",
       tooltip: "Quản lý buổi bảo vệ",
     },
-    {
-      path: "/admin/academic-year",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          fill="currentColor"
-          className="bi bi-mortarboard-fill"
-          viewBox="0 0 16 16"
-        >
-          <path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917z" />
-          <path d="M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466z" />
-        </svg>
-      ),
-      text: "Quản lý năm học",
-      tooltip: "Quản lý năm học",
-    },
-    {
-      path: "/admin/registration-period",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          fill="currentColor"
-          className="bi bi-calendar-event"
-          viewBox="0 0 16 16"
-        >
-          <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z" />
-          <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" />
-        </svg>
-      ),
-      text: "Quản lý đợt đăng ký",
-      tooltip: "Quản lý đợt đăng ký",
-    },
+
     {
       path: "/admin/student-period",
       icon: (
@@ -109,11 +112,11 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           className="bi bi-people-fill"
           viewBox="0 0 16 16"
         >
-          <path d="M7 14s-1 0-1-1 1-4 7-4 7 3 7 4-1 1-1 1H7Zm4-6a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216ZM4.5 8a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" />
+          <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
         </svg>
       ),
-      text: "Quản lý sinh viên theo đợt",
-      tooltip: "Quản lý sinh viên theo đợt",
+      text: "Quản lý sinh viên",
+      tooltip: "Quản lý sinh viên",
     },
     {
       path: "/admin/statistics",

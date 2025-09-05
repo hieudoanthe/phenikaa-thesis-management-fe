@@ -28,6 +28,7 @@ const DefenseSessionsSchedule = () => {
     date: "",
     time: "09:00",
     committeeMembers: [],
+    reviewerMembers: [], // Thêm giảng viên phản biện
     status: "PLANNING",
   });
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
@@ -372,7 +373,11 @@ const DefenseSessionsSchedule = () => {
         location: formData.room,
         maxStudents: 10,
         status: formData.status,
-        notes: `Committee: ${formData.committeeMembers.length} members`,
+        notes: `Committee: ${formData.committeeMembers.length} members, Reviewers: ${formData.reviewerMembers.length} members`,
+        committeeMembers: formData.committeeMembers.map(
+          (member) => member.value
+        ), // Gửi danh sách ID giảng viên hội đồng
+        reviewerMembers: formData.reviewerMembers.map((member) => member.value), // Gửi danh sách ID giảng viên phản biện
       };
 
       await evalService.createDefenseSession(sessionData);
@@ -1113,10 +1118,12 @@ const CreateScheduleModal = ({
     room: "",
     topic: "",
     committeeMembers: [],
+    reviewerMembers: [], // Thêm giảng viên phản biện
     status: "PLANNING", // Status mặc định
   });
 
   const [selectedTeachers, setSelectedTeachers] = useState([]);
+  const [selectedReviewers, setSelectedReviewers] = useState([]);
   const [teacherOptions, setTeacherOptions] = useState([]);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
 
@@ -1257,6 +1264,7 @@ const CreateScheduleModal = ({
     onSubmit({
       ...formData,
       committeeMembers: selectedTeachers,
+      reviewerMembers: selectedReviewers,
     });
     onClose();
   };
@@ -1268,9 +1276,11 @@ const CreateScheduleModal = ({
       room: "",
       topic: "",
       committeeMembers: [],
+      reviewerMembers: [],
       status: "PLANNING", // Reset về status mặc định
     });
     setSelectedTeachers([]);
+    setSelectedReviewers([]);
     onClose();
   };
 
@@ -1526,6 +1536,49 @@ const CreateScheduleModal = ({
                 loadingTeachers
                   ? "Đang tải giảng viên..."
                   : "Chọn thành viên hội đồng"
+              }
+              isMulti
+              isSearchable={true}
+              isLoading={loadingTeachers}
+              menuPlacement="auto"
+              maxMenuHeight={80}
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  minHeight: 48,
+                  borderWidth: 2,
+                  borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                  boxShadow: state.isFocused
+                    ? "0 0 0 3px rgba(255,102,0,0.1)"
+                    : "none",
+                }),
+                menuList: (base) => ({
+                  ...base,
+                  maxHeight: 80,
+                  overflowY: "auto",
+                }),
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700 mb-2"
+              htmlFor="reviewer-select"
+            >
+              Giảng viên phản biện <span className="text-red-500">*</span>
+            </label>
+            <Select
+              inputId="reviewer-select"
+              value={selectedReviewers}
+              onChange={setSelectedReviewers}
+              options={teacherOptions}
+              className="react-select-container"
+              classNamePrefix="react-select"
+              placeholder={
+                loadingTeachers
+                  ? "Đang tải giảng viên..."
+                  : "Chọn giảng viên phản biện"
               }
               isMulti
               isSearchable={true}

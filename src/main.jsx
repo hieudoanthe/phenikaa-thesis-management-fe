@@ -33,6 +33,7 @@ import MyThesis from "./pages/student/MyThesis.jsx";
 import AssignmentsDetail from "./pages/student/AssignmentsDetail.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
+import GradingManagement from "./pages/lecturer/GradingManagement.jsx";
 
 import AcademicYearManagement from "./pages/admin/AcademicYearManagement.jsx";
 import DefenseSessionsSchedule from "./pages/admin/DefenseSessionsSchedule.jsx";
@@ -90,15 +91,7 @@ createRoot(document.getElementById("root")).render(
                     />
                   }
                 />
-                <Route
-                  path="grading"
-                  element={
-                    <PlaceholderPage
-                      title="Chấm điểm"
-                      description="Tính năng chấm điểm đang được phát triển."
-                    />
-                  }
-                />
+                <Route path="grading" element={<GradingManagement />} />
                 <Route
                   path="defense-schedule"
                   element={
