@@ -67,15 +67,20 @@ const StudentLayout = () => {
           title: "Nhóm",
           subtitle: "Quản lý nhóm thực hiện luận văn",
         };
-      case "/student/report":
+      case "/student/submissions":
         return {
-          title: "Báo cáo",
-          subtitle: "Nộp và theo dõi tiến độ báo cáo",
+          title: "Nộp báo cáo",
+          subtitle: "Quản lý nộp báo cáo",
         };
-      case "/student/message":
+      case "/student/chat":
         return {
           title: "Tin nhắn",
           subtitle: "Trao đổi với giảng viên và nhóm",
+        };
+      case "/student/notifications":
+        return {
+          title: "Thông báo",
+          subtitle: "Quản lý thông báo",
         };
       case "/student/settings":
         return {
@@ -442,7 +447,21 @@ const StudentLayout = () => {
               if (inInitialBuffer) {
                 bufferedCountRef.current += 1;
               } else {
-                toast.success(messageText);
+                // Thay vì hiển thị từng toast riêng lẻ, chỉ tăng counter
+                bufferedCountRef.current += 1;
+                // Hiển thị toast tổng hợp sau 1 giây
+                if (bufferToastTimerRef.current) {
+                  clearTimeout(bufferToastTimerRef.current);
+                }
+                bufferToastTimerRef.current = setTimeout(() => {
+                  if (bufferedCountRef.current > 0) {
+                    toast.success(
+                      `Bạn có ${bufferedCountRef.current} thông báo mới`
+                    );
+                    bufferedCountRef.current = 0;
+                  }
+                  bufferToastTimerRef.current = null;
+                }, 1000);
               }
             }
 
@@ -843,8 +862,12 @@ const StudentLayout = () => {
           {/* Main content */}
           <main className="flex-1 bg-gray-50 text-secondary overflow-auto">
             <div
-              className={`px-6 ${
-                location.pathname === "/student/my-thesis" ? "py-2" : "py-6"
+              className={`${
+                location.pathname === "/student/my-thesis"
+                  ? "px-6 py-2"
+                  : location.pathname === "/student/chat"
+                  ? "px-0 py-0"
+                  : "px-6 py-6"
               }`}
             >
               <Outlet />

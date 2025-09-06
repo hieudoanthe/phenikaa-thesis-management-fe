@@ -6,7 +6,7 @@ import {
 } from "../../services/grading.service";
 import { toast } from "react-toastify";
 
-const QnAManagement = ({ topicId, studentId }) => {
+const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
   const [qnas, setQnas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -80,9 +80,17 @@ const QnAManagement = ({ topicId, studentId }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">
-          Câu hỏi và trả lời trong bảo vệ
-        </h3>
+        <div>
+          <h3 className="text-lg font-medium text-gray-900">
+            Câu hỏi và trả lời trong bảo vệ
+          </h3>
+          {topicTitle && studentName && (
+            <p className="text-sm text-gray-600 mt-1">
+              Đề tài: <span className="font-medium">{topicTitle}</span> - Sinh
+              viên: <span className="font-medium">{studentName}</span>
+            </p>
+          )}
+        </div>
         <button
           onClick={() => setShowAddModal(true)}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"

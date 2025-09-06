@@ -137,6 +137,23 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
       tooltip: "Thống kê",
     },
     {
+      path: "/admin/submission-analytics",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="currentColor"
+          className="bi bi-file-earmark-bar-graph"
+          viewBox="0 0 16 16"
+        >
+          <path d="M10.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zm-1.5 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5z" />
+        </svg>
+      ),
+      text: "Phân tích báo cáo",
+      tooltip: "Phân tích báo cáo",
+    },
+    {
       path: "/admin/audit-log",
       icon: (
         <svg
@@ -179,7 +196,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
 
   return (
     <div
-      className={`h-full bg-gradient-to-br from-secondary to-secondary-light text-white transition-all duration-500 ease-in-out overflow-hidden ${
+      className={`h-full flex flex-col bg-gradient-to-br from-secondary to-secondary-light text-white transition-all duration-500 ease-in-out overflow-hidden ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >
@@ -262,6 +279,33 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           ))}
         </ul>
       </nav>
+
+      {/* Logo Section */}
+      <div
+        className={`mt-auto p-4 border-t border-white/20 ${
+          isCollapsed ? "px-2" : "px-4"
+        }`}
+      >
+        <div
+          className={`flex items-center justify-center ${
+            isCollapsed ? "flex-col" : "flex-row gap-3"
+          }`}
+        >
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className={`${
+              isCollapsed ? "w-12 h-12" : "w-16 h-16"
+            } object-contain`}
+          />
+          {!isCollapsed && (
+            <div className="text-center">
+              <div className="text-sm font-semibold text-white">Phenikaa</div>
+              <div className="text-xs text-white/70">University</div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

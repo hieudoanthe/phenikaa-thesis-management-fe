@@ -973,7 +973,10 @@ const ThesisManagement = () => {
           {/* Top row - Add button and search */}
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary text-white font-medium rounded-lg hover:bg-secondary-hover transition-colors duration-200 shadow-sm w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-lg transition-all duration-200 shadow-sm w-full sm:w-auto hover:opacity-90"
+              style={{
+                background: "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
+              }}
               onClick={() => {
                 setIsFormOpen(true);
                 setSelectedTopicForView(null); // Reset để tạo mới

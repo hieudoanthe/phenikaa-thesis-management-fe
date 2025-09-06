@@ -31,15 +31,19 @@ import LecturerChat from "./pages/lecturer/Chat.jsx";
 import StudentProfile from "./pages/student/StudentProfile.jsx";
 import MyThesis from "./pages/student/MyThesis.jsx";
 import AssignmentsDetail from "./pages/student/AssignmentsDetail.jsx";
+import SubmissionManagement from "./pages/student/SubmissionManagement.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
 import GradingManagement from "./pages/lecturer/GradingManagement.jsx";
+import StudentSubmissionsView from "./pages/lecturer/StudentSubmissionsView.jsx";
 
 import AcademicYearManagement from "./pages/admin/AcademicYearManagement.jsx";
 import DefenseSessionsSchedule from "./pages/admin/DefenseSessionsSchedule.jsx";
 import DefenseScheduleManagement from "./pages/admin/DefenseScheduleManagement.jsx";
 import RegistrationPeriodManagement from "./pages/admin/RegistrationPeriodManagement.jsx";
 import StudentPeriodManagement from "./pages/admin/StudentPeriodManagement.jsx";
+import StatisticsDashboard from "./pages/admin/StatisticsDashboard.jsx";
+import SubmissionAnalytics from "./pages/admin/SubmissionAnalytics.jsx";
 // Import CSS
 import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -93,6 +97,10 @@ createRoot(document.getElementById("root")).render(
                 />
                 <Route path="grading" element={<GradingManagement />} />
                 <Route
+                  path="student-submissions"
+                  element={<StudentSubmissionsView />}
+                />
+                <Route
                   path="defense-schedule"
                   element={
                     <PlaceholderPage
@@ -139,6 +147,7 @@ createRoot(document.getElementById("root")).render(
                 />
                 <Route path="my-thesis" element={<MyThesis />} />
                 <Route path="assignments" element={<AssignmentsDetail />} />
+                <Route path="submissions" element={<SubmissionManagement />} />
                 {/* Có thể thêm các route con khác cho student ở đây */}
               </Route>
 
@@ -192,14 +201,10 @@ createRoot(document.getElementById("root")).render(
                   path="student-period"
                   element={<StudentPeriodManagement />}
                 />
+                <Route path="statistics" element={<StatisticsDashboard />} />
                 <Route
-                  path="statistics"
-                  element={
-                    <PlaceholderPage
-                      title="Thống kê"
-                      description="Tính năng thống kê đang được phát triển."
-                    />
-                  }
+                  path="submission-analytics"
+                  element={<SubmissionAnalytics />}
                 />
                 <Route
                   path="notifications"

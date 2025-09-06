@@ -103,6 +103,11 @@ const LecturerLayout = () => {
           title: "Báo cáo & Thống kê",
           subtitle: "Xem báo cáo tiến độ và thống kê luận văn",
         };
+      case "/lecturer/student-submissions":
+        return {
+          title: "Báo cáo sinh viên",
+          subtitle: "Xem và quản lý các báo cáo mà sinh viên đã nộp",
+        };
       case "/lecturer/schedule":
         return {
           title: "Lịch trình",

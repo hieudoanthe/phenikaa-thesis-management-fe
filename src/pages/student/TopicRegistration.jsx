@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import registrationService from "../../services/registration.service";
 import ThesisRegisterModal from "./ThesisRegister.jsx";
 import { toast } from "react-toastify";
@@ -141,6 +142,52 @@ const TopicRegistration = () => {
 
   const years = ["2024-2025", "2023-2024", "2022-2023"];
 
+  // Chuẩn bị data cho react-select
+  const departmentOptions = [
+    { value: "", label: "Chọn khoa" },
+    ...departments.map((dept) => ({ value: dept, label: dept })),
+  ];
+
+  const yearOptions = [
+    { value: "", label: "Chọn năm học" },
+    ...years.map((year) => ({ value: year, label: year })),
+  ];
+
+  // Custom styles cho react-select
+  const customSelectStyles = {
+    control: (provided, state) => ({
+      ...provided,
+      minHeight: "38px",
+      borderColor: state.isFocused ? "#ea580c" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(234, 88, 12, 0.1)" : "none",
+      "&:hover": {
+        borderColor: state.isFocused ? "#ea580c" : "#9ca3af",
+      },
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isSelected
+        ? "#ea580c"
+        : state.isFocused
+        ? "#fed7aa"
+        : "white",
+      color: state.isSelected ? "white" : "#374151",
+      "&:hover": {
+        backgroundColor: state.isSelected ? "#ea580c" : "#fed7aa",
+      },
+    }),
+    placeholder: (provided) => ({
+      ...provided,
+      color: "#9ca3af",
+      fontSize: "14px",
+    }),
+    singleValue: (provided) => ({
+      ...provided,
+      color: "#374151",
+      fontSize: "14px",
+    }),
+  };
+
   return (
     <div className="max-w-full mx-auto p-3">
       {/* Hiển thị thông tin đợt đăng ký hiện tại */}
@@ -190,7 +237,10 @@ const TopicRegistration = () => {
       <div className="flex justify-end mb-3">
         <button
           onClick={() => setIsRegisterModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover:opacity-90"
+          style={{
+            background: "linear-gradient(135deg, #ea580c 100%, #fb923c 0%)",
+          }}
         >
           <svg
             className="w-5 h-5"
@@ -212,41 +262,43 @@ const TopicRegistration = () => {
       {/* Filters Bar */}
       <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-200 mb-4 flex gap-3.5 items-end flex-wrap">
         {/* Department Filter */}
-        <div className="flex flex-col gap-1.5 min-w-[130px]">
+        <div className="flex flex-col gap-1.5 min-w-[200px]">
           <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
             Khoa
           </label>
-          <select
-            value={selectedDepartment}
-            onChange={(e) => setSelectedDepartment(e.target.value)}
-            className="px-2.5 py-1.5 border border-gray-300 rounded-md text-sm min-w-[130px] focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-colors"
-          >
-            <option value="">Chọn khoa</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={departmentOptions.find(
+              (option) => option.value === selectedDepartment
+            )}
+            onChange={(selectedOption) =>
+              setSelectedDepartment(selectedOption?.value || "")
+            }
+            options={departmentOptions}
+            styles={customSelectStyles}
+            placeholder="Chọn khoa"
+            isClearable
+            isSearchable
+            className="text-sm"
+          />
         </div>
 
         {/* Year Filter */}
-        <div className="flex flex-col gap-1.5 min-w-[130px]">
+        <div className="flex flex-col gap-1.5 min-w-[200px]">
           <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
             Năm học
           </label>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-2.5 py-1.5 border border-gray-300 rounded-md text-sm min-w-[130px] focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-colors"
-          >
-            <option value="">Chọn năm học</option>
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={yearOptions.find((option) => option.value === selectedYear)}
+            onChange={(selectedOption) =>
+              setSelectedYear(selectedOption?.value || "")
+            }
+            options={yearOptions}
+            styles={customSelectStyles}
+            placeholder="Chọn năm học"
+            isClearable
+            isSearchable
+            className="text-sm"
+          />
         </div>
 
         {/* Search Filter */}
@@ -346,7 +398,7 @@ const TopicRegistration = () => {
                       Độ khó:
                     </span>
                     <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${
+                      className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border ${
                         difficultyMap[topic.difficultyLevel]?.class || ""
                       }`}
                     >

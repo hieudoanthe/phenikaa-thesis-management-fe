@@ -15,9 +15,7 @@ const MAIN_API_CONFIG = {
 const mainHttpClient = axios.create({
   baseURL: MAIN_API_CONFIG.BASE_URL,
   timeout: MAIN_API_CONFIG.TIMEOUT,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  // Không set Content-Type mặc định để FormData có thể tự set
 });
 
 // Request interceptor - thêm token vào header
@@ -27,6 +25,12 @@ mainHttpClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Chỉ set Content-Type nếu chưa có (để FormData tự set)
+    if (!config.headers["Content-Type"] && !(config.data instanceof FormData)) {
+      config.headers["Content-Type"] = "application/json";
+    }
+
     return config;
   },
   (error) => {

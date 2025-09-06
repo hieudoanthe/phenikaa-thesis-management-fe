@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import { suggestTopicForStudent } from "../../services/suggest.service";
 import { userService } from "../../services";
 import { toast } from "react-toastify";
@@ -210,7 +211,7 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
       setForm(initialForm);
       setSearchQuery(""); // Reset search input
       toast.success("Đề xuất đề tài thành công!");
-      onClose && onClose();
+      onClose?.();
     } catch (err) {
       const errorMessage = err.message || "Có lỗi xảy ra, vui lòng thử lại!";
       setError(errorMessage);
@@ -229,13 +230,19 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      }}
+      tabIndex={-1}
     >
       <div
-        className="relative flex flex-col lg:flex-row gap-6 mx-auto my-4 px-4 py-6 bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+        className="relative flex flex-col lg:flex-row gap-8 mx-auto my-4 px-6 py-8 bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto thin-scrollbar animate-in slide-in-from-bottom-4 duration-500"
         onClick={(e) => {
           e.stopPropagation();
           if (
@@ -250,43 +257,94 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
         }}
       >
         {/* Form Card */}
-        <div className="flex-1 lg:flex-[1.2] bg-white rounded-2xl p-6 lg:p-8 flex flex-col gap-4 min-w-0">
-          <h2 className="text-xl lg:text-2xl font-bold text-blue-900 mb-2">
-            Đề xuất đề tài khóa luận
-          </h2>
-          <p className="text-gray-600 text-sm lg:text-base mb-4">
-            Vui lòng điền đầy đủ các trường bắt buộc bên dưới
-          </p>
+        <div className="flex-1 lg:flex-[1.2] bg-gradient-to-br from-white to-blue-50/30 rounded-3xl p-8 lg:p-10 flex flex-col gap-6 min-w-0 border border-blue-100/50">
+          {/* Header Section */}
+          <div className="text-center mb-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl mb-4 shadow-lg">
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-900 to-blue-700 bg-clip-text text-transparent mb-3">
+              Đề xuất đề tài khóa luận
+            </h2>
+            <p className="text-gray-600 text-base lg:text-lg">
+              Vui lòng điền đầy đủ thông tin để đề xuất đề tài của bạn
+            </p>
+          </div>
 
           {/* Notice Box */}
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-3 flex items-start gap-3 text-sm mb-4">
-            <span>
-              Bạn chỉ được đề xuất 1 đề tài tại một thời điểm. Hãy kiểm tra kỹ
-              thông tin trước khi gửi.
-            </span>
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 text-amber-800 rounded-xl p-4 flex items-start gap-3 text-sm mb-6 shadow-sm">
+            <div>
+              <p className="font-medium">Lưu ý quan trọng</p>
+              <p className="text-amber-700 mt-1">
+                Bạn chỉ được đề xuất 1 đề tài tại một thời điểm. Hãy kiểm tra kỹ
+                thông tin trước khi gửi.
+              </p>
+            </div>
           </div>
 
           {/* Hiển thị thông tin đợt đăng ký */}
           {currentPeriod && (
-            <div className="period-info bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="period-info bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6 shadow-sm">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-blue-800 mb-2">
-                    Đợt đăng ký: {currentPeriod.periodName}
-                  </h3>
-                  <p className="text-blue-700 text-sm">
-                    Thời gian:{" "}
-                    {new Date(currentPeriod.startDate).toLocaleDateString(
-                      "vi-VN"
-                    )}{" "}
-                    -{" "}
-                    {new Date(currentPeriod.endDate).toLocaleDateString(
-                      "vi-VN"
-                    )}
-                  </p>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                    <svg
+                      className="w-6 h-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-blue-900 mb-1">
+                      {currentPeriod.periodName}
+                    </h3>
+                    <p className="text-blue-700 text-sm">
+                      <span className="font-medium">Thời gian:</span>{" "}
+                      {new Date(currentPeriod.startDate).toLocaleDateString(
+                        "vi-VN"
+                      )}{" "}
+                      -{" "}
+                      {new Date(currentPeriod.endDate).toLocaleDateString(
+                        "vi-VN"
+                      )}
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-semibold text-blue-600">
+                  <div
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                      new Date(currentPeriod.endDate).getTime() > Date.now()
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-sm ${
+                        new Date(currentPeriod.endDate).getTime() > Date.now()
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                      }`}
+                    ></div>
                     {new Date(currentPeriod.endDate).getTime() > Date.now()
                       ? "Đang diễn ra"
                       : "Đã kết thúc"}
@@ -298,12 +356,27 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
 
           {/* Hiển thị cảnh báo khi không có đợt đăng ký */}
           {!currentPeriod && !periodLoading && (
-            <div className="no-period-warning bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <div className="text-yellow-800 text-center">
-                <h3 className="text-lg font-semibold mb-2">
+            <div className="no-period-warning bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-6 mb-6 shadow-sm">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-amber-900 mb-2">
                   Không có đợt đăng ký nào đang diễn ra
                 </h3>
-                <p>
+                <p className="text-amber-700 text-base">
                   Vui lòng chờ đến đợt đăng ký tiếp theo để có thể đề xuất đề
                   tài.
                 </p>
@@ -313,9 +386,24 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
 
           {/* Form đề xuất đề tài - chỉ hiển thị khi có đợt đăng ký */}
           {currentPeriod && (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Tên đề tài */}
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg
+                    className="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
                 <input
                   id="tieuDe"
                   type="text"
@@ -324,18 +412,33 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                   value={form.tieuDe}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
+                  className="w-full pl-10 pr-4 py-3 pt-7 text-sm border-2 border-gray-200 rounded-xl outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 bg-white peer hover:border-gray-300"
                 />
                 <label
                   htmlFor="tieuDe"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
                   Tên đề tài <span className="text-red-500">*</span>
                 </label>
               </div>
 
               {/* Mô tả đề tài */}
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <svg
+                    className="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h7"
+                    />
+                  </svg>
+                </div>
                 <textarea
                   id="moTa"
                   name="moTa"
@@ -343,19 +446,34 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                   value={form.moTa}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  className="w-full pl-10 pr-4 py-3 pt-7 text-sm border-2 border-gray-200 rounded-xl outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 bg-white peer resize-none hover:border-gray-300"
                   rows={3}
                 />
                 <label
                   htmlFor="moTa"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
                   Mô tả đề tài <span className="text-red-500">*</span>
                 </label>
               </div>
 
               {/* Mục tiêu */}
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <svg
+                    className="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+                    />
+                  </svg>
+                </div>
                 <textarea
                   id="mucTieu"
                   name="mucTieu"
@@ -363,19 +481,40 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                   value={form.mucTieu}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  className="w-full pl-10 pr-4 py-3 pt-7 text-sm border-2 border-gray-200 rounded-xl outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 bg-white peer resize-none hover:border-gray-300"
                   rows={3}
                 />
                 <label
                   htmlFor="mucTieu"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
                   Mục tiêu <span className="text-red-500">*</span>
                 </label>
               </div>
 
               {/* Phương pháp thực hiện */}
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <svg
+                    className="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
                 <textarea
                   id="phuongPhap"
                   name="phuongPhap"
@@ -383,19 +522,34 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                   value={form.phuongPhap}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  className="w-full pl-10 pr-4 py-3 pt-7 text-sm border-2 border-gray-200 rounded-xl outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 bg-white peer resize-none hover:border-gray-300"
                   rows={3}
                 />
                 <label
                   htmlFor="phuongPhap"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
                   Phương pháp thực hiện <span className="text-red-500">*</span>
                 </label>
               </div>
 
               {/* Kết quả dự kiến */}
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <svg
+                    className="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                </div>
                 <textarea
                   id="ketQuaDuKien"
                   name="ketQuaDuKien"
@@ -403,40 +557,70 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                   value={form.ketQuaDuKien}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  className="w-full pl-10 pr-4 py-3 pt-7 text-sm border-2 border-gray-200 rounded-xl outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 bg-white peer resize-none hover:border-gray-300"
                   rows={3}
                 />
                 <label
                   htmlFor="ketQuaDuKien"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
                   Kết quả dự kiến <span className="text-red-500">*</span>
                 </label>
               </div>
 
               {/* Lý do đề xuất */}
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <svg
+                    className="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
                 <textarea
                   id="lyDo"
                   name="lyDo"
                   placeholder=" "
                   value={form.lyDo}
                   onChange={handleChange}
-                  className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer resize-none"
+                  className="w-full pl-10 pr-4 py-3 pt-7 text-sm border-2 border-gray-200 rounded-xl outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 bg-white peer resize-none hover:border-gray-300"
                   required
                   rows={3}
                 />
                 <label
                   htmlFor="lyDo"
-                  className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
                   Lý do đề xuất <span className="text-red-500">*</span>
                 </label>
               </div>
 
               {/* Lecturer Autocomplete - Full Width */}
-              <div className="relative mb-4">
-                <div className="relative">
+              <div className="relative mb-6">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg
+                      className="w-5 h-5 text-gray-400 group-focus-within:text-blue-600 transition-colors duration-200"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
                   <input
                     id="lecturer-search"
                     type="text"
@@ -470,11 +654,11 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                     }}
                     onFocus={() => setShowLecturerList(true)}
                     ref={searchInputRef}
-                    className="w-full px-3 py-2.5 pt-6 text-sm border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-blue-900 focus:shadow-md bg-white peer"
+                    className="w-full pl-10 pr-4 py-3 pt-7 text-sm border-2 border-gray-200 rounded-xl outline-none transition-all duration-300 focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 bg-white peer hover:border-gray-300"
                   />
                   <label
                     htmlFor="lecturer-search"
-                    className="absolute top-2.5 left-3 text-sm text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-blue-900 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-medium"
+                    className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                   >
                     Giảng viên hướng dẫn mong muốn{" "}
                     <span className="text-red-500">*</span>
@@ -484,22 +668,39 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                   {showLecturerList && (
                     <div
                       ref={dropdownRef}
-                      className="absolute left-0 right-0 bottom-full mb-6 bg-white border border-gray-300 rounded-lg shadow-xl z-20 max-h-96 overflow-hidden"
+                      className="absolute left-0 right-0 bottom-full mb-4 bg-white border border-gray-200 rounded-2xl shadow-2xl z-20 max-h-96 overflow-hidden animate-in slide-in-from-top-2 duration-200"
                     >
                       {/* Search Header removed as requested */}
 
                       {/* Lecturer List */}
-                      <div className="max-h-72 overflow-y-auto">
+                      <div className="max-h-72 overflow-y-auto thin-scrollbar">
                         {loadingLecturers ? (
-                          <div className="p-3 text-center text-gray-500">
-                            <div className="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                            <span className="ml-2 text-sm">
+                          <div className="p-6 text-center text-gray-500">
+                            <div className="inline-block w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+                            <p className="text-sm font-medium">
                               Đang tải danh sách giảng viên...
-                            </span>
+                            </p>
                           </div>
                         ) : errorLecturers ? (
-                          <div className="p-3 text-center text-red-500 text-sm">
-                            {errorLecturers}
+                          <div className="p-6 text-center text-red-500">
+                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <svg
+                                className="w-6 h-6 text-red-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              </svg>
+                            </div>
+                            <p className="text-sm font-medium">
+                              {errorLecturers}
+                            </p>
                           </div>
                         ) : filteredLecturers.length > 0 ? (
                           <>
@@ -507,9 +708,9 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                             {filteredLecturers.slice(0, 8).map((l) => (
                               <div
                                 key={l.id}
-                                className={`flex items-center gap-3 p-3 cursor-pointer transition-colors duration-150 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
+                                className={`flex items-center gap-4 p-4 cursor-pointer transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-b border-gray-100 last:border-b-0 group ${
                                   form.giangVien?.id === l.id
-                                    ? "bg-blue-100"
+                                    ? "bg-gradient-to-r from-blue-100 to-indigo-100"
                                     : ""
                                 }`}
                                 onClick={() => handleLecturerSelect(l)}
@@ -517,10 +718,10 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                                 <img
                                   src={l.avatar}
                                   alt={l.name}
-                                  className="w-8 h-8 rounded-full object-cover bg-gray-200 flex-shrink-0"
+                                  className="w-10 h-10 rounded-full object-cover bg-gray-200 flex-shrink-0 ring-2 ring-white group-hover:ring-blue-200 transition-all duration-200"
                                 />
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-blue-900 text-sm truncate">
+                                  <div className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-900 transition-colors duration-200">
                                     {l.name}
                                   </div>
                                   <div className="text-gray-600 text-xs truncate">
@@ -531,10 +732,10 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
                                   </div>
                                 </div>
                                 <span
-                                  className={`text-xs font-semibold rounded-lg px-2 py-1 flex-shrink-0 ${
+                                  className={`text-xs font-bold rounded-lg px-3 py-1.5 flex-shrink-0 transition-all duration-200 ${
                                     l.remainingSlots > 0
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
+                                      ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-800"
+                                      : "bg-gradient-to-r from-red-100 to-pink-100 text-red-800"
                                   }`}
                                 >
                                   {l.remainingSlots === 0
@@ -546,23 +747,38 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
 
                             {/* Show more results if available */}
                             {filteredLecturers.length > 8 && (
-                              <div className="border-t border-gray-200 p-3 bg-gray-50">
-                                <div className="text-center text-xs text-gray-600">
+                              <div className="border-t border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-blue-50">
+                                <div className="text-center text-sm font-medium text-gray-700 mb-1">
                                   Hiển thị 8/{filteredLecturers.length} kết quả
                                 </div>
-                                <div className="text-center text-xs text-gray-500 mt-1">
-                                  {filteredLecturers.length > 8 && (
-                                    <span>💡 Gõ thêm để tìm chính xác hơn</span>
-                                  )}
+                                <div className="text-center text-xs text-gray-500">
+                                  💡 Gõ thêm để tìm chính xác hơn
                                 </div>
                               </div>
                             )}
                           </>
                         ) : (
-                          <div className="p-3 text-center text-gray-500 italic text-sm">
-                            {searchQuery
-                              ? "Không tìm thấy giảng viên"
-                              : "Không có giảng viên nào"}
+                          <div className="p-6 text-center text-gray-500">
+                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <svg
+                                className="w-6 h-6 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                            </div>
+                            <p className="text-sm font-medium">
+                              {searchQuery
+                                ? "Không tìm thấy giảng viên"
+                                : "Không có giảng viên nào"}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -574,83 +790,161 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
               </div>
 
               {/* Submit Button */}
-              <button
-                type="submit"
-                className="bg-orange-500 text-white border-none rounded-lg py-3 text-base font-semibold mt-2 cursor-pointer transition-all duration-200 shadow-md hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed"
-                disabled={loading}
-                onClick={handleSubmit}
-              >
-                {loading ? (
-                  <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                ) : (
-                  "Gửi đề xuất"
-                )}
-              </button>
+              <div className="pt-4 pb-6">
+                <button
+                  type="submit"
+                  className="w-full text-white border-none rounded-xl py-4 text-base font-bold cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] hover:opacity-90"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
+                  }}
+                  disabled={loading}
+                  onClick={handleSubmit}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Đang gửi đề xuất...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                        />
+                      </svg>
+                      <span>Gửi đề xuất</span>
+                    </div>
+                  )}
+                </button>
+              </div>
             </form>
           )}
 
           {/* Loading state */}
           {periodLoading && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <p className="text-gray-600">Đang kiểm tra đợt đăng ký...</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+              </div>
+              <p className="text-gray-600 font-medium">
+                Đang kiểm tra đợt đăng ký...
+              </p>
             </div>
           )}
         </div>
 
         {/* Lecturer Preview Card */}
-        <div className="lg:flex-[0.8] bg-gray-50 rounded-2xl shadow-md p-4 lg:p-6 mt-0 lg:mt-0 h-fit lg:self-start flex flex-col gap-4 min-w-0 lg:max-w-72 lg:sticky lg:top-6">
-          <div className="font-bold text-blue-900 text-lg mb-2">
-            Giảng viên đã chọn
+        <div className="lg:flex-[0.8] bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-3xl shadow-lg p-6 lg:p-8 mt-0 lg:mt-0 h-fit lg:self-start flex flex-col gap-6 min-w-0 lg:max-w-80 lg:sticky lg:top-6 border border-blue-100/50">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl mb-3 shadow-md">
+              <svg
+                className="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </div>
+            <h3 className="font-bold text-blue-900 text-lg mb-1">
+              Giảng viên đã chọn
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Thông tin giảng viên hướng dẫn
+            </p>
           </div>
 
           {form.giangVien ? (
-            <div className="flex flex-col items-center gap-3 bg-white rounded-xl shadow-sm p-4">
-              <img
-                src={form.giangVien.avatar}
-                alt={form.giangVien.name}
-                className="w-14 h-14 rounded-full object-cover bg-gray-200"
-              />
-              <div className="font-bold text-blue-900 text-base text-center">
-                {form.giangVien.name}
+            <div className="flex flex-col items-center gap-4 bg-white rounded-2xl shadow-lg p-6 border border-blue-100">
+              <div className="relative">
+                <img
+                  src={form.giangVien.avatar}
+                  alt={form.giangVien.name}
+                  className="w-20 h-20 rounded-full object-cover bg-gray-200 ring-4 ring-blue-100 shadow-lg"
+                />
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
               </div>
-              <div className="text-gray-600 text-sm text-center">
-                {form.giangVien.email}
+              <div className="text-center">
+                <div className="font-bold text-gray-900 text-lg mb-1">
+                  {form.giangVien.name}
+                </div>
+                <div className="text-gray-600 text-sm mb-2">
+                  {form.giangVien.email}
+                </div>
+                <div className="text-blue-600 text-sm font-semibold mb-1">
+                  {form.giangVien.specialization}
+                </div>
+                <div className="text-gray-700 text-sm mb-3">
+                  {form.giangVien.department}
+                </div>
+                <span className="inline-flex items-center gap-1 text-xs font-bold rounded-lg px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800">
+                  <div className="w-2 h-2 bg-green-500 rounded-sm"></div>
+                  Còn nhận sinh viên
+                </span>
               </div>
-              <div className="text-orange-500 text-sm font-medium text-center">
-                {form.giangVien.specialization}
-              </div>
-              <div className="text-blue-900 text-sm mb-1">
-                {form.giangVien.department}
-              </div>
-              <span className="text-xs font-semibold rounded-lg px-3 py-1 bg-green-100 text-green-800">
-                Còn nhận
-              </span>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-xl bg-white text-gray-400 gap-2">
-              <div className="mb-1">
-                <svg width="40" height="40" fill="#d1d5db" viewBox="0 0 24 24">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M12 14c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z" />
+            <div className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded-2xl bg-white text-gray-400 gap-3">
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
                 </svg>
               </div>
-              <div className="text-sm text-gray-400">Chưa chọn giảng viên</div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  Chưa chọn giảng viên
+                </p>
+                <p className="text-xs text-gray-400">
+                  Tìm kiếm và chọn giảng viên hướng dẫn
+                </p>
+              </div>
             </div>
           )}
         </div>
-        {/* Close Button */}
-        <button
-          type="button"
-          className="absolute top-3 right-3 bg-white rounded-full p-2 shadow hover:bg-gray-100"
-          onClick={onClose}
-          aria-label="Đóng"
-        >
-          ✕
-        </button>
       </div>
     </div>
   );
+};
+
+ThesisRegisterModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default ThesisRegisterModal;

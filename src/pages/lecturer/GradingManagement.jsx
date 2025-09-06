@@ -2,13 +2,13 @@ import React, { useState, useEffect } from "react";
 import {
   submitEvaluation,
   getEvaluatorTasks,
-  createEvaluationData,
 } from "../../services/grading.service";
 import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import GradingModal from "../../components/grading/GradingModal";
 import QnAManagement from "../../components/grading/QnAManagement";
 import FinalScoreView from "../../components/grading/FinalScoreView";
+import AllFinalScoresView from "../../components/grading/AllFinalScoresView";
 import TopicDetailModal from "../../components/grading/TopicDetailModal";
 import { getUserIdFromToken } from "../../auth/authUtils";
 
@@ -21,6 +21,7 @@ const GradingManagement = () => {
   const [showGradingModal, setShowGradingModal] = useState(false);
   const [showTopicDetailModal, setShowTopicDetailModal] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState(null);
+  const [selectedQnATopic, setSelectedQnATopic] = useState(null);
 
   // Mock data
   const mockEvaluations = [
@@ -77,8 +78,23 @@ const GradingManagement = () => {
 
       const data = await getEvaluatorTasks(lecturerId, null, "all");
       console.log("Raw API data:", data);
-      const normalized = (data || []).map((e) => ({
-        id: e.evaluationId,
+
+      // Debug: Log chi tiết từng task
+      if (data && data.length > 0) {
+        console.log("Task details:");
+        data.forEach((task, index) => {
+          console.log(`Task ${index + 1}:`, {
+            id: task.id,
+            topicId: task.topicId,
+            studentId: task.studentId,
+            evaluationType: task.evaluationType,
+            studentName: task.studentName,
+            topicTitle: task.topicTitle,
+          });
+        });
+      }
+      const normalized = (data || []).map((e, index) => ({
+        id: e.evaluationId || `task_${e.topicId}_${e.evaluationType}_${index}`,
         topicId: e.topicId,
         studentId: e.studentId,
         studentName: e.studentName || `SV ${e.studentId}`,
@@ -89,6 +105,16 @@ const GradingManagement = () => {
         defenseTime: e.defenseTime || "",
       }));
       console.log("Normalized evaluations:", normalized);
+
+      // Debug: Log chi tiết từng normalized evaluation
+      normalized.forEach((evaluation, index) => {
+        console.log(`Normalized ${index + 1}:`, {
+          id: evaluation.id,
+          topicId: evaluation.topicId,
+          evaluationType: evaluation.evaluationType,
+          status: evaluation.status,
+        });
+      });
       setEvaluations(normalized);
     } catch (error) {
       toast.error("Lỗi khi tải danh sách chấm điểm");
@@ -108,35 +134,39 @@ const GradingManagement = () => {
     setShowTopicDetailModal(true);
   };
 
+  // Auto-select first topic when switching to Q&A tab
+  useEffect(() => {
+    if (activeTab === "qna" && !selectedQnATopic && evaluations.length > 0) {
+      const uniqueTopics = evaluations.filter(
+        (evaluation, index, self) =>
+          self.findIndex((e) => e.topicId === evaluation.topicId) === index
+      );
+      if (uniqueTopics.length > 0) {
+        setSelectedQnATopic(uniqueTopics[0]);
+      }
+    }
+  }, [activeTab, selectedQnATopic, evaluations]);
+
   const handleSubmitGrading = async (gradingForm) => {
     if (!selectedEvaluation) return;
 
-    // Validate form
-    const scores = {
-      content: parseFloat(gradingForm.contentScore),
-      presentation: parseFloat(gradingForm.presentationScore),
-      technical: parseFloat(gradingForm.technicalScore),
-      innovation: parseFloat(gradingForm.innovationScore),
-      defense: parseFloat(gradingForm.defenseScore),
-    };
-
-    // Validate scores
-    for (const [key, value] of Object.entries(scores)) {
-      if (isNaN(value) || value < 0 || value > 10) {
-        toast.error(`Điểm ${key} phải từ 0 đến 10`);
+    try {
+      // Get evaluatorId with fallback
+      const evaluatorId = user?.id || getUserIdFromToken();
+      if (!evaluatorId) {
+        toast.error("Không thể xác định ID giảng viên");
         return;
       }
-    }
 
-    try {
-      const evaluationData = createEvaluationData(
-        selectedEvaluation.topicId,
-        selectedEvaluation.studentId,
-        user.id,
-        selectedEvaluation.evaluationType,
-        scores,
-        gradingForm.comments
-      );
+      // Create evaluation data with role-specific fields
+      const evaluationData = {
+        topicId: selectedEvaluation.topicId,
+        studentId: selectedEvaluation.studentId,
+        evaluatorId: evaluatorId,
+        evaluationType: selectedEvaluation.evaluationType,
+        comments: gradingForm.comments,
+        ...gradingForm, // Include all role-specific score fields
+      };
 
       await submitEvaluation(evaluationData);
       toast.success("Chấm điểm thành công!");
@@ -189,11 +219,13 @@ const GradingManagement = () => {
 
   const filteredEvaluations = evaluations.filter((item) => {
     if (activeTab === "grading") {
-      // Hiển thị tất cả các đề tài cần chấm điểm (PENDING, IN_PROGRESS, hoặc chưa có status)
+      // Hiển thị tất cả các đề tài cần chấm điểm (chưa có evaluationId hoặc status PENDING/IN_PROGRESS)
       return (
         item.status === "PENDING" ||
         item.status === "IN_PROGRESS" ||
-        !item.status
+        !item.status ||
+        item.id.toString().startsWith("task_") || // Tasks chưa được chấm điểm
+        item.status === "COMPLETED" // Hiển thị cả tasks đã chấm để có thể chấm lại
       );
     }
     return item.status === "COMPLETED";
@@ -376,16 +408,72 @@ const GradingManagement = () => {
 
         {activeTab === "qna" && (
           <div className="bg-white rounded-lg shadow p-6">
-            <QnAManagement
-              topicId={selectedEvaluation?.topicId || 1}
-              studentId={selectedEvaluation?.studentId || 201}
-            />
+            <div className="mb-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Quản lý Q&A theo đề tài
+              </h3>
+
+              {/* Topic Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn đề tài để quản lý Q&A:
+                </label>
+                <select
+                  value={selectedQnATopic?.topicId || ""}
+                  onChange={(e) => {
+                    const topicId = parseInt(e.target.value);
+                    const topic = evaluations.find(
+                      (evaluation) => evaluation.topicId === topicId
+                    );
+                    setSelectedQnATopic(topic);
+                  }}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">-- Chọn đề tài --</option>
+                  {evaluations
+                    .filter(
+                      (evaluation, index, self) =>
+                        self.findIndex(
+                          (e) => e.topicId === evaluation.topicId
+                        ) === index
+                    )
+                    .map((evaluation) => (
+                      <option
+                        key={evaluation.topicId}
+                        value={evaluation.topicId}
+                      >
+                        {evaluation.topicTitle} - {evaluation.studentName}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Q&A Management */}
+            {selectedQnATopic ? (
+              <QnAManagement
+                topicId={selectedQnATopic.topicId}
+                studentId={selectedQnATopic.studentId}
+                topicTitle={selectedQnATopic.topicTitle}
+                studentName={selectedQnATopic.studentName}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-4xl mb-4">❓</div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                  Chưa chọn đề tài
+                </h4>
+                <p className="text-gray-600">
+                  Vui lòng chọn một đề tài để quản lý Q&A.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === "results" && (
           <div className="bg-white rounded-lg shadow p-6">
-            <FinalScoreView topicId={selectedEvaluation?.topicId || 1} />
+            <AllFinalScoresView evaluations={evaluations} />
           </div>
         )}
 
