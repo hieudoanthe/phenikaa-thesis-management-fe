@@ -188,6 +188,17 @@ const TopicRegistration = () => {
     }),
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mb-4"></div>
+          <p className="text-gray-600 text-lg">Đang tải danh sách đề tài...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-full mx-auto p-3">
       {/* Hiển thị thông tin đợt đăng ký hiện tại */}
@@ -335,13 +346,7 @@ const TopicRegistration = () => {
         </button>
       </div>
 
-      {/* Loading State */}
-      {loading ? (
-        <div className="text-center py-15 px-5 text-gray-500">
-          <div className="w-10 h-10 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Đang tải danh sách đề tài...</p>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="text-center py-10 px-5 text-red-600 bg-red-50 border border-red-200 rounded-lg my-5">
           <p>{error}</p>
         </div>

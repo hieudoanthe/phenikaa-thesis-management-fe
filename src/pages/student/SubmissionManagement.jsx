@@ -661,7 +661,10 @@ const SubmissionManagement = () => {
               {loading ? (
                 <tr>
                   <td colSpan="8" className="px-6 py-4 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mx-auto mb-4"></div>
+                    <p className="text-gray-600 text-lg">
+                      Đang tải danh sách báo cáo...
+                    </p>
                   </td>
                 </tr>
               ) : submissions.length === 0 ? (
@@ -714,7 +717,7 @@ const SubmissionManagement = () => {
                               className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1 hover:bg-blue-50 px-2 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {loadingView === submission.submissionId ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-secondary"></div>
                               ) : (
                                 <span>{getFileIcon(submission.filePath)}</span>
                               )}
@@ -733,7 +736,7 @@ const SubmissionManagement = () => {
                               className="text-green-600 hover:text-green-800 underline flex items-center gap-1 hover:bg-green-50 px-2 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {loadingDownload === submission.submissionId ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-secondary"></div>
                               ) : (
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"

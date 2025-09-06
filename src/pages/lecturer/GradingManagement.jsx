@@ -237,17 +237,7 @@ const GradingManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Quản lý chấm điểm
-          </h1>
-          <p className="text-gray-600">
-            Chấm điểm và đánh giá các đề tài được gán cho bạn trong buổi bảo vệ
-          </p>
-        </div>
-
+      <div className="w-full">
         {/* Tabs */}
         <div className="mb-6">
           <div className="border-b border-gray-200">

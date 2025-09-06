@@ -169,6 +169,16 @@ export const API_ENDPOINTS = {
   GET_ASSIGNED_STUDENTS:
     "/api/eval-service/admin/sessions/{sessionId}/students",
   GET_AVAILABLE_SESSIONS: "/api/eval-service/admin/sessions/available",
+
+  /**
+   * Communication Service (Chat)
+   */
+  // Chat Messages
+  SEND_CHAT_MESSAGE: "/chat/send",
+  GET_CHAT_HISTORY: "/chat/history",
+  GET_CONVERSATION_HISTORY: "/chat/conversation/{userId1}/{userId2}",
+  GET_USER_CONVERSATIONS: "/chat/conversations/{userId}",
+  GET_RECENT_MESSAGES: "/chat/recent-messages/{userId}",
 };
 
 // WebSocket Endpoints

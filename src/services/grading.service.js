@@ -268,3 +268,50 @@ export const validateScore = (score) => {
 export const formatScore = (score) => {
   return score ? score.toFixed(1) : "0.0";
 };
+
+// ==================== PDF EXPORT SERVICE ====================
+
+/**
+ * Xuất PDF phiếu đánh giá hội đồng
+ */
+export const generateCommitteeEvaluationPDF = async (topicId) => {
+  try {
+    const response = await fetch(
+      `${
+        process.env.REACT_APP_API_BASE_URL || "http://localhost:8080"
+      }/api/eval-service/reports/committee-evaluation-pdf/topic/${topicId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Tạo blob từ response
+    const blob = await response.blob();
+
+    // Tạo URL tạm thời và tải file
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `committee_evaluation_${topicId}_${new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/:/g, "-")}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return response;
+  } catch (error) {
+    console.error("Error generating committee evaluation PDF:", error);
+    throw error;
+  }
+};

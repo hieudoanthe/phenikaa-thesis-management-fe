@@ -526,26 +526,6 @@ const MyThesis = () => {
                         {formatDate(selectedThesis.createdAt)}
                       </p>
                     </div>
-
-                    <div>
-                      <label className="block text-sm text-blue-700 mb-1">
-                        Tiến độ thực hiện:
-                      </label>
-                      <div className="w-full bg-blue-200 rounded-lg h-2 mb-2">
-                        <div
-                          className="bg-orange-600 h-2 rounded-lg transition-all duration-500 ease-out"
-                          style={{
-                            width: `${getProgressPercentage(
-                              selectedThesis.suggestionStatus
-                            )}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <p className="text-sm text-blue-700">
-                        {getProgressPercentage(selectedThesis.suggestionStatus)}
-                        %
-                      </p>
-                    </div>
                   </div>
                 </div>
 
@@ -824,27 +804,6 @@ const MyThesis = () => {
                             <p className="font-medium">
                               {formatDate(thesis.createdAt)}
                             </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-600">
-                              Tiến độ:
-                            </span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {getProgressPercentage(thesis.suggestionStatus)}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-lg h-2">
-                            <div
-                              className="bg-orange-600 h-2 rounded-lg transition-all duration-500 ease-out"
-                              style={{
-                                width: `${getProgressPercentage(
-                                  thesis.suggestionStatus
-                                )}%`,
-                              }}
-                            ></div>
                           </div>
                         </div>
                       </div>

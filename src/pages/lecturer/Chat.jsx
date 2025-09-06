@@ -1,13 +1,21 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import { WS_ENDPOINTS } from "../../config/api";
 import userService from "../../services/user.service";
+import chatService from "../../services/chat.service";
 
 // Trang Chat của Giảng viên - nhận tin nhắn từ sinh viên
 const LecturerChat = () => {
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId] = useState(null);
-  const [filter, setFilter] = useState("all"); // all | unread | archived
+
+  const [filter, setFilter] = useState("all"); // all | unread
   const [search, setSearch] = useState("");
   const [messageInput, setMessageInput] = useState("");
   const messageEndRef = useRef(null);
@@ -24,14 +32,126 @@ const LecturerChat = () => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [errorStudents, setErrorStudents] = useState("");
 
-  // Lấy thông báo realtime làm nguồn cho panel bên phải
-  const [notifications, setNotifications] = useState([]);
+  // Load danh sách sinh viên để hiển thị conversations
+  useEffect(() => {
+    const loadStudents = async () => {
+      setLoadingStudents(true);
+      setErrorStudents("");
+      try {
+        const response = await userService.getUsers({ page: 0, size: 1000 });
+
+        if (response && response.content && Array.isArray(response.content)) {
+          // Filter ra chỉ sinh viên (role STUDENT)
+          const students = response.content.filter(
+            (user) =>
+              user.roles &&
+              user.roles.some((role) => role.roleName === "STUDENT")
+          );
+
+          // Fallback: Nếu không có students, sử dụng tất cả users
+          const studentsToUse =
+            students.length > 0 ? students : response.content;
+
+          const formattedStudents = studentsToUse.map((student) => ({
+            id: student.userId,
+            name: student.fullName || "Chưa có tên",
+            email: student.phoneNumber || "Chưa có thông tin liên lạc",
+            avatar:
+              student.avt ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                student.fullName || "SV"
+              )}&background=random`,
+            specialization: student.specialization || "Chưa có chuyên ngành",
+            department: student.department || "Chưa có khoa",
+          }));
+
+          setStudents(formattedStudents);
+
+          // Không tạo conversations ban đầu - chỉ hiển thị khi có tin nhắn
+          setConversations([]);
+        } else {
+          // API không trả về dữ liệu hợp lệ
+          setErrorStudents("API không trả về dữ liệu hợp lệ");
+        }
+      } catch (error) {
+        // Lỗi khi load danh sách sinh viên
+        setErrorStudents(
+          "Không thể tải danh sách sinh viên. Vui lòng thử lại sau."
+        );
+      } finally {
+        setLoadingStudents(false);
+      }
+    };
+
+    loadStudents();
+  }, []);
+
+  // Load lịch sử chat
+  const [loadingChatHistory, setLoadingChatHistory] = useState(false);
+  const [chatHistoryLoaded, setChatHistoryLoaded] = useState(false);
+  const loadedConversationsRef = useRef(new Set());
 
   // Sử dụng useRef để lưu conversations và tránh bị reset khi component re-render
   const conversationsRef = useRef([]);
 
   // Ref để tránh duplicate WebSocket messages
   const processedMessagesRef = useRef(new Set());
+
+  // Load lịch sử chat khi chọn sinh viên
+  const loadChatHistory = useCallback(async (currentUserId, studentId) => {
+    if (!currentUserId || !studentId) return;
+
+    setLoadingChatHistory(true);
+    try {
+      const historyMessages = await chatService.loadChatHistory(
+        currentUserId,
+        studentId
+      );
+
+      // Cập nhật conversations với lịch sử chat
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.studentId === studentId) {
+            return {
+              ...conv,
+              messages: historyMessages,
+              lastMessageAt:
+                historyMessages.length > 0
+                  ? historyMessages[historyMessages.length - 1].time
+                  : Date.now(),
+            };
+          }
+          return conv;
+        })
+      );
+
+      setChatHistoryLoaded(true);
+      // Đánh dấu conversation đã load
+      loadedConversationsRef.current.add(studentId);
+    } catch (error) {
+      // Lỗi khi load lịch sử chat
+    } finally {
+      setLoadingChatHistory(false);
+    }
+  }, []);
+
+  // Load lịch sử chat khi chọn conversation
+  useEffect(() => {
+    if (!activeConvId) return;
+
+    const activeConv = conversations.find((conv) => conv.id === activeConvId);
+    if (!activeConv || !activeConv.studentId) return;
+
+    // Chỉ load nếu chưa load lịch sử cho conversation này
+    if (loadedConversationsRef.current.has(activeConv.studentId)) {
+      return;
+    }
+
+    const userId = getUserIdFromToken();
+    if (userId && activeConv.studentId) {
+      loadChatHistory(userId, activeConv.studentId);
+    }
+  }, [activeConvId, loadChatHistory]);
 
   // Sync conversationsRef với conversations state
   useEffect(() => {
@@ -42,7 +162,7 @@ const LecturerChat = () => {
   useEffect(() => {
     const userId = getUserIdFromToken();
     if (!userId) {
-      console.error("Không thể lấy userId từ token");
+      // Không thể lấy userId từ token
       return;
     }
 
@@ -81,7 +201,7 @@ const LecturerChat = () => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       } catch (error) {
-        console.error("Lỗi khi parse WebSocket message:", error);
+        // Lỗi parse WebSocket message
       }
     };
 
@@ -170,7 +290,7 @@ const LecturerChat = () => {
       // Tạo tin nhắn mới
       const newMessage = {
         id: id || `msg_${Date.now()}_${Math.random()}`,
-        sender: `Sinh viên ${studentConversation.studentName || senderId}`,
+        sender: studentConversation.studentName || `Sinh viên ${senderId}`,
         time: timestamp ? new Date(timestamp).getTime() : Date.now(),
         text: content,
         mine: false,
@@ -227,7 +347,7 @@ const LecturerChat = () => {
         // Nếu đã có conversation (có thể được tạo trong thời gian async), thêm tin nhắn
         const newMessage = {
           id: id || `msg_${Date.now()}_${Math.random()}`,
-          sender: `Sinh viên ${profile.fullName || profile.name || senderId}`,
+          sender: profile.fullName || profile.name || `Sinh viên ${senderId}`,
           time: timestamp ? new Date(timestamp).getTime() : Date.now(),
           text: content,
           mine: false,
@@ -265,10 +385,12 @@ const LecturerChat = () => {
       }
 
       const newConversation = {
-        id: `student_${senderId}`,
+        id: `student_${senderId}_${Date.now()}`, // Thêm timestamp để đảm bảo unique
         studentId: senderId,
-        topic: `Chat với ${profile.fullName || profile.name || "Sinh viên"}`,
-        studentName: profile.fullName || profile.name || "Sinh viên",
+        topic: `Đang trong đoạn chat với ${
+          profile.name || profile.fullName || "Sinh viên"
+        }`,
+        studentName: profile.name || profile.fullName || "Sinh viên",
         studentAvatar:
           profile.avt ||
           profile.avatar ||
@@ -276,7 +398,6 @@ const LecturerChat = () => {
             profile.fullName || profile.name || "SV"
           )}&background=random`,
         unread: 1,
-        archived: false,
         members: 2,
         lastMessageAt: Date.now(),
         messages: [],
@@ -285,7 +406,7 @@ const LecturerChat = () => {
       // Tạo tin nhắn đầu tiên
       const newMessage = {
         id: id || `msg_${Date.now()}_${Math.random()}`,
-        sender: `Sinh viên ${profile.fullName || profile.name || senderId}`,
+        sender: profile.fullName || profile.name || `Sinh viên ${senderId}`,
         time: timestamp ? new Date(timestamp).getTime() : Date.now(),
         text: content,
         mine: false,
@@ -293,15 +414,51 @@ const LecturerChat = () => {
         studentId: senderId,
       };
 
-      // Thêm conversation mới VÀ tin nhắn đầu tiên trong 1 lần setConversations
+      // Thêm conversation mới hoặc merge với conversation hiện có
       setConversations((prev) => {
-        // Kiểm tra lần cuối để chắc chắn không có duplicate
-        const alreadyExists = prev.find((conv) => conv.studentId === senderId);
-        if (alreadyExists) {
-          return prev; // Không thêm nếu đã tồn tại
+        // Kiểm tra xem đã có conversation cho studentId này chưa
+        const existingConvIndex = prev.findIndex(
+          (conv) => conv.studentId === senderId
+        );
+
+        if (existingConvIndex !== -1) {
+          // Nếu đã tồn tại, merge tin nhắn vào conversation hiện có
+          const existingConv = prev[existingConvIndex];
+
+          // Kiểm tra duplicate message trước khi thêm
+          const isDuplicate = existingConv.messages.some(
+            (msg) =>
+              msg.id === newMessage.id ||
+              (msg.text === newMessage.text &&
+                Math.abs(msg.time - newMessage.time) < 5000)
+          );
+
+          if (isDuplicate) {
+            return prev; // Không thay đổi nếu là duplicate
+          }
+
+          // Merge conversation mới với conversation hiện có
+          const mergedConv = {
+            ...existingConv,
+            // Cập nhật thông tin từ conversation mới nếu có
+            topic: newConversation.topic,
+            studentName: newConversation.studentName,
+            studentAvatar: newConversation.studentAvatar,
+            // Merge messages và thêm tin nhắn mới
+            messages: [...existingConv.messages, newMessage],
+            lastMessageAt: newMessage.time,
+            unread: existingConv.unread + 1,
+          };
+
+          const updated = [...prev];
+          updated[existingConvIndex] = mergedConv;
+
+          // Cập nhật conversationsRef để đồng bộ
+          conversationsRef.current = updated;
+          return updated;
         }
 
-        // Tạo conversation mới với tin nhắn đầu tiên
+        // Nếu chưa có conversation, tạo mới với tin nhắn đầu tiên
         const conversationWithMessage = {
           ...newConversation,
           messages: [newMessage],
@@ -335,7 +492,7 @@ const LecturerChat = () => {
 
       return;
     } catch (error) {
-      console.error("Không thể lấy profile sinh viên:", error);
+      // Không thể lấy profile sinh viên
 
       // Tạo conversation với thông tin cơ bản nếu API thất bại
       const fallbackConversation = {
@@ -345,13 +502,38 @@ const LecturerChat = () => {
         studentName: `Sinh viên (ID: ${senderId})`,
         studentAvatar: `https://ui-avatars.com/api/?name=SV&background=random`,
         unread: 1,
-        archived: false,
         members: 2,
         lastMessageAt: Date.now(),
         messages: [],
       };
 
       setConversations((prev) => {
+        // Kiểm tra xem đã có conversation cho studentId này chưa
+        const existingConvIndex = prev.findIndex(
+          (conv) => conv.studentId === senderId
+        );
+
+        if (existingConvIndex !== -1) {
+          // Nếu đã tồn tại, merge thông tin vào conversation hiện có
+          const existingConv = prev[existingConvIndex];
+
+          const mergedConv = {
+            ...existingConv,
+            // Cập nhật thông tin từ fallback nếu cần
+            topic: fallbackConversation.topic,
+            studentName: fallbackConversation.studentName,
+            studentAvatar: fallbackConversation.studentAvatar,
+          };
+
+          const updated = [...prev];
+          updated[existingConvIndex] = mergedConv;
+
+          // Cập nhật conversationsRef để đồng bộ
+          conversationsRef.current = updated;
+          return updated;
+        }
+
+        // Nếu chưa có conversation, tạo mới
         const updated = [fallbackConversation, ...prev];
         // Cập nhật conversationsRef để đồng bộ
         conversationsRef.current = updated;
@@ -361,7 +543,7 @@ const LecturerChat = () => {
 
       const fallbackMessage = {
         id: id || `msg_${Date.now()}_${Math.random()}`,
-        sender: `Sinh viên (ID: ${senderId})`,
+        sender: `Sinh viên ${senderId}`,
         time: timestamp ? new Date(timestamp).getTime() : Date.now(),
         text: content,
         mine: false,
@@ -394,7 +576,7 @@ const LecturerChat = () => {
   const reconnectWebSocket = () => {
     const userId = getUserIdFromToken();
     if (!userId) {
-      console.error("Không thể lấy userId từ token");
+      // Không thể lấy userId từ token
       return;
     }
 
@@ -419,7 +601,7 @@ const LecturerChat = () => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       } catch (error) {
-        console.error("Lỗi khi parse WebSocket message:", error);
+        // Lỗi parse WebSocket message
       }
     };
 
@@ -433,40 +615,62 @@ const LecturerChat = () => {
     };
   };
 
-  // Đồng bộ thông báo từ LecturerLayout
-  useEffect(() => {
-    try {
-      const initial = Array.isArray(window.__lecturerNotifications)
-        ? window.__lecturerNotifications
-        : [];
-      setNotifications(initial);
-    } catch (_) {}
-    const handler = (evt) => {
-      const list = evt?.detail;
-      if (Array.isArray(list)) setNotifications(list);
-    };
-    window.addEventListener("app:lecturer-notifications", handler);
-    return () =>
-      window.removeEventListener("app:lecturer-notifications", handler);
-  }, []);
-
-  // Hàm xóa duplicate conversations
+  // Hàm merge duplicate conversations - merge tất cả conversations của cùng 1 studentId
   const removeDuplicateConversations = (conversationsList) => {
-    const seen = new Map();
-    return conversationsList.filter((conv) => {
-      if (seen.has(conv.studentId)) {
-        return false; // Bỏ conversation duplicate này
+    const merged = new Map();
+
+    conversationsList.forEach((conv) => {
+      if (merged.has(conv.studentId)) {
+        // Nếu đã có conversation cho studentId này, merge
+        const existing = merged.get(conv.studentId);
+
+        // Merge messages từ conversation mới vào conversation hiện có
+        const allMessages = [...existing.messages, ...conv.messages];
+
+        // Loại bỏ duplicate messages dựa trên id và thời gian
+        const uniqueMessages = allMessages.filter((msg, index, arr) => {
+          return (
+            arr.findIndex(
+              (m) =>
+                m.id === msg.id ||
+                (m.text === msg.text && Math.abs(m.time - msg.time) < 5000)
+            ) === index
+          );
+        });
+
+        // Sắp xếp messages theo thời gian
+        uniqueMessages.sort((a, b) => a.time - b.time);
+
+        // Merge conversation
+        const mergedConv = {
+          ...existing,
+          // Cập nhật thông tin từ conversation mới nếu có
+          topic: conv.topic || existing.topic,
+          studentName: conv.studentName || existing.studentName,
+          studentAvatar: conv.studentAvatar || existing.studentAvatar,
+          // Merge messages
+          messages: uniqueMessages,
+          // Cập nhật thời gian tin nhắn cuối
+          lastMessageAt: Math.max(existing.lastMessageAt, conv.lastMessageAt),
+          // Cộng unread count
+          unread: existing.unread + conv.unread,
+        };
+
+        merged.set(conv.studentId, mergedConv);
       } else {
-        seen.set(conv.studentId, conv);
-        return true; // Giữ conversation này
+        // Conversation đầu tiên cho studentId này
+        merged.set(conv.studentId, conv);
       }
     });
+
+    return Array.from(merged.values());
   };
 
   // Tự động xóa duplicate conversations
   useEffect(() => {
     if (conversations.length > 0) {
       const uniqueConversations = removeDuplicateConversations(conversations);
+
       if (uniqueConversations.length !== conversations.length) {
         setConversations(uniqueConversations);
         // Cập nhật activeConvId nếu conversation hiện tại bị xóa
@@ -495,7 +699,6 @@ const LecturerChat = () => {
   const filteredConversations = useMemo(() => {
     let list = conversations;
     if (filter === "unread") list = list.filter((c) => c.unread > 0);
-    if (filter === "archived") list = list.filter((c) => c.archived);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -504,6 +707,7 @@ const LecturerChat = () => {
           c.studentId?.toString().includes(q)
       );
     }
+
     return list;
   }, [conversations, filter, search]);
 
@@ -525,7 +729,7 @@ const LecturerChat = () => {
 
     const userId = getUserIdFromToken();
     if (!userId) {
-      console.error("Không thể lấy userId từ token");
+      // Không thể lấy userId từ token
       return;
     }
 
@@ -568,9 +772,9 @@ const LecturerChat = () => {
 
       if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
         wsConnection.send(JSON.stringify(chatMessage));
-        console.log("Giảng viên đã gửi tin nhắn:", chatMessage);
+        // Giảng viên đã gửi tin nhắn
       } else {
-        console.error("WebSocket không kết nối");
+        // WebSocket không kết nối
         // Khôi phục input nếu gửi thất bại
         setMessageInput(text);
         // Xóa tin nhắn local nếu gửi thất bại
@@ -586,7 +790,7 @@ const LecturerChat = () => {
         );
       }
     } catch (error) {
-      console.error("Lỗi khi gửi tin nhắn:", error);
+      // Lỗi khi gửi tin nhắn
       setMessageInput(text);
       setConversations((prev) =>
         prev.map((c) =>
@@ -615,9 +819,6 @@ const LecturerChat = () => {
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-gray-900">
-                Hội thoại với sinh viên
-              </h2>
               {/* Debug button - xóa duplicate */}
               {conversations.length > 0 &&
                 removeDuplicateConversations(conversations).length !==
@@ -627,11 +828,7 @@ const LecturerChat = () => {
                       const uniqueConversations =
                         removeDuplicateConversations(conversations);
                       setConversations(uniqueConversations);
-                      console.log(
-                        "🧹 Đã xóa",
-                        conversations.length - uniqueConversations.length,
-                        "duplicate conversations"
-                      );
+                      // Đã xóa duplicate conversations
                     }}
                     className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                     title="Xóa conversation trùng lặp"
@@ -711,7 +908,32 @@ const LecturerChat = () => {
 
         {/* Danh sách hội thoại */}
         <div className="flex-1 overflow-y-auto thin-scrollbar p-2">
-          {filteredConversations.length === 0 ? (
+          {loadingStudents ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="mb-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              </div>
+              <p className="text-sm font-medium mb-1">
+                Đang tải danh sách sinh viên...
+              </p>
+            </div>
+          ) : errorStudents ? (
+            <div className="text-center py-8 text-red-500">
+              <div className="mb-3">
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="mx-auto text-red-300"
+                >
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium mb-1">Lỗi tải danh sách</p>
+              <p className="text-xs text-red-400">{errorStudents}</p>
+            </div>
+          ) : conversations.length === 0 && !loadingStudents ? (
             <div className="text-center py-8 text-gray-500">
               <div className="mb-3">
                 <svg
@@ -726,7 +948,7 @@ const LecturerChat = () => {
               </div>
               <p className="text-sm font-medium mb-1">Chưa có hội thoại nào</p>
               <p className="text-xs text-gray-400">
-                Sinh viên sẽ xuất hiện ở đây khi gửi tin nhắn
+                Danh sách sinh viên sẽ hiển thị ở đây
               </p>
             </div>
           ) : (
@@ -797,10 +1019,29 @@ const LecturerChat = () => {
                 {activeConv?.studentName || "Chọn hội thoại"}
               </div>
               <div className="text-xs text-gray-500">
-                {activeConv ? `Chat với sinh viên` : "Chọn hội thoại"}
+                {activeConv ? `Đang trong đoạn chat` : "Chọn hội thoại"}
               </div>
             </div>
           </div>
+
+          {/* Button reload lịch sử chat */}
+          {activeConv && activeConv.studentId && (
+            <button
+              onClick={() => {
+                const userId = getUserIdFromToken();
+                if (userId && activeConv.studentId) {
+                  // Reset trạng thái loaded để cho phép load lại
+                  loadedConversationsRef.current.delete(activeConv.studentId);
+                  setChatHistoryLoaded(false);
+                  loadChatHistory(userId, activeConv.studentId);
+                }
+              }}
+              disabled={loadingChatHistory}
+              className="text-xs px-3 py-1.5 border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingChatHistory ? "Đang tải..." : "Tải lại lịch sử"}
+            </button>
+          )}
         </div>
 
         {/* Khu vực tin nhắn */}
@@ -811,6 +1052,16 @@ const LecturerChat = () => {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Loading indicator cho lịch sử chat */}
+              {loadingChatHistory && (
+                <div className="text-center py-4">
+                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mb-2"></div>
+                  <p className="text-sm text-gray-600">
+                    Đang tải lịch sử chat...
+                  </p>
+                </div>
+              )}
+
               {activeConv.messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-500 text-sm">
                   <div className="mb-4">
@@ -847,20 +1098,6 @@ const LecturerChat = () => {
                             : "bg-white border border-gray-200 text-gray-900"
                         }`}
                       >
-                        {/* Hiển thị tên người gửi cho tin nhắn từ sinh viên */}
-                        {!m.mine && (
-                          <div className="text-xs text-gray-500 mb-1 font-medium flex items-center gap-2">
-                            <img
-                              src={
-                                activeConv.studentAvatar ||
-                                "https://ui-avatars.com/api/?name=SV&background=random"
-                              }
-                              alt={activeConv.studentName}
-                              className="w-4 h-4 rounded-full object-cover"
-                            />
-                            {m.sender}
-                          </div>
-                        )}
                         <div className="text-sm leading-relaxed">{m.text}</div>
                         <div
                           className={`mt-2 text-[10px] ${
@@ -926,51 +1163,6 @@ const LecturerChat = () => {
           </div>
         </div>
       </section>
-
-      {/* Panel thông báo bên phải */}
-      <aside className="hidden xl:flex w-80 flex-col border-l border-gray-200 bg-white">
-        {/* Header */}
-        <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Thông báo</h3>
-          <div className="flex gap-1">
-            <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-              Tất cả
-            </span>
-            <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-              Chưa đọc
-            </span>
-          </div>
-        </div>
-
-        {/* Danh sách thông báo */}
-        <div className="flex-1 overflow-y-auto thin-scrollbar p-3 min-h-0">
-          {notifications.length === 0 ? (
-            <div className="text-xs text-gray-500 text-center mt-8">
-              Không có thông báo
-            </div>
-          ) : (
-            notifications.slice(0, 10).map((n) => (
-              <div
-                key={n.id}
-                className="p-3 border border-gray-200 rounded-lg mb-2"
-              >
-                <div className="text-xs text-gray-500 mb-1">
-                  {formatRelative(n.createdAt || Date.now())}
-                </div>
-                <div className="text-sm text-gray-900">{n.message}</div>
-                <div className="mt-2 flex gap-2">
-                  <button className="text-[11px] px-2 px-2 py-1 border border-gray-300 rounded hover:bg-gray-50">
-                    Đánh dấu đã đọc
-                  </button>
-                  <button className="text-[11px] px-2 py-1 border border-gray-300 rounded hover:bg-gray-50">
-                    Lưu trữ
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </aside>
     </div>
   );
 };

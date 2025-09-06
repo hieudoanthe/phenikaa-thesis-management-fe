@@ -975,7 +975,8 @@ const ThesisManagement = () => {
             <button
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-lg transition-all duration-200 shadow-sm w-full sm:w-auto hover:opacity-90"
               style={{
-                background: "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
+                background:
+                  "linear-gradient(135deg, #ea580c 100%, #fb923c 100%)",
               }}
               onClick={() => {
                 setIsFormOpen(true);
@@ -1022,7 +1023,7 @@ const ThesisManagement = () => {
 
           {/* Bottom row - Filters */}
           <div className="flex flex-col gap-4">
-            {/* Row 1: Basic filters */}
+            {/* Row 1: Basic filters and action buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="w-full sm:w-40">
                 <Select
@@ -1091,8 +1092,6 @@ const ThesisManagement = () => {
                     { value: "approved", label: "Đã duyệt" },
                     { value: "rejected", label: "Bị từ chối" },
                     { value: "available", label: "Còn trống" },
-                    { value: "active", label: "Hoạt động" },
-                    { value: "inactive", label: "Ngừng hoạt động" },
                   ]}
                   isSearchable={false}
                   className="custom-select"
@@ -1194,8 +1193,6 @@ const ThesisManagement = () => {
                     { value: "All", label: "Tất cả trạng thái đề tài" },
                     { value: "ACTIVE", label: "Hoạt động" },
                     { value: "INACTIVE", label: "Ngừng hoạt động" },
-                    { value: "ARCHIVED", label: "Lưu trữ" },
-                    { value: "DELETED", label: "Đã xóa" },
                   ]}
                   isSearchable={false}
                   className="custom-select"
@@ -1229,23 +1226,27 @@ const ThesisManagement = () => {
                   }}
                 />
               </div>
-            </div>
 
-            {/* Row 2: Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                className="px-4 h-10 bg-secondary hover:bg-secondary-hover text-white font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto flex items-center justify-center"
-                onClick={() => filterTopics(0)}
-              >
-                Áp dụng bộ lọc
-              </button>
+              {/* Action buttons moved to the same row */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                <button
+                  className="px-4 h-10 text-white font-medium rounded-lg transition-all duration-200 shadow-sm w-full sm:w-auto flex items-center justify-center hover:opacity-90"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #ea580c 100%, #fb923c 100%)",
+                  }}
+                  onClick={() => filterTopics(0)}
+                >
+                  Áp dụng bộ lọc
+                </button>
 
-              <button
-                className="px-4 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto flex items-center justify-center"
-                onClick={clearFilters}
-              >
-                Xóa bộ lọc
-              </button>
+                <button
+                  className="px-4 h-10 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto flex items-center justify-center"
+                  onClick={clearFilters}
+                >
+                  Xóa bộ lọc
+                </button>
+              </div>
             </div>
           </div>
         </div>

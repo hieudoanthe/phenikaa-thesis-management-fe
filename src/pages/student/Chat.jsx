@@ -9,6 +9,7 @@ import { useLocation } from "react-router-dom";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import { WS_ENDPOINTS } from "../../config/api";
 import userService from "../../services/user.service";
+import chatService from "../../services/chat.service";
 
 // Trang Chat của Sinh viên - giao diện giống Slack/Teams, học thuật
 const StudentChat = () => {
@@ -22,7 +23,7 @@ const StudentChat = () => {
 
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId] = useState(null);
-  const [filter, setFilter] = useState("all"); // all | unread | archived
+  const [filter, setFilter] = useState("all"); // all | unread
   const [search, setSearch] = useState("");
   const [messageInput, setMessageInput] = useState("");
   const messageEndRef = useRef(null);
@@ -42,8 +43,43 @@ const StudentChat = () => {
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [errorTeachers, setErrorTeachers] = useState("");
 
-  // Lấy thông báo realtime làm nguồn cho panel bên phải (nếu có)
-  const [notifications, setNotifications] = useState([]);
+  // Load lịch sử chat
+  const [loadingChatHistory, setLoadingChatHistory] = useState(false);
+  const [chatHistoryLoaded, setChatHistoryLoaded] = useState(false);
+
+  // Load lịch sử chat khi chọn giảng viên
+  const loadChatHistory = useCallback(async (currentUserId, teacherId) => {
+    if (!currentUserId || !teacherId) return;
+
+    setLoadingChatHistory(true);
+    try {
+      console.log("Đang load lịch sử chat với giảng viên:", teacherId);
+      const historyMessages = await chatService.loadChatHistory(
+        currentUserId,
+        teacherId
+      );
+
+      console.log("Lịch sử chat đã load:", historyMessages);
+
+      // Cập nhật conversations với lịch sử chat
+      setConversations((prev) =>
+        prev.map((conv) => ({
+          ...conv,
+          messages: historyMessages,
+          lastMessageAt:
+            historyMessages.length > 0
+              ? historyMessages[historyMessages.length - 1].time
+              : Date.now(),
+        }))
+      );
+
+      setChatHistoryLoaded(true);
+    } catch (error) {
+      console.error("Lỗi khi load lịch sử chat:", error);
+    } finally {
+      setLoadingChatHistory(false);
+    }
+  }, []);
 
   // Load danh sách giảng viên
   useEffect(() => {
@@ -113,7 +149,6 @@ const StudentChat = () => {
         id: "cv1",
         topic: "Chọn giảng viên để chat", // Hướng dẫn chọn giảng viên
         unread: 0,
-        archived: false,
         members: 0, // Chưa có ai
         lastMessageAt: Date.now() - 1000 * 60 * 10,
         messages: [],
@@ -146,6 +181,7 @@ const StudentChat = () => {
           messages: [],
         }))
       );
+      setChatHistoryLoaded(false);
       return;
     }
 
@@ -153,15 +189,20 @@ const StudentChat = () => {
     setConversations((prev) =>
       prev.map((conv) => ({
         ...conv,
-        topic: `Chat với ${selectedTeacher.name || "Giảng viên"}`,
+        topic: selectedTeacher.name || "Giảng viên",
         members: 2,
       }))
     );
 
+    // Load lịch sử chat khi chọn giảng viên
     const userId = getUserIdFromToken();
     if (!userId) {
       console.error("Không thể lấy userId từ token");
       return;
+    }
+
+    if (selectedTeacher.id) {
+      loadChatHistory(userId, selectedTeacher.id);
     }
 
     // Kết nối WebSocket chat với giảng viên đã chọn
@@ -214,7 +255,7 @@ const StudentChat = () => {
       // Xóa tất cả processed messages
       processedMessagesRef.current.clear();
     };
-  }, [selectedTeacher]); // Dependency vào selectedTeacher
+  }, [selectedTeacher, loadChatHistory]); // Dependency vào selectedTeacher và loadChatHistory
 
   // Xử lý message từ WebSocket
   const handleWebSocketMessage = useCallback((data) => {
@@ -401,22 +442,6 @@ const StudentChat = () => {
     };
   };
 
-  useEffect(() => {
-    try {
-      const initial = Array.isArray(window.__studentNotifications)
-        ? window.__studentNotifications
-        : [];
-      setNotifications(initial);
-    } catch (_) {}
-    const handler = (evt) => {
-      const list = evt?.detail;
-      if (Array.isArray(list)) setNotifications(list);
-    };
-    window.addEventListener("app:student-notifications", handler);
-    return () =>
-      window.removeEventListener("app:student-notifications", handler);
-  }, []);
-
   const formatRelative = (ms) => {
     const diff = Math.max(0, Date.now() - ms);
     const s = Math.floor(diff / 1000);
@@ -432,7 +457,6 @@ const StudentChat = () => {
   const filteredConversations = useMemo(() => {
     let list = conversations;
     if (filter === "unread") list = list.filter((c) => c.unread > 0);
-    if (filter === "archived") list = list.filter((c) => c.archived);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((c) => c.topic.toLowerCase().includes(q));
@@ -567,8 +591,8 @@ const StudentChat = () => {
             <div className="p-6">
               {loadingTeachers ? (
                 <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary mb-4"></div>
-                  <p className="text-gray-600">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mb-4"></div>
+                  <p className="text-gray-600 text-lg">
                     Đang tải danh sách giảng viên...
                   </p>
                 </div>
@@ -663,9 +687,6 @@ const StudentChat = () => {
           <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-gray-900">
-                  Conversations
-                </h2>
                 {/* WebSocket connection status */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
@@ -712,7 +733,7 @@ const StudentChat = () => {
                   }`}
                   onClick={() => setFilter("all")}
                 >
-                  All
+                  Tất cả
                 </button>
                 <button
                   className={`text-xs px-2 py-1 rounded ${
@@ -722,17 +743,7 @@ const StudentChat = () => {
                   }`}
                   onClick={() => setFilter("unread")}
                 >
-                  Unread
-                </button>
-                <button
-                  className={`text-xs px-2 py-1 rounded ${
-                    filter === "archived"
-                      ? "bg-secondary text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setFilter("archived")}
-                >
-                  Archived
+                  Chưa đọc
                 </button>
               </div>
             </div>
@@ -800,7 +811,7 @@ const StudentChat = () => {
                 </div>
                 <div className="text-xs text-gray-500">
                   {selectedTeacher
-                    ? `Chat với ${selectedTeacher.name}`
+                    ? selectedTeacher.name
                     : "Chọn giảng viên để chat"}
                 </div>
               </div>
@@ -814,12 +825,26 @@ const StudentChat = () => {
                   Chọn giảng viên
                 </button>
               ) : (
-                <button
-                  onClick={() => setShowTeacherSelector(true)}
-                  className="text-xs px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                >
-                  Đổi giảng viên
-                </button>
+                <>
+                  <button
+                    onClick={() => setShowTeacherSelector(true)}
+                    className="text-xs px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    Đổi giảng viên
+                  </button>
+                  <button
+                    onClick={() => {
+                      const userId = getUserIdFromToken();
+                      if (userId && selectedTeacher.id) {
+                        loadChatHistory(userId, selectedTeacher.id);
+                      }
+                    }}
+                    disabled={loadingChatHistory}
+                    className="text-xs px-3 py-1.5 border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingChatHistory ? "Đang tải..." : "Tải lại lịch sử"}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -853,6 +878,16 @@ const StudentChat = () => {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Loading indicator cho lịch sử chat */}
+                {loadingChatHistory && (
+                  <div className="text-center py-4">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-3"></div>
+                    <p className="text-sm text-gray-600">
+                      Đang tải lịch sử chat...
+                    </p>
+                  </div>
+                )}
+
                 {activeConv.messages.map((m) => (
                   <div
                     key={m.id}
@@ -945,56 +980,6 @@ const StudentChat = () => {
             </div>
           </div>
         </section>
-
-        {/* Panel thông báo bên phải - Fixed height, scrollable content */}
-        <aside className="hidden xl:flex w-80 flex-col border-l border-gray-200 bg-white">
-          {/* Header cố định */}
-          <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900">
-              Notifications
-            </h3>
-            <div className="flex gap-1">
-              <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-                All
-              </span>
-              <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-                Unread
-              </span>
-              <span className="text-xs px-2 py-0.5 bg-gray-100 rounded">
-                Archived
-              </span>
-            </div>
-          </div>
-
-          {/* Scrollable notifications list */}
-          <div className="flex-1 overflow-y-auto thin-scrollbar p-3 min-h-0">
-            {notifications.length === 0 ? (
-              <div className="text-xs text-gray-500 text-center mt-8">
-                Không có thông báo
-              </div>
-            ) : (
-              notifications.slice(0, 10).map((n) => (
-                <div
-                  key={n.id}
-                  className="p-3 border border-gray-200 rounded-lg mb-2"
-                >
-                  <div className="text-xs text-gray-500 mb-1">
-                    {formatRelative(n.createdAt || Date.now())}
-                  </div>
-                  <div className="text-sm text-gray-900">{n.message}</div>
-                  <div className="mt-2 flex gap-2">
-                    <button className="text-[11px] px-2 py-1 border border-gray-300 rounded hover:bg-gray-50">
-                      Mark as read
-                    </button>
-                    <button className="text-[11px] px-2 py-1 border border-gray-300 rounded hover:bg-gray-50">
-                      Archive
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </aside>
       </div>
     </>
   );

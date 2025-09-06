@@ -4,31 +4,13 @@ import { assignmentService } from "../../services";
 import userService from "../../services/user.service";
 import { toast } from "react-toastify";
 import ConfirmModal from "../../components/modals/ConfirmModal";
+import AddAssignmentModal from "../../components/modals/AddAssignmentModal";
 
 const AssignmentManagement = () => {
   const [selectedThesis, setSelectedThesis] = useState(0);
   const [selectedAssignment, setSelectedAssignment] = useState(0);
   const [showNewAssignmentModal, setShowNewAssignmentModal] = useState(false);
   const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false);
-  // State form tạo assignment
-  const [createForm, setCreateForm] = useState({
-    topicId: null,
-    assignedTo: "",
-    title: "",
-    description: "",
-    dueDate: "",
-    priority: 1,
-  });
-
-  const resetCreateForm = (topicId, defaultAssignedTo) =>
-    setCreateForm({
-      topicId: topicId || null,
-      assignedTo: defaultAssignedTo || "",
-      title: "",
-      description: "",
-      dueDate: "",
-      priority: 1,
-    });
 
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [showEditTaskModal, setShowEditTaskModal] = useState(false);
@@ -317,11 +299,25 @@ const AssignmentManagement = () => {
   };
 
   const handleNewAssignment = () => {
-    const current = thesisTopics[selectedThesis];
-    const topicId = current?.id || null;
-    const defaultAssignedTo = current?.suggestedBy || "";
-    resetCreateForm(topicId, defaultAssignedTo);
     setShowNewAssignmentModal(true);
+  };
+
+  const handleCreateAssignment = async (payload) => {
+    try {
+      const res = await assignmentService.createAssignment(payload);
+      if (res.success) {
+        // Reload assignments của topic hiện tại
+        if (payload.topicId) {
+          await loadAssignmentsForTopic(payload.topicId);
+        }
+        return res;
+      } else {
+        throw new Error(res.message || "Tạo assignment thất bại");
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
   const handleAddTask = () => {
@@ -1066,186 +1062,13 @@ const AssignmentManagement = () => {
       </div>
 
       {/* Modals */}
-      {showNewAssignmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 min-w-[320px] max-w-[500px] w-full shadow-2xl">
-            <h3 className="text-lg font-semibold text-secondary-800 mb-4">
-              Thêm Assignment mới
-            </h3>
-            <form
-              className="flex flex-col gap-3"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                try {
-                  // Luôn giao cho sinh viên đã đăng ký đề tài (suggestedBy)
-                  const selected = thesisTopics.find(
-                    (t) => t.id === createForm.topicId
-                  );
-                  const assigneeId = selected?.suggestedBy || null;
-
-                  const payload = {
-                    topicId: createForm.topicId,
-                    assignedTo: assigneeId,
-                    title: createForm.title?.trim(),
-                    description: createForm.description?.trim(),
-                    dueDate: createForm.dueDate || null,
-                    priority:
-                      createForm.priority === ""
-                        ? null
-                        : Number(createForm.priority),
-                  };
-
-                  if (!payload.topicId || !payload.title) {
-                    toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
-                    return;
-                  }
-
-                  const res = await assignmentService.createAssignment(payload);
-                  if (res.success) {
-                    toast.success("Tạo assignment thành công");
-                    setShowNewAssignmentModal(false);
-                    // Reload assignments của topic hiện tại
-                    if (payload.topicId) {
-                      await loadAssignmentsForTopic(payload.topicId);
-                    }
-                  } else {
-                    toast.error(res.message || "Tạo assignment thất bại");
-                  }
-                } catch (err) {
-                  console.error(err);
-                  toast.error("Có lỗi xảy ra khi tạo assignment");
-                }
-              }}
-            >
-              <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Đề tài (ID)
-                  </label>
-                  <input
-                    type="text"
-                    value={createForm.topicId || ""}
-                    readOnly
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Giao cho (Sinh viên đăng ký)
-                  </label>
-                  <input
-                    type="text"
-                    value={(() => {
-                      const topic = thesisTopics.find(
-                        (t) => t.id === createForm.topicId
-                      );
-                      const profile = topic?.suggestedBy
-                        ? studentProfiles[topic.suggestedBy]
-                        : null;
-                      const name = profile?.fullName || "Sinh viên";
-                      const idText = topic?.suggestedBy
-                        ? ` (ID: ${topic.suggestedBy})`
-                        : "";
-                      return `${name}${idText}`;
-                    })()}
-                    readOnly
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiêu đề
-                  </label>
-                  <input
-                    type="text"
-                    value={createForm.title}
-                    onChange={(e) =>
-                      setCreateForm((f) => ({ ...f, title: e.target.value }))
-                    }
-                    placeholder="Nhập tiêu đề assignment"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mô tả
-                  </label>
-                  <textarea
-                    value={createForm.description}
-                    onChange={(e) =>
-                      setCreateForm((f) => ({
-                        ...f,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="Mô tả chi tiết assignment"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hạn chót
-                    </label>
-                    <input
-                      type="date"
-                      value={createForm.dueDate}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({
-                          ...f,
-                          dueDate: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Mức ưu tiên
-                    </label>
-                    <select
-                      value={createForm.priority}
-                      onChange={(e) =>
-                        setCreateForm((f) => ({
-                          ...f,
-                          priority: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                    >
-                      <option value={1}>Thấp</option>
-                      <option value={2}>Trung bình</option>
-                      <option value={3}>Cao</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-2">
-                  <button
-                    type="button"
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 rounded-lg py-2 px-4 text-sm font-medium cursor-pointer transition-colors duration-200"
-                    onClick={() => setShowNewAssignmentModal(false)}
-                  >
-                    Huỷ
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white border-none rounded-lg py-2 px-4 text-sm font-medium cursor-pointer transition-colors duration-200"
-                  >
-                    Tạo assignment
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <AddAssignmentModal
+        isOpen={showNewAssignmentModal}
+        onClose={() => setShowNewAssignmentModal(false)}
+        onSubmit={handleCreateAssignment}
+        topicData={currentThesis}
+        studentProfiles={studentProfiles}
+      />
 
       {/* Confirm Modal dùng chung */}
       <ConfirmModal
@@ -1362,6 +1185,7 @@ const AssignmentManagement = () => {
                     <input
                       type="date"
                       value={createTaskForm.startDate}
+                      min={new Date().toISOString().split("T")[0]}
                       onChange={(e) =>
                         setCreateTaskForm((f) => ({
                           ...f,
@@ -1370,6 +1194,12 @@ const AssignmentManagement = () => {
                       }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
+                    {createTaskForm.startDate &&
+                      new Date(createTaskForm.startDate) < new Date() && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày bắt đầu không được nhỏ hơn ngày hiện tại
+                        </p>
+                      )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1378,6 +1208,10 @@ const AssignmentManagement = () => {
                     <input
                       type="date"
                       value={createTaskForm.endDate}
+                      min={
+                        createTaskForm.startDate ||
+                        new Date().toISOString().split("T")[0]
+                      }
                       onChange={(e) =>
                         setCreateTaskForm((f) => ({
                           ...f,
@@ -1386,6 +1220,20 @@ const AssignmentManagement = () => {
                       }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
+                    {createTaskForm.endDate &&
+                      createTaskForm.startDate &&
+                      new Date(createTaskForm.endDate) <
+                        new Date(createTaskForm.startDate) && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày kết thúc không được nhỏ hơn ngày bắt đầu
+                        </p>
+                      )}
+                    {createTaskForm.endDate &&
+                      new Date(createTaskForm.endDate) < new Date() && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày kết thúc không được nhỏ hơn ngày hiện tại
+                        </p>
+                      )}
                   </div>
                 </div>
                 <div>
@@ -1514,6 +1362,7 @@ const AssignmentManagement = () => {
                     <input
                       type="date"
                       value={editAssignmentForm.dueDate}
+                      min={new Date().toISOString().split("T")[0]}
                       onChange={(e) =>
                         setEditAssignmentForm((f) => ({
                           ...f,
@@ -1522,6 +1371,12 @@ const AssignmentManagement = () => {
                       }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
+                    {editAssignmentForm.dueDate &&
+                      new Date(editAssignmentForm.dueDate) < new Date() && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày hạn chót không được nhỏ hơn ngày hiện tại
+                        </p>
+                      )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1663,6 +1518,7 @@ const AssignmentManagement = () => {
                     <input
                       type="date"
                       value={editTaskForm.startDate}
+                      min={new Date().toISOString().split("T")[0]}
                       onChange={(e) =>
                         setEditTaskForm((f) => ({
                           ...f,
@@ -1671,6 +1527,12 @@ const AssignmentManagement = () => {
                       }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
+                    {editTaskForm.startDate &&
+                      new Date(editTaskForm.startDate) < new Date() && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày bắt đầu không được nhỏ hơn ngày hiện tại
+                        </p>
+                      )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1679,6 +1541,10 @@ const AssignmentManagement = () => {
                     <input
                       type="date"
                       value={editTaskForm.endDate}
+                      min={
+                        editTaskForm.startDate ||
+                        new Date().toISOString().split("T")[0]
+                      }
                       onChange={(e) =>
                         setEditTaskForm((f) => ({
                           ...f,
@@ -1687,6 +1553,20 @@ const AssignmentManagement = () => {
                       }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
+                    {editTaskForm.endDate &&
+                      editTaskForm.startDate &&
+                      new Date(editTaskForm.endDate) <
+                        new Date(editTaskForm.startDate) && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày kết thúc không được nhỏ hơn ngày bắt đầu
+                        </p>
+                      )}
+                    {editTaskForm.endDate &&
+                      new Date(editTaskForm.endDate) < new Date() && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày kết thúc không được nhỏ hơn ngày hiện tại
+                        </p>
+                      )}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

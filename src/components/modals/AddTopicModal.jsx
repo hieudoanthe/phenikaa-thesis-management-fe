@@ -538,7 +538,12 @@ const AddTopicModal = ({
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2.5 text-base font-medium text-white bg-secondary rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-secondary-hover disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[120px]"
+              className="px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 shadow-sm hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[120px]"
+              style={{
+                background: submitting
+                  ? "#9ca3af"
+                  : "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
+              }}
             >
               {submitting
                 ? isViewMode
