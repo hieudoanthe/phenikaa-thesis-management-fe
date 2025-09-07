@@ -432,7 +432,7 @@ const ScoreStats = ({ data, formatPercentage }) => (
             <p className="text-3xl font-bold text-green-600">
               {formatPercentage(data.passRate)}
             </p>
-            <p className="text-sm text-gray-600">Điểm >= 5.0</p>
+            <p className="text-sm text-gray-600">Điểm &gt;= 5.0</p>
           </div>
         </div>
       </div>

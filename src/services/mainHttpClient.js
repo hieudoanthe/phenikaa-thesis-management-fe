@@ -144,4 +144,35 @@ export const apiPatch = (endpoint, data = null, config = {}) =>
 export const apiDelete = (endpoint, config = {}) =>
   mainApiRequest("DELETE", endpoint, null, config);
 
+// Helper function để tải file (PDF, Excel, etc.)
+export const apiDownloadFile = async (endpoint, filename, config = {}) => {
+  try {
+    const response = await mainHttpClient.request({
+      method: "GET",
+      url: endpoint,
+      responseType: "blob",
+      ...config,
+    });
+
+    // Tạo blob từ response
+    const blob = new Blob([response.data], {
+      type: response.headers["content-type"] || "application/octet-stream",
+    });
+
+    // Tạo URL tạm thời và tải file
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return response;
+  } catch (error) {
+    throw handleApiError(error);
+  }
+};
+
 export default mainHttpClient;

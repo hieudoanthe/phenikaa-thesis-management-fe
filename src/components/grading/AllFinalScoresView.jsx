@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { getFinalScore } from "../../services/grading.service";
+import {
+  getFinalScore,
+  generateComprehensiveEvaluationPDF,
+} from "../../services/grading.service";
 import { toast } from "react-toastify";
 
 const AllFinalScoresView = ({ evaluations }) => {
   const [finalScores, setFinalScores] = useState({});
   const [loading, setLoading] = useState(false);
   const [expandedTopics, setExpandedTopics] = useState(new Set());
+  const [pdfLoading, setPdfLoading] = useState({});
 
   useEffect(() => {
     if (evaluations && evaluations.length > 0) {
@@ -100,6 +104,24 @@ const AllFinalScoresView = ({ evaluations }) => {
     return expandedTopics.has(topicId);
   };
 
+  const handleExportComprehensivePDF = async (topicId) => {
+    if (!topicId) {
+      toast.error("Không tìm thấy thông tin đề tài");
+      return;
+    }
+
+    setPdfLoading((prev) => ({ ...prev, [topicId]: true }));
+    try {
+      await generateComprehensiveEvaluationPDF(topicId);
+      toast.success("Xuất PDF tổng hợp thành công!");
+    } catch (error) {
+      toast.error("Lỗi khi xuất PDF tổng hợp");
+      console.error("Error exporting comprehensive PDF:", error);
+    } finally {
+      setPdfLoading((prev) => ({ ...prev, [topicId]: false }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -160,6 +182,43 @@ const AllFinalScoresView = ({ evaluations }) => {
                 >
                   {getStatusLabel(scoreData.status)}
                 </span>
+
+                {/* Export PDF Button - Only show if there's a final score */}
+                {scoreData.finalScore !== null && (
+                  <div className="flex items-center space-x-2">
+                    {/* Export Comprehensive PDF Button */}
+                    <button
+                      onClick={() => handleExportComprehensivePDF(topicId)}
+                      disabled={pdfLoading[topicId]}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {pdfLoading[topicId] ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                          Đang xuất...
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-3 h-3 mr-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          PDF Tổng hợp
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 <button
                   onClick={() => toggleTopicExpansion(topicId)}
                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
