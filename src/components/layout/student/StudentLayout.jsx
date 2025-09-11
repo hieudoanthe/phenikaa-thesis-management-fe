@@ -11,6 +11,7 @@ import { WS_ENDPOINTS } from "../../../config/api";
 import notificationService from "../../../services/notification.service";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import StudentAiChatWidget from "../../common/StudentAiChatWidget.jsx";
 
 const StudentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -893,6 +894,7 @@ const StudentLayout = () => {
         theme="colored"
         limit={3}
       />
+      <StudentAiChatWidget />
     </>
   );
 };
