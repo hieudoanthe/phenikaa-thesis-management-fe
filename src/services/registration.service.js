@@ -44,20 +44,30 @@ const registrationService = {
     }
   },
 
-  registerTopic: async (topicId) => {
+  // Lọc/tìm kiếm đề tài dùng Specification
+  filterTopics: async (filter) => {
     try {
-      // Kiểm tra đợt đăng ký trước khi đăng ký
-      const currentPeriod = await registrationPeriodService.getCurrentPeriod();
-      if (!currentPeriod.success || !currentPeriod.data) {
-        return {
-          success: false,
-          message: "Hiện tại không có đợt đăng ký nào đang diễn ra!",
-        };
-      }
+      const payload = {
+        page: 0,
+        size: 10,
+        sortBy: "topicId",
+        sortDirection: "DESC",
+        userRole: "STUDENT",
+        ...filter,
+      };
+      const res = await apiPost(API_ENDPOINTS.STUDENT_FILTER_TOPICS, payload);
+      return { success: true, data: res };
+    } catch (error) {
+      console.error("Lỗi khi lọc đề tài:", error);
+      return { success: false, message: error.message };
+    }
+  },
 
+  registerTopic: async (topicId, registrationPeriodId) => {
+    try {
       const response = await apiPost(API_ENDPOINTS.REGISTER_TOPIC, {
         topicId,
-        registrationPeriodId: currentPeriod.data.periodId,
+        registrationPeriodId,
       });
       return response;
     } catch (error) {

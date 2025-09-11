@@ -25,7 +25,6 @@ const SubmissionManagement = () => {
   const [currentViewingSubmissionId, setCurrentViewingSubmissionId] =
     useState(null);
   const [filters, setFilters] = useState({
-    status: "",
     submissionType: "",
     search: "",
   });
@@ -50,17 +49,28 @@ const SubmissionManagement = () => {
     loadConfirmedTopics();
   }, [currentPage, filters]);
 
+  // Đọc query params để prefill topicId và tự mở modal tạo mới nếu có yêu cầu
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const topicId = params.get("topicId");
+      const openCreate = params.get("openCreate");
+      if (topicId) {
+        setFormData((prev) => ({ ...prev, topicId }));
+      }
+      if (openCreate === "1") {
+        setShowCreateModal(true);
+      }
+    } catch (e) {
+      // noop
+    }
+  }, []);
+
   // State để kiểm soát việc hiển thị toast lỗi
   const [hasShownError, setHasShownError] = useState(false);
 
   // Options cho react-select
-  const statusOptions = [
-    { value: "", label: "Tất cả trạng thái" },
-    { value: "1", label: "Đã nộp" },
-    { value: "2", label: "Đang xem xét" },
-    { value: "3", label: "Đã duyệt" },
-    { value: "4", label: "Từ chối" },
-  ];
+  // Bỏ filter theo trạng thái theo yêu cầu
 
   const submissionTypeOptions = [
     { value: "", label: "Tất cả loại" },
@@ -71,6 +81,11 @@ const SubmissionManagement = () => {
 
   // Custom styles cho react-select
   const customSelectStyles = {
+    container: (provided) => ({
+      ...provided,
+      width: 180,
+      display: "inline-block",
+    }),
     control: (provided, state) => ({
       ...provided,
       minHeight: "42px",
@@ -106,12 +121,16 @@ const SubmissionManagement = () => {
     try {
       setLoading(true);
       setHasShownError(false); // Reset error state
-      const response = await submissionService.getSubmissionsWithPagination(
-        currentPage,
-        10
-      );
-      setSubmissions(response.content || []);
-      setTotalPages(response.totalPages || 0);
+      const response = await submissionService.filterSubmissions({
+        search: filters.search || null,
+        submissionType: filters.submissionType
+          ? Number(filters.submissionType)
+          : null,
+        page: currentPage,
+        size: 10,
+      });
+      setSubmissions(response?.content || []);
+      setTotalPages(response?.totalPages || 0);
     } catch (error) {
       console.error("Error loading submissions:", error);
       if (!hasShownError) {
@@ -553,27 +572,8 @@ const SubmissionManagement = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Trạng thái
-            </label>
-            <Select
-              value={statusOptions.find(
-                (option) => option.value === filters.status
-              )}
-              onChange={(selectedOption) =>
-                setFilters({ ...filters, status: selectedOption?.value || "" })
-              }
-              options={statusOptions}
-              styles={customSelectStyles}
-              placeholder="Chọn trạng thái"
-              isClearable
-              isSearchable
-              className="text-sm"
-            />
-          </div>
-          <div>
+        <div className="flex flex-col md:flex-row md:items-end gap-4">
+          <div className="shrink-0">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Loại báo cáo
             </label>
@@ -590,30 +590,43 @@ const SubmissionManagement = () => {
               options={submissionTypeOptions}
               styles={customSelectStyles}
               placeholder="Chọn loại báo cáo"
-              isClearable
               isSearchable
               className="text-sm"
             />
           </div>
-          <div>
+          <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tìm kiếm
             </label>
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) =>
-                setFilters({ ...filters, search: e.target.value })
-              }
-              placeholder="Tìm kiếm theo tiêu đề..."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="text-gray-400"
+                >
+                  <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79L20 21.49 21.49 20 15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
+                placeholder="Tìm kiếm theo tiêu đề..."
+                className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end justify-end shrink-0 md:ml-auto">
             <button
               onClick={() => setShowCreateModal(true)}
               disabled={!loadingTopics && confirmedTopics.length === 0}
-              className="w-full text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:opacity-90"
+              className="w-auto text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:opacity-90"
               style={{
                 background:
                   "linear-gradient(135deg, #ea580c 100%, #fb923c 100%)",
@@ -649,9 +662,7 @@ const SubmissionManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày nộp
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Deadline
-                </th>
+
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Hành động
                 </th>
@@ -764,13 +775,7 @@ const SubmissionManagement = () => {
                           "vi-VN"
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {submission.deadline
-                          ? new Date(submission.deadline).toLocaleDateString(
-                              "vi-VN"
-                            )
-                          : "N/A"}
-                      </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button
@@ -852,18 +857,18 @@ const SubmissionManagement = () => {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+          <div className="relative top-16 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-xl bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Tạo báo cáo mới
-              </h3>
+              <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 m-0">
+                  Tạo báo cáo mới
+                </h3>
+              </div>
               <form onSubmit={handleCreateSubmission}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chọn đề tài
-                  </label>
+                <div className="mb-4 relative">
                   <select
+                    id="create-topicId"
                     value={formData.topicId}
                     onChange={(e) =>
                       setFormData({
@@ -871,7 +876,7 @@ const SubmissionManagement = () => {
                         topicId: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     required
                     disabled={loadingTopics}
                   >
@@ -885,18 +890,23 @@ const SubmissionManagement = () => {
                       </option>
                     ))}
                   </select>
+                  <label
+                    htmlFor="create-topicId"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    Chọn đề tài <span className="text-red-500">*</span>
+                  </label>
                   {confirmedTopics.length === 0 && !loadingTopics && (
                     <p className="text-sm text-red-600 mt-1">
                       Bạn chưa có đề tài nào được xác nhận
                     </p>
                   )}
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tiêu đề báo cáo
-                  </label>
+                <div className="mb-4 relative">
                   <input
+                    id="create-title"
                     type="text"
+                    placeholder=" "
                     value={formData.reportTitle}
                     onChange={(e) =>
                       setFormData({
@@ -904,15 +914,20 @@ const SubmissionManagement = () => {
                         reportTitle: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     required
                   />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mô tả
+                  <label
+                    htmlFor="create-title"
+                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm"
+                  >
+                    Tiêu đề báo cáo <span className="text-red-500">*</span>
                   </label>
+                </div>
+                <div className="mb-4 relative">
                   <textarea
+                    id="create-desc"
+                    placeholder=" "
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({
@@ -920,15 +935,19 @@ const SubmissionManagement = () => {
                         description: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     rows="3"
                   />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Loại báo cáo
+                  <label
+                    htmlFor="create-desc"
+                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm"
+                  >
+                    Mô tả <span className="text-red-500">*</span>
                   </label>
+                </div>
+                <div className="mb-4 relative">
                   <select
+                    id="create-type"
                     value={formData.submissionType}
                     onChange={(e) =>
                       setFormData({
@@ -936,25 +955,35 @@ const SubmissionManagement = () => {
                         submissionType: parseInt(e.target.value),
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                   >
                     <option value={1}>Báo cáo tiến độ</option>
                     <option value={2}>Báo cáo cuối kỳ</option>
                     <option value={3}>Báo cáo khác</option>
                   </select>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    File đính kèm
+                  <label
+                    htmlFor="create-type"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    Loại báo cáo <span className="text-red-500">*</span>
                   </label>
+                </div>
+                <div className="mb-4 relative">
                   <input
+                    id="create-file"
                     type="file"
                     onChange={(e) =>
                       setFormData({ ...formData, file: e.target.files[0] })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif"
                   />
+                  <label
+                    htmlFor="create-file"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    File đính kèm <span className="text-red-500">*</span>
+                  </label>
                   <p className="text-xs text-gray-500 mt-1">
                     Hỗ trợ: PDF, Word, Excel, PowerPoint, TXT, ZIP, RAR, JPG,
                     PNG, GIF (Tối đa 50MB)
@@ -988,18 +1017,16 @@ const SubmissionManagement = () => {
 
       {/* Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+          <div className="relative top-16 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-xl bg-white">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Chỉnh sửa báo cáo
               </h3>
               <form onSubmit={handleUpdateSubmission}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chọn đề tài
-                  </label>
+                <div className="mb-4 relative">
                   <select
+                    id="edit-topicId"
                     value={formData.topicId}
                     onChange={(e) =>
                       setFormData({
@@ -1007,7 +1034,7 @@ const SubmissionManagement = () => {
                         topicId: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     required
                     disabled={loadingTopics}
                   >
@@ -1021,17 +1048,21 @@ const SubmissionManagement = () => {
                       </option>
                     ))}
                   </select>
+                  <label
+                    htmlFor="edit-topicId"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    Chọn đề tài
+                  </label>
                   {confirmedTopics.length === 0 && !loadingTopics && (
                     <p className="text-sm text-red-600 mt-1">
                       Bạn chưa có đề tài nào được xác nhận
                     </p>
                   )}
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tiêu đề báo cáo
-                  </label>
+                <div className="mb-4 relative">
                   <input
+                    id="edit-title"
                     type="text"
                     value={formData.reportTitle}
                     onChange={(e) =>
@@ -1040,15 +1071,19 @@ const SubmissionManagement = () => {
                         reportTitle: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     required
                   />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mô tả
+                  <label
+                    htmlFor="edit-title"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    Tiêu đề báo cáo
                   </label>
+                </div>
+                <div className="mb-4 relative">
                   <textarea
+                    id="edit-desc"
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({
@@ -1056,15 +1091,19 @@ const SubmissionManagement = () => {
                         description: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     rows="3"
                   />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Loại báo cáo
+                  <label
+                    htmlFor="edit-desc"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    Mô tả
                   </label>
+                </div>
+                <div className="mb-4 relative">
                   <select
+                    id="edit-type"
                     value={formData.submissionType}
                     onChange={(e) =>
                       setFormData({
@@ -1072,25 +1111,35 @@ const SubmissionManagement = () => {
                         submissionType: parseInt(e.target.value),
                       })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                   >
                     <option value={1}>Báo cáo tiến độ</option>
                     <option value={2}>Báo cáo cuối kỳ</option>
                     <option value={3}>Báo cáo khác</option>
                   </select>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    File đính kèm mới (tùy chọn)
+                  <label
+                    htmlFor="edit-type"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    Loại báo cáo
                   </label>
+                </div>
+                <div className="mb-4 relative">
                   <input
+                    id="edit-file"
                     type="file"
                     onChange={(e) =>
                       setFormData({ ...formData, file: e.target.files[0] })
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif"
                   />
+                  <label
+                    htmlFor="edit-file"
+                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                  >
+                    File đính kèm mới (tùy chọn)
+                  </label>
                   <p className="text-xs text-gray-500 mt-1">
                     Hỗ trợ: PDF, Word, Excel, PowerPoint, TXT, ZIP, RAR, JPG,
                     PNG, GIF (Tối đa 50MB)

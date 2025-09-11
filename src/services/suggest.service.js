@@ -24,7 +24,7 @@ export const suggestTopicForStudent = async (duLieuDeXuat) => {
     );
     return ketQua;
   } catch (error) {
-    // Xử lý lỗi và ném ra cho component xử lý tiếp
+    // Ném nguyên văn thông điệp lỗi đã được chuẩn hoá ở mainHttpClient
     throw error;
   }
 };

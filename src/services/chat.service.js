@@ -1,9 +1,6 @@
 import { API_ENDPOINTS } from "../config/api";
 import mainHttpClient from "./mainHttpClient";
 
-// Base URL cho Communication Service
-const COMMUNICATION_SERVICE_URL = "http://localhost:8088";
-
 class ChatService {
   /**
    * Gửi tin nhắn chat
@@ -19,10 +16,7 @@ class ChatService {
       // Sử dụng base URL cho communication service
       const response = await mainHttpClient.post(
         API_ENDPOINTS.SEND_CHAT_MESSAGE,
-        messageData,
-        {
-          baseURL: COMMUNICATION_SERVICE_URL,
-        }
+        messageData
       );
       return response.data;
     } catch (error) {
@@ -41,10 +35,7 @@ class ChatService {
     try {
       const response = await mainHttpClient.get(
         API_ENDPOINTS.GET_CHAT_HISTORY,
-        {
-          params: { user1, user2 },
-          baseURL: COMMUNICATION_SERVICE_URL,
-        }
+        { params: { user1, user2 } }
       );
       return response.data;
     } catch (error) {
@@ -66,9 +57,7 @@ class ChatService {
         userId1
       ).replace("{userId2}", userId2);
 
-      const response = await mainHttpClient.get(url, {
-        baseURL: COMMUNICATION_SERVICE_URL,
-      });
+      const response = await mainHttpClient.get(url);
       return response.data;
     } catch (error) {
       console.error("Lỗi khi lấy lịch sử conversation:", error);
@@ -87,9 +76,7 @@ class ChatService {
         "{userId}",
         userId
       );
-      const response = await mainHttpClient.get(url, {
-        baseURL: COMMUNICATION_SERVICE_URL,
-      });
+      const response = await mainHttpClient.get(url);
       return response.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách conversations:", error);

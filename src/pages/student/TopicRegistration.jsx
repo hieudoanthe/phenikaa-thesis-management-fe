@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import registrationService from "../../services/registration.service";
+import { userService } from "../../services";
+import registrationPeriodService from "../../services/registrationPeriod.service";
 import ThesisRegisterModal from "./ThesisRegister.jsx";
 import { toast } from "react-toastify";
 
@@ -9,7 +11,15 @@ const difficultyMap = {
     label: "Khó",
     class: "bg-yellow-100 text-yellow-800 border-yellow-200",
   },
+  HARD: {
+    label: "Khó",
+    class: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  },
   INTERMEDIATE: {
+    label: "Trung bình",
+    class: "bg-blue-100 text-blue-800 border-blue-200",
+  },
+  MEDIUM: {
     label: "Trung bình",
     class: "bg-blue-100 text-blue-800 border-blue-200",
   },
@@ -17,13 +27,25 @@ const difficultyMap = {
     label: "Dễ",
     class: "bg-green-100 text-green-800 border-green-200",
   },
+  EASY: {
+    label: "Dễ",
+    class: "bg-green-100 text-green-800 border-green-200",
+  },
+};
+
+const translateDifficulty = (level) => {
+  if (!level) return "";
+  const key = String(level).toUpperCase();
+  return difficultyMap[key]?.label || level;
 };
 
 const TopicRegistration = () => {
   const [topics, setTopics] = useState([]);
   const [search, setSearch] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("");
-  const [selectedYear, setSelectedYear] = useState("");
+  const [serverPage, setServerPage] = useState(0);
+  const [serverSize] = useState(12);
+  const [serverTotalPages, setServerTotalPages] = useState(0);
+  // Bỏ lọc theo Khoa và Năm học
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [registeringId, setRegisteringId] = useState(null);
@@ -31,7 +53,10 @@ const TopicRegistration = () => {
   const [topicsPerPage] = useState(10);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [currentPeriod, setCurrentPeriod] = useState(null);
+  const [activePeriods, setActivePeriods] = useState([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState(null);
   const [periodLoading, setPeriodLoading] = useState(false);
+  const [lecturerNameMap, setLecturerNameMap] = useState({});
 
   useEffect(() => {
     const fetchTopics = async () => {
@@ -39,12 +64,9 @@ const TopicRegistration = () => {
       setError("");
       try {
         const res = await registrationService.getAvailableTopicList();
+        const periodsRes = await registrationPeriodService.getActivePeriods();
 
-        if (res.noActivePeriod) {
-          setError(res.message);
-          setTopics([]);
-          return;
-        }
+        // Không vội hiển thị lỗi nếu API currentPeriod không có; đợi kiểm tra activePeriods
 
         if (Array.isArray(res.data)) {
           setTopics(res.data);
@@ -55,9 +77,25 @@ const TopicRegistration = () => {
         }
 
         // Lưu thông tin đợt đăng ký hiện tại
-        if (res.currentPeriod) {
-          setCurrentPeriod(res.currentPeriod);
+        if (periodsRes.success && Array.isArray(periodsRes.data)) {
+          setActivePeriods(periodsRes.data);
+          if (!selectedPeriodId && periodsRes.data.length > 0) {
+            setSelectedPeriodId(periodsRes.data[0].periodId);
+            setCurrentPeriod(periodsRes.data[0]);
+          }
+          // Nếu có ít nhất 1 đợt ACTIVE, clear lỗi
+          if (periodsRes.data.length > 0) {
+            setError("");
+          } else if (res.noActivePeriod) {
+            // Chỉ set lỗi khi thực sự không có đợt nào ACTIVE
+            setError(
+              res.message || "Hiện tại không có đợt đăng ký nào đang diễn ra!"
+            );
+          }
         }
+        // Fallback: nếu chưa có danh sách periods, dùng currentPeriod cũ
+        if (!currentPeriod && res.currentPeriod)
+          setCurrentPeriod(res.currentPeriod);
       } catch (err) {
         setError("Đã xảy ra lỗi khi tải danh sách đề tài");
       } finally {
@@ -67,6 +105,55 @@ const TopicRegistration = () => {
     fetchTopics();
   }, []);
 
+  // Tải danh sách giảng viên để ánh xạ supervisorId -> fullName
+  useEffect(() => {
+    const loadLecturers = async () => {
+      try {
+        const teachers = await userService.getAllTeachers();
+        const map = {};
+        (teachers || []).forEach((t) => {
+          if (t?.userId)
+            map[t.userId] = t.fullName || t.name || `GV ${t.userId}`;
+        });
+        setLecturerNameMap(map);
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadLecturers();
+  }, []);
+
+  // Gọi API filter khi search thay đổi hoặc serverPage thay đổi
+  useEffect(() => {
+    const doFilter = async () => {
+      try {
+        const payload = {
+          searchPattern: search || undefined,
+          page: serverPage,
+          size: serverSize,
+          sortBy: "topicId",
+          sortDirection: "DESC",
+          userRole: "STUDENT",
+        };
+        const res = await registrationService.filterTopics(payload);
+        if (res.success && res.data) {
+          setTopics(res.data.content || []);
+          setServerTotalPages(res.data.totalPages || 0);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    doFilter();
+  }, [search, serverPage]);
+
+  // Đồng bộ panel "đợt hiện tại" theo lựa chọn dropdown
+  useEffect(() => {
+    if (!selectedPeriodId) return;
+    const found = activePeriods.find((p) => p.periodId === selectedPeriodId);
+    if (found) setCurrentPeriod(found);
+  }, [selectedPeriodId, activePeriods]);
+
   const filterTopics = () => {
     return topics.filter((t) => {
       const matchesSearch =
@@ -74,11 +161,7 @@ const TopicRegistration = () => {
         t.topicCode.toLowerCase().includes(search.toLowerCase()) ||
         (t.supervisorName || "").toLowerCase().includes(search.toLowerCase());
 
-      const matchesDepartment =
-        !selectedDepartment || t.department === selectedDepartment;
-      const matchesYear = !selectedYear || t.academicYear === selectedYear;
-
-      return matchesSearch && matchesDepartment && matchesYear;
+      return matchesSearch;
     });
   };
 
@@ -91,7 +174,14 @@ const TopicRegistration = () => {
   const handleRegister = async (topicId) => {
     setRegisteringId(topicId);
     try {
-      const res = await registrationService.registerTopic(topicId);
+      if (!selectedPeriodId) {
+        toast.error("Vui lòng chọn đợt đăng ký");
+        return;
+      }
+      const res = await registrationService.registerTopic(
+        topicId,
+        selectedPeriodId
+      );
 
       if (res.success) {
         // Cập nhật trạng thái đề tài thành "Pending" khi đăng ký thành công
@@ -117,41 +207,22 @@ const TopicRegistration = () => {
 
   const clearFilters = () => {
     setSearch("");
-    setSelectedDepartment("");
-    setSelectedYear("");
     setCurrentPage(1);
   };
 
-  const filteredTopics = filterTopics();
-  const indexOfLastTopic = currentPage * topicsPerPage;
-  const indexOfFirstTopic = indexOfLastTopic - topicsPerPage;
-  const currentTopics = filteredTopics.slice(
-    indexOfFirstTopic,
-    indexOfLastTopic
-  );
-  const totalPages = Math.ceil(filteredTopics.length / topicsPerPage);
+  const filteredTopics = topics; // đã lọc từ server
+  const currentTopics = filteredTopics;
+  const totalPages = serverTotalPages || 1;
 
-  // Mock data cho departments và years (có thể thay bằng API thực tế)
-  const departments = [
-    "Khoa Công nghệ Thông tin",
-    "Khoa Kỹ thuật Phần mềm",
-    "Khoa Khoa học Máy tính",
-    "Khoa Khoa học Dữ liệu",
-    "Khoa An ninh Mạng",
-  ];
+  // Options cho react-select của danh sách đợt đăng ký
+  const periodOptions = activePeriods.map((p) => ({
+    value: p.periodId,
+    label: `${p.periodName} (${new Date(p.startDate).toLocaleDateString(
+      "vi-VN"
+    )} - ${new Date(p.endDate).toLocaleDateString("vi-VN")})`,
+  }));
 
-  const years = ["2024-2025", "2023-2024", "2022-2023"];
-
-  // Chuẩn bị data cho react-select
-  const departmentOptions = [
-    { value: "", label: "Chọn khoa" },
-    ...departments.map((dept) => ({ value: dept, label: dept })),
-  ];
-
-  const yearOptions = [
-    { value: "", label: "Chọn năm học" },
-    ...years.map((year) => ({ value: year, label: year })),
-  ];
+  // Đã bỏ data filter theo Khoa và Năm học
 
   // Custom styles cho react-select
   const customSelectStyles = {
@@ -201,7 +272,27 @@ const TopicRegistration = () => {
 
   return (
     <div className="max-w-full mx-auto p-3">
-      {/* Hiển thị thông tin đợt đăng ký hiện tại */}
+      {/* Chọn đợt đăng ký (nhiều đợt song song) */}
+      {activePeriods.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <label className="block text-sm font-semibold text-green-800 mb-2">
+            Chọn đợt đăng ký
+          </label>
+          <Select
+            value={
+              periodOptions.find((o) => o.value === selectedPeriodId) || null
+            }
+            onChange={(opt) => setSelectedPeriodId(opt?.value || null)}
+            options={periodOptions}
+            styles={customSelectStyles}
+            placeholder="Chọn đợt đăng ký"
+            isClearable={false}
+            className="text-sm"
+          />
+        </div>
+      )}
+
+      {/* Hiển thị thông tin đợt đăng ký hiện tại (giữ lại để tương thích UI cũ) */}
       {currentPeriod && (
         <div className="current-period-info bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between">
@@ -214,10 +305,7 @@ const TopicRegistration = () => {
                 {new Date(currentPeriod.startDate).toLocaleDateString("vi-VN")}{" "}
                 - {new Date(currentPeriod.endDate).toLocaleDateString("vi-VN")}
               </p>
-              <p className="text-blue-700">
-                Trạng thái:{" "}
-                <span className="font-semibold">{currentPeriod.status}</span>
-              </p>
+              {/* Bỏ hiển thị Trạng thái: ACTIVE */}
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">
@@ -272,46 +360,6 @@ const TopicRegistration = () => {
 
       {/* Filters Bar */}
       <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-200 mb-4 flex gap-3.5 items-end flex-wrap">
-        {/* Department Filter */}
-        <div className="flex flex-col gap-1.5 min-w-[200px]">
-          <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
-            Khoa
-          </label>
-          <Select
-            value={departmentOptions.find(
-              (option) => option.value === selectedDepartment
-            )}
-            onChange={(selectedOption) =>
-              setSelectedDepartment(selectedOption?.value || "")
-            }
-            options={departmentOptions}
-            styles={customSelectStyles}
-            placeholder="Chọn khoa"
-            isClearable
-            isSearchable
-            className="text-sm"
-          />
-        </div>
-
-        {/* Year Filter */}
-        <div className="flex flex-col gap-1.5 min-w-[200px]">
-          <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
-            Năm học
-          </label>
-          <Select
-            value={yearOptions.find((option) => option.value === selectedYear)}
-            onChange={(selectedOption) =>
-              setSelectedYear(selectedOption?.value || "")
-            }
-            options={yearOptions}
-            styles={customSelectStyles}
-            placeholder="Chọn năm học"
-            isClearable
-            isSearchable
-            className="text-sm"
-          />
-        </div>
-
         {/* Search Filter */}
         <div className="flex flex-col gap-1.5 flex-1 min-w-[300px]">
           <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
@@ -332,7 +380,7 @@ const TopicRegistration = () => {
               placeholder="Tìm theo từ khóa hoặc giảng viên"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-2.5 py-1.5 pl-8 border border-gray-300 rounded-md text-sm min-w-[180px] focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-colors"
+              className="w-full px-2.5 py-1.5 pl-8 border border-gray-300 rounded-md text-sm min-w-[180px] outline-none focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors"
             />
           </div>
         </div>
@@ -377,7 +425,9 @@ const TopicRegistration = () => {
                       Giảng viên:
                     </span>
                     <span className="text-xs font-medium text-purple-600 font-semibold">
-                      {topic.supervisorName || `Dr. ${topic.supervisorId}`}
+                      {lecturerNameMap[topic.supervisorId] ||
+                        topic.supervisorName ||
+                        "Đang cập nhật"}
                     </span>
                   </div>
 
@@ -404,11 +454,12 @@ const TopicRegistration = () => {
                     </span>
                     <span
                       className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border ${
-                        difficultyMap[topic.difficultyLevel]?.class || ""
+                        difficultyMap[
+                          String(topic.difficultyLevel).toUpperCase()
+                        ]?.class || ""
                       }`}
                     >
-                      {difficultyMap[topic.difficultyLevel]?.label ||
-                        topic.difficultyLevel}
+                      {translateDifficulty(topic.difficultyLevel)}
                     </span>
                   </div>
                 </div>
@@ -467,11 +518,11 @@ const TopicRegistration = () => {
                   <button
                     key={page}
                     className={`border rounded-md px-2.5 py-1.5 text-xs font-medium cursor-pointer transition-all duration-200 min-w-[36px] ${
-                      currentPage === page
+                      serverPage + 1 === page
                         ? "bg-blue-900 text-white border-blue-900"
                         : "bg-white border-gray-300 text-gray-600 hover:bg-blue-900 hover:text-white hover:border-blue-900"
                     }`}
-                    onClick={() => setCurrentPage(page)}
+                    onClick={() => setServerPage(page - 1)}
                   >
                     {page}
                   </button>
@@ -481,9 +532,9 @@ const TopicRegistration = () => {
               <button
                 className="bg-white border border-gray-300 text-gray-600 rounded-md px-2.5 py-1.5 text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-blue-900 hover:text-white hover:border-blue-900 min-w-[36px] disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  setServerPage((prev) => Math.min(prev + 1, totalPages - 1))
                 }
-                disabled={currentPage === totalPages}
+                disabled={serverPage + 1 === totalPages}
               >
                 Tiếp
               </button>
@@ -494,9 +545,8 @@ const TopicRegistration = () => {
           {filteredTopics.length > 0 && (
             <div className="text-center mb-4 text-gray-500 text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-md">
               <p className="m-0 p-3 bg-gray-50 rounded-md border border-gray-200">
-                Hiển thị {indexOfFirstTopic + 1} đến {""}
-                {Math.min(indexOfLastTopic, filteredTopics.length)} trong tổng
-                số {filteredTopics.length} đề tài
+                Trang {serverPage + 1}/{totalPages} — {filteredTopics.length} đề
+                tài hiển thị
               </p>
             </div>
           )}
@@ -507,6 +557,7 @@ const TopicRegistration = () => {
       <ThesisRegisterModal
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
+        selectedPeriod={currentPeriod}
       />
     </div>
   );

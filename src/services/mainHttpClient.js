@@ -105,19 +105,35 @@ export const handleApiError = (error) => {
     // Server trả về response với status code lỗi
     const { status, data } = error.response;
 
+    // Lấy thông điệp lỗi rõ ràng nhất có thể từ nhiều format khác nhau
+    const extractMessage = (payload) => {
+      if (!payload) return null;
+      if (typeof payload === "string") return payload; // backend trả plain text
+      return (
+        payload.message ||
+        payload.detail ||
+        payload.error ||
+        payload.title ||
+        (Array.isArray(payload.errors) && payload.errors[0]?.defaultMessage) ||
+        null
+      );
+    };
+
+    const serverMessage = extractMessage(data);
+
     switch (status) {
       case 400:
-        return new Error(data?.message || "Dữ liệu không hợp lệ");
+        return new Error(serverMessage || "Dữ liệu không hợp lệ");
       case 401:
-        return new Error("Phiên đăng nhập đã hết hạn");
+        return new Error(serverMessage || "Phiên đăng nhập đã hết hạn");
       case 403:
-        return new Error("Bạn không có quyền truy cập");
+        return new Error(serverMessage || "Bạn không có quyền truy cập");
       case 404:
-        return new Error("Không tìm thấy dữ liệu");
+        return new Error(serverMessage || "Không tìm thấy dữ liệu");
       case 500:
-        return new Error("Lỗi server, vui lòng thử lại sau");
+        return new Error(serverMessage || "Lỗi server, vui lòng thử lại sau");
       default:
-        return new Error(data?.message || "Có lỗi xảy ra");
+        return new Error(serverMessage || "Có lỗi xảy ra");
     }
   } else if (error.request) {
     // Request được gửi nhưng không nhận được response

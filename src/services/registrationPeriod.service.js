@@ -38,6 +38,21 @@ class RegistrationPeriodService {
   }
 
   /**
+   * Lấy tất cả đợt đăng ký đang ACTIVE (public cho sinh viên)
+   */
+  async getActivePeriods() {
+    try {
+      const response = await apiGet(
+        API_ENDPOINTS.GET_ACTIVE_REGISTRATION_PERIODS_PUBLIC
+      );
+      return { success: true, data: response };
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách đợt ACTIVE:", error);
+      return { success: false, message: "Không thể lấy danh sách đợt ACTIVE" };
+    }
+  }
+
+  /**
    * Lấy tất cả đợt đăng ký
    */
   async getAllPeriods() {

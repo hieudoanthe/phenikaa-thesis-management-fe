@@ -35,6 +35,21 @@ const MyThesis = () => {
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState("");
 
+  // Rút gọn tên đề tài dài theo ký tự
+  const getShortTitle = (title, max = 60) => {
+    if (!title) return "";
+    if (title.length <= max) return title;
+    return title.slice(0, Math.max(0, max - 1)) + "…";
+  };
+
+  // Rút gọn theo số từ (tối đa maxWords từ)
+  const getShortWords = (title, maxWords = 5) => {
+    if (!title) return "";
+    const words = String(title).trim().split(/\s+/);
+    if (words.length <= maxWords) return title;
+    return words.slice(0, maxWords).join(" ") + "…";
+  };
+
   // Hàm lấy trạng thái hiển thị
   const getStatusDisplay = (status) => {
     const statusMap = {
@@ -450,8 +465,12 @@ const MyThesis = () => {
               // Hiển thị thông tin chi tiết của đề tài được chọn
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">
-                    Đề tài {selectedThesis.topicId}
+                  <h4
+                    className="font-semibold text-blue-900 mb-2 break-words"
+                    title={selectedThesis?.title}
+                  >
+                    {selectedThesis?.title ||
+                      `Đề tài #${selectedThesis?.topicId}`}
                   </h4>
                   <div className="space-y-3">
                     <div>
@@ -469,7 +488,7 @@ const MyThesis = () => {
 
                     <div>
                       <label className="block text-sm text-blue-700 mb-1">
-                        Sinh viên đề xuất:
+                        Sinh viên đăng ký:
                       </label>
                       <p className="font-medium text-blue-900">
                         {suggestedByProfiles[selectedThesis.suggestedBy] ||
@@ -479,7 +498,7 @@ const MyThesis = () => {
 
                     <div>
                       <label className="block text-sm text-blue-700 mb-1">
-                        Giảng viên được đề xuất:
+                        Giảng viên được đăng ký:
                       </label>
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-blue-900">
@@ -501,17 +520,17 @@ const MyThesis = () => {
                           title="Chat với giảng viên"
                         >
                           <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="currentColor"
+                            className="size-6"
                           >
                             <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"
                             />
                           </svg>
                         </button>
@@ -520,7 +539,7 @@ const MyThesis = () => {
 
                     <div>
                       <label className="block text-sm text-blue-700 mb-1">
-                        Ngày đề xuất:
+                        Ngày đăng ký:
                       </label>
                       <p className="font-medium text-blue-900">
                         {formatDate(selectedThesis.createdAt)}
@@ -544,7 +563,7 @@ const MyThesis = () => {
                         }
                         className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
                       >
-                        Xem chi tiết →
+                        Xem chi tiết
                       </button>
                     )}
                   </div>
@@ -618,18 +637,7 @@ const MyThesis = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full bg-emerald-500"
-                                        style={{
-                                          width: `${
-                                            typeof t.progress === "number"
-                                              ? t.progress
-                                              : 0
-                                          }%`,
-                                        }}
-                                      ></div>
-                                    </div>
+                                    {/* Bỏ progress bar theo yêu cầu */}
                                     <span className="text-xs text-gray-700 w-8 text-right">
                                       {typeof t.progress === "number"
                                         ? t.progress
@@ -674,7 +682,7 @@ const MyThesis = () => {
                   <div className="text-3xl font-bold text-orange-600 mb-2">
                     {totalElements}
                   </div>
-                  <p className="text-sm text-gray-600">Đề tài đã đề xuất</p>
+                  <p className="text-sm text-gray-600">Đề tài đã đăng ký</p>
                 </div>
 
                 <div className="space-y-3">
@@ -724,7 +732,7 @@ const MyThesis = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Danh sách đề tài đã đề xuất ({totalElements})
+                  Danh sách đề tài đã đăng ký ({totalElements})
                   {totalPages > 1 && (
                     <span className="text-sm font-normal text-gray-500 ml-2">
                       - Trang {currentPage + 1}/{totalPages}
@@ -754,12 +762,18 @@ const MyThesis = () => {
                         onClick={() => handleThesisSelect(thesis)}
                       >
                         <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm font-medium text-gray-500">
                               #{index + 1}
                             </span>
-                            <span className="text-base font-semibold text-gray-900">
-                              Đề tài {thesis.topicId}
+                            <span
+                              className="text-base font-semibold text-gray-900 truncate whitespace-nowrap overflow-hidden text-ellipsis"
+                              title={thesis?.title}
+                            >
+                              {getShortWords(
+                                thesis?.title || `Đề tài #${thesis.topicId}`,
+                                5
+                              )}
                             </span>
                           </div>
                           <span
@@ -774,7 +788,7 @@ const MyThesis = () => {
                         <div className="space-y-2.5 text-sm">
                           <div>
                             <label className="block text-gray-600 mb-1.5">
-                              Sinh viên đề xuất:
+                              Sinh viên đăng ký:
                             </label>
                             <p className="font-medium">
                               {suggestedByProfiles[thesis.suggestedBy] ||
@@ -783,7 +797,7 @@ const MyThesis = () => {
                           </div>
                           <div>
                             <label className="block text-gray-600 mb-1.5">
-                              Giảng viên được đề xuất:
+                              Giảng viên được đăng ký:
                             </label>
                             <p className="font-medium">
                               {(() => {
@@ -799,7 +813,7 @@ const MyThesis = () => {
                           </div>
                           <div>
                             <label className="block text-gray-600 mb-1.5">
-                              Ngày đề xuất:
+                              Ngày đăng ký:
                             </label>
                             <p className="font-medium">
                               {formatDate(thesis.createdAt)}

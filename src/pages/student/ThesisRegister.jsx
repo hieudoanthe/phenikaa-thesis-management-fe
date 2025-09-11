@@ -47,7 +47,7 @@ const fieldsOfStudy = [
   "Data Science",
 ];
 
-const ThesisRegisterModal = ({ isOpen, onClose }) => {
+const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
   if (!isOpen) return null;
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
@@ -67,12 +67,15 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
   const [currentPeriod, setCurrentPeriod] = useState(null);
   const [periodLoading, setPeriodLoading] = useState(false);
 
-  // Kiểm tra đợt đăng ký khi component mount
+  // Đồng bộ đợt đăng ký từ parent nếu truyền vào; fallback gọi API cũ khi thiếu
   useEffect(() => {
-    if (isOpen) {
-      checkRegistrationPeriod();
+    if (!isOpen) return;
+    if (selectedPeriod) {
+      setCurrentPeriod(selectedPeriod);
+      return;
     }
-  }, [isOpen]);
+    checkRegistrationPeriod();
+  }, [isOpen, selectedPeriod]);
 
   const checkRegistrationPeriod = async () => {
     setPeriodLoading(true);
@@ -213,7 +216,7 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
       toast.success("Đề xuất đề tài thành công!");
       onClose?.();
     } catch (err) {
-      const errorMessage = err.message || "Có lỗi xảy ra, vui lòng thử lại!";
+      const errorMessage = err?.message || "Có lỗi xảy ra, vui lòng thử lại!";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -945,6 +948,7 @@ const ThesisRegisterModal = ({ isOpen, onClose }) => {
 ThesisRegisterModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  selectedPeriod: PropTypes.object,
 };
 
 export default ThesisRegisterModal;

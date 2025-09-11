@@ -61,6 +61,8 @@ export const createSubmission = async (submissionData) => {
         headers: {
           // Không set Content-Type để FormData tự set
         },
+        // Upload có thể mất thời gian, tăng timeout để tránh timeout giả
+        timeout: 60000,
       }
     );
     return response.data;
@@ -99,6 +101,7 @@ export const updateSubmission = async (submissionId, submissionData) => {
         headers: {
           // Không set Content-Type để FormData tự set
         },
+        timeout: 60000,
       }
     );
     return response.data;
@@ -164,6 +167,22 @@ export const getSubmissionsWithPagination = async (page = 0, size = 10) => {
     return response;
   } catch (error) {
     console.error("Error getting submissions with pagination:", error);
+    throw error;
+  }
+};
+
+/**
+ * Lọc/tìm kiếm submissions bằng specification
+ */
+export const filterSubmissions = async (payload) => {
+  try {
+    const response = await apiPost(
+      `${SUBMISSION_SERVICE_BASE}/submissions/filter`,
+      payload
+    );
+    return response;
+  } catch (error) {
+    console.error("Error filtering submissions:", error);
     throw error;
   }
 };

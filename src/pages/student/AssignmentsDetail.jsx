@@ -2,12 +2,25 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { assignmentService } from "../../services";
 import { getUserIdFromToken } from "../../auth/authUtils";
+import * as submissionService from "../../services/submission.service";
+import { toast } from "react-toastify";
 
 const AssignmentsDetail = () => {
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    topicId: "",
+    reportTitle: "",
+    description: "",
+    submissionType: 1,
+    deadline: "",
+    file: null,
+    submittedBy: null,
+  });
 
   const query = new URLSearchParams(window.location.search);
   const topicId = query.get("topicId");
@@ -43,8 +56,39 @@ const AssignmentsDetail = () => {
 
   useEffect(() => {
     loadData();
+    if (topicId) {
+      setFormData((prev) => ({ ...prev, topicId }));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId]);
+
+  const handleCreateSubmission = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      const studentId = getUserIdFromToken();
+      const payload = { ...formData, submittedBy: studentId, topicId };
+      await submissionService.createSubmission(payload);
+      setShowCreateModal(false);
+      setFormData((prev) => ({
+        ...prev,
+        reportTitle: "",
+        description: "",
+        file: null,
+      }));
+      // Suppress aggregated notification toast briefly to avoid duplicate toasts
+      try {
+        window.__suppressNotificationToastUntil = Date.now() + 3000;
+      } catch (_) {}
+      toast.success("Tạo báo cáo thành công");
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || err?.message || "Lỗi khi tạo báo cáo";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="h-full bg-gray-50 overflow-hidden">
@@ -55,14 +99,132 @@ const AssignmentsDetail = () => {
             <h1 className="text-xl font-semibold text-gray-900 m-0">
               Nhiệm vụ của đề tài #{topicId}
             </h1>
-            <button
-              onClick={() => navigate(-1)}
-              className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
-            >
-              ← Quay lại
-            </button>
+            <div className="flex items-center gap-2">
+              {topicId && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-3 py-1.5 text-sm rounded text-white"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
+                  }}
+                  title="Tạo báo cáo"
+                >
+                  Tạo báo cáo
+                </button>
+              )}
+              <button
+                onClick={() => navigate(-1)}
+                className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+              >
+                ← Quay lại
+              </button>
+            </div>
           </div>
         </div>
+
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Tạo báo cáo mới
+                </h3>
+                <form onSubmit={handleCreateSubmission}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tiêu đề báo cáo
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.reportTitle}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          reportTitle: e.target.value,
+                        })
+                      }
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mô tả
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows="3"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Loại báo cáo
+                    </label>
+                    <select
+                      value={formData.submissionType}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          submissionType: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={1}>Báo cáo tiến độ</option>
+                      <option value={2}>Báo cáo cuối kỳ</option>
+                      <option value={3}>Báo cáo khác</option>
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      File đính kèm
+                    </label>
+                    <input
+                      type="file"
+                      onChange={(e) =>
+                        setFormData({ ...formData, file: e.target.files[0] })
+                      }
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Hỗ trợ: PDF, Word, Excel, PowerPoint, TXT, ZIP, RAR, JPG,
+                      PNG, GIF (Tối đa 50MB)
+                    </p>
+                  </div>
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateModal(false)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 transition-all duration-300 hover:opacity-90"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
+                      }}
+                    >
+                      {submitting ? "Đang tạo..." : "Tạo báo cáo"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-4 overflow-hidden">

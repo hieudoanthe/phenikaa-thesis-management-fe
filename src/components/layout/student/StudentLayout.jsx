@@ -52,15 +52,15 @@ const StudentLayout = () => {
           title: "Trang chủ",
           subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
         };
-      case "/student/topic":
-        return {
-          title: "Đề tài",
-          subtitle: "Quản lý và đăng ký đề tài luận văn",
-        };
       case "/student/topic-registration":
         return {
           title: "Đăng ký đề tài",
-          subtitle: "Đăng ký và chọn đề tài luận văn",
+          subtitle: "Đăng ký đề tài đồ án tốt nghiệp",
+        };
+      case "/student/my-thesis":
+        return {
+          title: "Đề tài của tôi",
+          subtitle: "Theo dõi tiến độ và trạng thái đề tài đồ án tốt nghiệp",
         };
       case "/student/group":
         return {
@@ -69,8 +69,8 @@ const StudentLayout = () => {
         };
       case "/student/submissions":
         return {
-          title: "Nộp báo cáo",
-          subtitle: "Quản lý nộp báo cáo",
+          title: "Tài liệu của tôi",
+          subtitle: "Xem và quản lý tài liệu của tôi",
         };
       case "/student/chat":
         return {
@@ -92,11 +92,7 @@ const StudentLayout = () => {
           title: "Hồ sơ cá nhân",
           subtitle: "Quản lý thông tin cá nhân và tài khoản",
         };
-      case "/student/my-thesis":
-        return {
-          title: "Đề tài của tôi",
-          subtitle: "Theo dõi tiến độ và trạng thái đề tài luận văn",
-        };
+
       default:
         return {
           title: "Trang chủ",
@@ -371,7 +367,11 @@ const StudentLayout = () => {
           const count = bufferedCountRef.current;
           bufferToastTimerRef.current = null;
           bufferedCountRef.current = 0;
-          if (count > 0 && !summaryShownRef.current) {
+          // Tôn trọng suppression flag sau hành động người dùng (tạo báo cáo)
+          const suppressUntil = window.__suppressNotificationToastUntil || 0;
+          const suppressed = Date.now() <= suppressUntil;
+          // Chỉ hiển thị toast tổng hợp khi có từ 2 thông báo trở lên và không bị suppress
+          if (count >= 2 && !summaryShownRef.current && !suppressed) {
             summaryShownRef.current = true;
             toast.success(`Bạn có ${count} thông báo mới`);
           }
@@ -454,12 +454,17 @@ const StudentLayout = () => {
                   clearTimeout(bufferToastTimerRef.current);
                 }
                 bufferToastTimerRef.current = setTimeout(() => {
-                  if (bufferedCountRef.current > 0) {
+                  // Tôn trọng suppression flag
+                  const suppressUntil =
+                    window.__suppressNotificationToastUntil || 0;
+                  const suppressed = Date.now() <= suppressUntil;
+                  // Chỉ hiện toast khi có từ 2 thông báo trở lên và không bị suppress
+                  if (bufferedCountRef.current >= 2 && !suppressed) {
                     toast.success(
                       `Bạn có ${bufferedCountRef.current} thông báo mới`
                     );
-                    bufferedCountRef.current = 0;
                   }
+                  bufferedCountRef.current = 0;
                   bufferToastTimerRef.current = null;
                 }, 1000);
               }

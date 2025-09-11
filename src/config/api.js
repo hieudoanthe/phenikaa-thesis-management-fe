@@ -75,6 +75,7 @@ export const API_ENDPOINTS = {
 
   // Student Topic Registration
   GET_AVAILABLE_TOPIC_LIST: "/api/thesis-service/student/available-topics",
+  STUDENT_FILTER_TOPICS: "/api/thesis-service/student/topics/filter",
   REGISTER_TOPIC: "/api/thesis-service/student/register-topic",
   STUDENT_SUGGEST_TOPIC: "/api/thesis-service/student/suggest-topic",
   GET_STUDENT_TOPIC:
@@ -108,6 +109,8 @@ export const API_ENDPOINTS = {
    */
   // Registration Period
   GET_CURRENT_REGISTRATION_PERIOD: "/api/thesis-service/admin/current",
+  GET_ACTIVE_REGISTRATION_PERIODS_PUBLIC:
+    "/api/thesis-service/student-period/active",
   GET_REGISTRATION_PERIODS: "/api/thesis-service/admin",
   GET_REGISTRATION_PERIODS_BY_ACADEMIC_YEAR:
     "/api/thesis-service/admin/academic-year/{academicYearId}",
