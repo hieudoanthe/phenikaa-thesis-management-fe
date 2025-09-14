@@ -43,7 +43,6 @@ import DefenseScheduleManagement from "./pages/admin/DefenseScheduleManagement.j
 import RegistrationPeriodManagement from "./pages/admin/RegistrationPeriodManagement.jsx";
 import StudentPeriodManagement from "./pages/admin/StudentPeriodManagement.jsx";
 import StatisticsDashboard from "./pages/admin/StatisticsDashboard.jsx";
-import SubmissionAnalytics from "./pages/admin/SubmissionAnalytics.jsx";
 // Import CSS
 import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -202,10 +201,6 @@ createRoot(document.getElementById("root")).render(
                   element={<StudentPeriodManagement />}
                 />
                 <Route path="statistics" element={<StatisticsDashboard />} />
-                <Route
-                  path="submission-analytics"
-                  element={<SubmissionAnalytics />}
-                />
                 <Route
                   path="notifications"
                   element={

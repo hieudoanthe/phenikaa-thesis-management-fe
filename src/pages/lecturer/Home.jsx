@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import dashboardService from "../../services/dashboard.service";
+import { statisticsService } from "../../services/statistics.service";
 
 const LecturerHome = () => {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ const LecturerHome = () => {
     upcomingDefenses: { upcomingDefenses: 0, defenses: [] },
     notifications: { newNotifications: 0, notifications: [] },
     activities: [],
+    teacherStats: null,
   });
 
   useEffect(() => {
@@ -33,12 +35,14 @@ const LecturerHome = () => {
           defensesRes,
           notificationsRes,
           activitiesRes,
+          teacherStatsRes,
         ] = await Promise.all([
           dashboardService.getTeacherDashboardStats(user.userId),
           dashboardService.getPendingReports(user.userId),
           dashboardService.getUpcomingDefenses(user.userId),
           dashboardService.getNewNotifications(user.userId),
           dashboardService.getRecentActivities(user.userId),
+          statisticsService.getTeacherStatistics(user.userId),
         ]);
 
         setDashboardData({
@@ -47,6 +51,7 @@ const LecturerHome = () => {
           upcomingDefenses: defensesRes.data,
           notifications: notificationsRes.data,
           activities: activitiesRes.data,
+          teacherStats: teacherStatsRes,
         });
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu dashboard:", error);
@@ -108,6 +113,110 @@ const LecturerHome = () => {
           Chào mừng {user?.fullName || "bạn"} đến với hệ thống quản lý luận văn
         </p>
       </div>
+
+      {/* Teacher Statistics Section */}
+      {dashboardData.teacherStats && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-100 mb-6">
+            Thống kê cá nhân
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Tổng đề tài */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 border border-blue-500 hover:border-blue-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Tổng đề tài
+                </h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {dashboardData.teacherStats.totalTopics || 0}
+                </span>
+              </div>
+              <p className="text-blue-100 text-sm">Đề tài bạn đang hướng dẫn</p>
+            </div>
+
+            {/* Tổng sinh viên */}
+            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 border border-green-500 hover:border-green-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Tổng sinh viên
+                </h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {dashboardData.teacherStats.totalStudents || 0}
+                </span>
+              </div>
+              <p className="text-green-100 text-sm">
+                Sinh viên bạn đang hướng dẫn
+              </p>
+            </div>
+
+            {/* Tổng đánh giá */}
+            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 border border-purple-500 hover:border-purple-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Tổng đánh giá
+                </h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {dashboardData.teacherStats.totalEvaluations || 0}
+                </span>
+              </div>
+              <p className="text-purple-100 text-sm">
+                Đánh giá bạn đã thực hiện
+              </p>
+            </div>
+
+            {/* Điểm trung bình */}
+            <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl p-6 border border-orange-500 hover:border-orange-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Điểm TB</h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {dashboardData.teacherStats.averageStudentScore?.toFixed(2) ||
+                    "0.00"}
+                </span>
+              </div>
+              <p className="text-orange-100 text-sm">
+                Điểm trung bình sinh viên
+              </p>
+            </div>
+          </div>
+
+          {/* Real-time Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl p-6 border border-cyan-500">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Nộp bài hôm nay
+                </h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {dashboardData.teacherStats.newSubmissionsToday || 0}
+                </span>
+              </div>
+              <p className="text-cyan-100 text-sm">Báo cáo mới được nộp</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-pink-600 to-pink-700 rounded-xl p-6 border border-pink-500">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Đánh giá chờ
+                </h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {dashboardData.teacherStats.pendingEvaluations || 0}
+                </span>
+              </div>
+              <p className="text-pink-100 text-sm">Đánh giá chờ xử lý</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl p-6 border border-indigo-500">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Cần chú ý</h3>
+                <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {dashboardData.teacherStats.studentsNeedingAttention || 0}
+                </span>
+              </div>
+              <p className="text-indigo-100 text-sm">Sinh viên cần hỗ trợ</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dashboard Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

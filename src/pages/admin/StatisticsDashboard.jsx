@@ -4,12 +4,7 @@ import { toast } from "react-toastify";
 
 const StatisticsDashboard = () => {
   const [loading, setLoading] = useState(true);
-  const [statistics, setStatistics] = useState({
-    overview: null,
-    defenses: null,
-    evaluations: null,
-    scores: null,
-  });
+  const [statistics, setStatistics] = useState(null);
   const [dateRange, setDateRange] = useState({
     startDate: "",
     endDate: "",
@@ -23,7 +18,7 @@ const StatisticsDashboard = () => {
   const loadStatistics = async (startDate = null, endDate = null) => {
     try {
       setLoading(true);
-      const data = await statisticsService.getAllStatistics(startDate, endDate);
+      const data = await statisticsService.getAdminStatistics();
       setStatistics(data);
     } catch (error) {
       toast.error("Lỗi khi tải dữ liệu thống kê");
@@ -144,27 +139,30 @@ const StatisticsDashboard = () => {
         </div>
 
         {/* Tab Content */}
-        {activeTab === "overview" && statistics.overview && (
+        {activeTab === "overview" && statistics && (
           <OverviewStats
-            data={statistics.overview}
+            data={statistics}
+            formatNumber={formatNumber}
             formatPercentage={formatPercentage}
           />
         )}
 
-        {activeTab === "defenses" && statistics.defenses && (
-          <DefenseStats data={statistics.defenses} />
+        {activeTab === "defenses" && statistics && (
+          <DefenseStats data={statistics} formatNumber={formatNumber} />
         )}
 
-        {activeTab === "evaluations" && statistics.evaluations && (
+        {activeTab === "evaluations" && statistics && (
           <EvaluationStats
-            data={statistics.evaluations}
+            data={statistics}
+            formatNumber={formatNumber}
             formatPercentage={formatPercentage}
           />
         )}
 
-        {activeTab === "scores" && statistics.scores && (
+        {activeTab === "scores" && statistics && (
           <ScoreStats
-            data={statistics.scores}
+            data={statistics}
+            formatNumber={formatNumber}
             formatPercentage={formatPercentage}
           />
         )}
@@ -174,7 +172,7 @@ const StatisticsDashboard = () => {
 };
 
 // Overview Statistics Component
-const OverviewStats = ({ data, formatPercentage }) => (
+const OverviewStats = ({ data, formatNumber, formatPercentage }) => (
   <div className="space-y-6">
     {/* Key Metrics */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -182,15 +180,13 @@ const OverviewStats = ({ data, formatPercentage }) => (
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 text-lg">🏛️</span>
+              <span className="text-blue-600 text-lg">👥</span>
             </div>
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500">
-              Tổng buổi bảo vệ
-            </p>
+            <p className="text-sm font-medium text-gray-500">Tổng người dùng</p>
             <p className="text-2xl font-semibold text-gray-900">
-              {data.totalDefenseSessions || 0}
+              {formatNumber(data.totalUsers || 0)}
             </p>
           </div>
         </div>
@@ -200,13 +196,13 @@ const OverviewStats = ({ data, formatPercentage }) => (
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-green-600 text-lg">👥</span>
+              <span className="text-green-600 text-lg">🎓</span>
             </div>
           </div>
           <div className="ml-4">
             <p className="text-sm font-medium text-gray-500">Tổng sinh viên</p>
             <p className="text-2xl font-semibold text-gray-900">
-              {data.totalStudents || 0}
+              {formatNumber(data.totalStudents || 0)}
             </p>
           </div>
         </div>
@@ -216,13 +212,13 @@ const OverviewStats = ({ data, formatPercentage }) => (
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-purple-600 text-lg">📝</span>
+              <span className="text-purple-600 text-lg">📚</span>
             </div>
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500">Tổng đánh giá</p>
+            <p className="text-sm font-medium text-gray-500">Tổng đề tài</p>
             <p className="text-2xl font-semibold text-gray-900">
-              {data.totalEvaluations || 0}
+              {formatNumber(data.totalTopics || 0)}
             </p>
           </div>
         </div>
@@ -232,7 +228,74 @@ const OverviewStats = ({ data, formatPercentage }) => (
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-              <span className="text-yellow-600 text-lg">⭐</span>
+              <span className="text-yellow-600 text-lg">📝</span>
+            </div>
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-500">Tổng đánh giá</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatNumber(data.totalEvaluations || 0)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Additional Metrics */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+              <span className="text-indigo-600 text-lg">👨‍🏫</span>
+            </div>
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-500">Tổng giảng viên</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatNumber(data.totalTeachers || 0)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+              <span className="text-red-600 text-lg">📋</span>
+            </div>
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-500">Tổng đăng ký</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatNumber(data.totalRegistrations || 0)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+              <span className="text-teal-600 text-lg">📄</span>
+            </div>
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-500">Tổng nộp bài</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatNumber(data.totalSubmissions || 0)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+              <span className="text-orange-600 text-lg">⭐</span>
             </div>
           </div>
           <div className="ml-4">
@@ -247,90 +310,90 @@ const OverviewStats = ({ data, formatPercentage }) => (
 
     {/* Detailed Stats */}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Defense Sessions Status */}
+      {/* Users by Status */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Trạng thái buổi bảo vệ
+          Trạng thái người dùng
         </h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Đã lên lịch</span>
-            <span className="font-semibold text-blue-600">
-              {data.scheduledSessions || 0}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Đang diễn ra</span>
-            <span className="font-semibold text-yellow-600">
-              {data.inProgressSessions || 0}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Đã hoàn thành</span>
+            <span className="text-sm text-gray-600">Hoạt động</span>
             <span className="font-semibold text-green-600">
-              {data.completedSessions || 0}
+              {formatNumber(data.usersByStatus?.ACTIVE || 0)}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Đã hủy</span>
+            <span className="text-sm text-gray-600">Không hoạt động</span>
             <span className="font-semibold text-red-600">
-              {data.cancelledSessions || 0}
+              {formatNumber(data.usersByStatus?.INACTIVE || 0)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Hoạt động hôm nay</span>
+            <span className="font-semibold text-blue-600">
+              {formatNumber(data.activeUsersToday || 0)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Students Status */}
+      {/* Topics by Status */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Trạng thái sinh viên
+          Trạng thái đề tài
         </h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Chờ bảo vệ</span>
-            <span className="font-semibold text-yellow-600">
-              {data.pendingStudents || 0}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Đã hoàn thành</span>
+            <span className="text-sm text-gray-600">Hoạt động</span>
             <span className="font-semibold text-green-600">
-              {data.completedStudents || 0}
+              {formatNumber(data.topicsByStatus?.ACTIVE || 0)}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Tỷ lệ hoàn thành</span>
+            <span className="text-sm text-gray-600">Không hoạt động</span>
+            <span className="font-semibold text-gray-600">
+              {formatNumber(data.topicsByStatus?.INACTIVE || 0)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Lưu trữ</span>
             <span className="font-semibold text-blue-600">
-              {formatPercentage(data.completionRate)}
+              {formatNumber(data.topicsByStatus?.ARCHIVED || 0)}
             </span>
           </div>
         </div>
       </div>
     </div>
 
-    {/* Evaluation Types */}
+    {/* Real-time Statistics */}
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">
-        Phân loại đánh giá
+        Thống kê thời gian thực
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="text-center p-4 bg-blue-50 rounded-lg">
           <p className="text-2xl font-bold text-blue-600">
-            {data.supervisorEvaluations || 0}
+            {formatNumber(data.activeUsersToday || 0)}
           </p>
-          <p className="text-sm text-blue-800">Giảng viên hướng dẫn</p>
+          <p className="text-sm text-blue-800">Người dùng hoạt động hôm nay</p>
         </div>
         <div className="text-center p-4 bg-green-50 rounded-lg">
           <p className="text-2xl font-bold text-green-600">
-            {data.reviewerEvaluations || 0}
+            {formatNumber(data.newRegistrationsToday || 0)}
           </p>
-          <p className="text-sm text-green-800">Giảng viên phản biện</p>
+          <p className="text-sm text-green-800">Đăng ký mới hôm nay</p>
         </div>
         <div className="text-center p-4 bg-purple-50 rounded-lg">
           <p className="text-2xl font-bold text-purple-600">
-            {data.committeeEvaluations || 0}
+            {formatNumber(data.newSubmissionsToday || 0)}
           </p>
-          <p className="text-sm text-purple-800">Hội đồng</p>
+          <p className="text-sm text-purple-800">Nộp bài mới hôm nay</p>
+        </div>
+        <div className="text-center p-4 bg-orange-50 rounded-lg">
+          <p className="text-2xl font-bold text-orange-600">
+            {formatNumber(data.pendingEvaluations || 0)}
+          </p>
+          <p className="text-sm text-orange-800">Đánh giá chờ xử lý</p>
         </div>
       </div>
     </div>
@@ -338,30 +401,62 @@ const OverviewStats = ({ data, formatPercentage }) => (
 );
 
 // Defense Statistics Component
-const DefenseStats = ({ data }) => (
+const DefenseStats = ({ data, formatNumber }) => (
   <div className="space-y-6">
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">
-        Thống kê buổi bảo vệ
+        Thống kê đăng ký đề tài
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="text-center p-4 bg-blue-50 rounded-lg">
           <p className="text-2xl font-bold text-blue-600">
-            {data.todaySessions || 0}
+            {formatNumber(data.totalRegistrations || 0)}
           </p>
-          <p className="text-sm text-blue-800">Hôm nay</p>
+          <p className="text-sm text-blue-800">Tổng đăng ký</p>
         </div>
         <div className="text-center p-4 bg-green-50 rounded-lg">
           <p className="text-2xl font-bold text-green-600">
-            {data.weekSessions || 0}
+            {formatNumber(data.registrationsByStatus?.APPROVED || 0)}
           </p>
-          <p className="text-sm text-green-800">Tuần này</p>
+          <p className="text-sm text-green-800">Đã duyệt</p>
         </div>
-        <div className="text-center p-4 bg-purple-50 rounded-lg">
-          <p className="text-2xl font-bold text-purple-600">
-            {data.monthSessions || 0}
+        <div className="text-center p-4 bg-yellow-50 rounded-lg">
+          <p className="text-2xl font-bold text-yellow-600">
+            {formatNumber(data.registrationsByStatus?.PENDING || 0)}
           </p>
-          <p className="text-sm text-purple-800">Tháng này</p>
+          <p className="text-sm text-yellow-800">Chờ duyệt</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Thống kê nộp bài
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="text-center p-4 bg-blue-50 rounded-lg">
+          <p className="text-2xl font-bold text-blue-600">
+            {formatNumber(data.totalSubmissions || 0)}
+          </p>
+          <p className="text-sm text-blue-800">Tổng nộp bài</p>
+        </div>
+        <div className="text-center p-4 bg-green-50 rounded-lg">
+          <p className="text-2xl font-bold text-green-600">
+            {formatNumber(data.submissionsByStatus?.APPROVED || 0)}
+          </p>
+          <p className="text-sm text-green-800">Đã duyệt</p>
+        </div>
+        <div className="text-center p-4 bg-yellow-50 rounded-lg">
+          <p className="text-2xl font-bold text-yellow-600">
+            {formatNumber(data.submissionsByStatus?.UNDER_REVIEW || 0)}
+          </p>
+          <p className="text-sm text-yellow-800">Đang xem xét</p>
+        </div>
+        <div className="text-center p-4 bg-red-50 rounded-lg">
+          <p className="text-2xl font-bold text-red-600">
+            {formatNumber(data.submissionsByStatus?.REJECTED || 0)}
+          </p>
+          <p className="text-sm text-red-800">Từ chối</p>
         </div>
       </div>
     </div>
@@ -369,7 +464,7 @@ const DefenseStats = ({ data }) => (
 );
 
 // Evaluation Statistics Component
-const EvaluationStats = ({ data, formatPercentage }) => (
+const EvaluationStats = ({ data, formatNumber, formatPercentage }) => (
   <div className="space-y-6">
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -378,28 +473,46 @@ const EvaluationStats = ({ data, formatPercentage }) => (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h4 className="text-md font-medium text-gray-700 mb-3">
-            Theo loại đánh giá
+            Theo trạng thái đánh giá
           </h4>
           <div className="space-y-2">
-            {Object.entries(data.typeCounts || {}).map(([type, count]) => (
-              <div key={type} className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">{type}</span>
-                <span className="font-semibold text-gray-900">{count}</span>
-              </div>
-            ))}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Chờ xử lý</span>
+              <span className="font-semibold text-yellow-600">
+                {formatNumber(data.evaluationsByStatus?.PENDING || 0)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Đang xử lý</span>
+              <span className="font-semibold text-blue-600">
+                {formatNumber(data.evaluationsByStatus?.IN_PROGRESS || 0)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Đã hoàn thành</span>
+              <span className="font-semibold text-green-600">
+                {formatNumber(data.evaluationsByStatus?.COMPLETED || 0)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Đã hủy</span>
+              <span className="font-semibold text-red-600">
+                {formatNumber(data.evaluationsByStatus?.CANCELLED || 0)}
+              </span>
+            </div>
           </div>
         </div>
         <div>
-          <h4 className="text-md font-medium text-gray-700 mb-3">
-            Tỷ lệ hoàn thành
-          </h4>
+          <h4 className="text-md font-medium text-gray-700 mb-3">Tổng quan</h4>
           <div className="text-center">
             <p className="text-3xl font-bold text-blue-600">
-              {formatPercentage(data.completionRate)}
+              {formatNumber(data.totalEvaluations || 0)}
             </p>
-            <p className="text-sm text-gray-600">
-              Tổng số: {data.totalEvaluations || 0}
+            <p className="text-sm text-gray-600">Tổng số đánh giá</p>
+            <p className="text-2xl font-bold text-orange-600 mt-2">
+              {formatNumber(data.pendingEvaluations || 0)}
             </p>
+            <p className="text-sm text-gray-600">Chờ xử lý</p>
           </div>
         </div>
       </div>
@@ -408,33 +521,56 @@ const EvaluationStats = ({ data, formatPercentage }) => (
 );
 
 // Score Statistics Component
-const ScoreStats = ({ data, formatPercentage }) => (
+const ScoreStats = ({ data, formatNumber, formatPercentage }) => (
   <div className="space-y-6">
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">
         Thống kê điểm số
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <h4 className="text-md font-medium text-gray-700 mb-3">
             Điểm trung bình
           </h4>
           <div className="text-center">
             <p className="text-3xl font-bold text-blue-600">
-              {data.overallAverage?.toFixed(2) || "0.00"}
+              {data.averageScore?.toFixed(2) || "0.00"}
             </p>
             <p className="text-sm text-gray-600">Tổng thể</p>
           </div>
         </div>
         <div>
-          <h4 className="text-md font-medium text-gray-700 mb-3">Tỷ lệ đạt</h4>
+          <h4 className="text-md font-medium text-gray-700 mb-3">
+            Điểm cao nhất
+          </h4>
           <div className="text-center">
             <p className="text-3xl font-bold text-green-600">
-              {formatPercentage(data.passRate)}
+              {data.highestScore?.toFixed(2) || "0.00"}
             </p>
-            <p className="text-sm text-gray-600">Điểm &gt;= 5.0</p>
+            <p className="text-sm text-gray-600">Tối đa</p>
           </div>
         </div>
+        <div>
+          <h4 className="text-md font-medium text-gray-700 mb-3">
+            Điểm thấp nhất
+          </h4>
+          <div className="text-center">
+            <p className="text-3xl font-bold text-red-600">
+              {data.lowestScore?.toFixed(2) || "0.00"}
+            </p>
+            <p className="text-sm text-gray-600">Tối thiểu</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-medium text-gray-900 mb-4">Tỷ lệ đạt</h3>
+      <div className="text-center">
+        <p className="text-4xl font-bold text-green-600">
+          {formatPercentage(data.passRate || 0)}
+        </p>
+        <p className="text-sm text-gray-600">Điểm &gt;= 5.0</p>
       </div>
     </div>
 
@@ -445,7 +581,9 @@ const ScoreStats = ({ data, formatPercentage }) => (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {Object.entries(data.scoreDistribution).map(([range, count]) => (
             <div key={range} className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{count}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatNumber(count)}
+              </p>
               <p className="text-sm text-gray-600">{range}</p>
             </div>
           ))}

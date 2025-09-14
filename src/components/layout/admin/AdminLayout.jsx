@@ -23,7 +23,7 @@ const AdminLayout = () => {
       case "/admin":
       case "/admin/dashboard":
         return {
-          title: "Dashboard",
+          title: "Trang chủ",
           subtitle: "Chào mừng bạn đến với hệ thống quản lý đồ án tốt nghiệp",
         };
       case "/admin/user-management":
@@ -85,7 +85,7 @@ const AdminLayout = () => {
         };
       default:
         return {
-          title: "Dashboard",
+          title: "Trang chủ",
           subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
         };
     }

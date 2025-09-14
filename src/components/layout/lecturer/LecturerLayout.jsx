@@ -85,23 +85,23 @@ const LecturerLayout = () => {
         };
       case "/lecturer/dashboard":
         return {
-          title: "Dashboard",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
+          title: "Trang chủ",
+          subtitle: "Chào mừng bạn đến với hệ thống quản lý đồ án tốt nghiệp",
         };
       case "/lecturer/thesis":
         return {
-          title: "Quản lý Luận văn",
-          subtitle: "Quản lý và tạo mới các đề tài luận văn",
+          title: "Quản lý đồ án",
+          subtitle: "Quản lý và tạo mới các đề tài",
         };
       case "/lecturer/students":
         return {
           title: "Quản lý Sinh viên",
-          subtitle: "Theo dõi và quản lý sinh viên thực hiện luận văn",
+          subtitle: "Theo dõi và quản lý sinh viên thực hiện đồ án tốt nghiệp",
         };
       case "/lecturer/reports":
         return {
           title: "Báo cáo & Thống kê",
-          subtitle: "Xem báo cáo tiến độ và thống kê luận văn",
+          subtitle: "Xem báo cáo tiến độ và thống kê đề tài đồ án tốt nghiệp",
         };
       case "/lecturer/student-submissions":
         return {
@@ -126,7 +126,7 @@ const LecturerLayout = () => {
       default:
         return {
           title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
+          subtitle: "Chào mừng bạn đến với hệ thống quản lý đồ án tốt nghiệp",
         };
     }
   };

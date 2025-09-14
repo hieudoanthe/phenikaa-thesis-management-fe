@@ -1,12 +1,36 @@
 import { apiGet } from "./mainHttpClient";
 
-const STATISTICS_API_BASE = "/api/eval-service/admin/statistics";
+const STATISTICS_API_BASE = "/api/statistics-service";
 
 export const statisticsService = {
-  // Lấy thống kê tổng quan
+  // Lấy thống kê tổng quan cho Admin
+  async getAdminStatistics() {
+    try {
+      const data = await apiGet(`${STATISTICS_API_BASE}/admin/statistics`);
+      return data;
+    } catch (error) {
+      console.error("Error fetching admin statistics:", error);
+      throw error;
+    }
+  },
+
+  // Lấy thống kê cho Giảng viên
+  async getTeacherStatistics(teacherId) {
+    try {
+      const data = await apiGet(
+        `${STATISTICS_API_BASE}/teacher/statistics/${teacherId}`
+      );
+      return data;
+    } catch (error) {
+      console.error("Error fetching teacher statistics:", error);
+      throw error;
+    }
+  },
+
+  // Lấy thống kê tổng quan (backward compatibility)
   async getOverviewStatistics() {
     try {
-      const data = await apiGet(`${STATISTICS_API_BASE}/overview`);
+      const data = await apiGet(`${STATISTICS_API_BASE}/admin/statistics`);
       return data;
     } catch (error) {
       console.error("Error fetching overview statistics:", error);
@@ -14,7 +38,7 @@ export const statisticsService = {
     }
   },
 
-  // Lấy thống kê buổi bảo vệ
+  // Lấy thống kê buổi bảo vệ (backward compatibility)
   async getDefenseStatistics(startDate = null, endDate = null) {
     try {
       const params = new URLSearchParams();
@@ -22,7 +46,7 @@ export const statisticsService = {
       if (endDate) params.append("endDate", endDate);
 
       const data = await apiGet(
-        `${STATISTICS_API_BASE}/defenses?${params.toString()}`
+        `${STATISTICS_API_BASE}/admin/statistics?${params.toString()}`
       );
       return data;
     } catch (error) {
@@ -31,7 +55,7 @@ export const statisticsService = {
     }
   },
 
-  // Lấy thống kê đánh giá
+  // Lấy thống kê đánh giá (backward compatibility)
   async getEvaluationStatistics(startDate = null, endDate = null) {
     try {
       const params = new URLSearchParams();
@@ -39,7 +63,7 @@ export const statisticsService = {
       if (endDate) params.append("endDate", endDate);
 
       const data = await apiGet(
-        `${STATISTICS_API_BASE}/evaluations?${params.toString()}`
+        `${STATISTICS_API_BASE}/admin/statistics?${params.toString()}`
       );
       return data;
     } catch (error) {
@@ -48,7 +72,7 @@ export const statisticsService = {
     }
   },
 
-  // Lấy thống kê điểm số
+  // Lấy thống kê điểm số (backward compatibility)
   async getScoreStatistics(startDate = null, endDate = null) {
     try {
       const params = new URLSearchParams();
@@ -56,7 +80,7 @@ export const statisticsService = {
       if (endDate) params.append("endDate", endDate);
 
       const data = await apiGet(
-        `${STATISTICS_API_BASE}/scores?${params.toString()}`
+        `${STATISTICS_API_BASE}/admin/statistics?${params.toString()}`
       );
       return data;
     } catch (error) {
@@ -65,14 +89,14 @@ export const statisticsService = {
     }
   },
 
-  // Lấy thống kê theo tháng
+  // Lấy thống kê theo tháng (backward compatibility)
   async getMonthlyStatistics(year = null) {
     try {
       const params = new URLSearchParams();
       if (year) params.append("year", year);
 
       const data = await apiGet(
-        `${STATISTICS_API_BASE}/monthly?${params.toString()}`
+        `${STATISTICS_API_BASE}/admin/statistics?${params.toString()}`
       );
       return data;
     } catch (error) {
@@ -81,21 +105,15 @@ export const statisticsService = {
     }
   },
 
-  // Lấy tất cả thống kê
+  // Lấy tất cả thống kê (backward compatibility)
   async getAllStatistics(startDate = null, endDate = null) {
     try {
-      const [overview, defenses, evaluations, scores] = await Promise.all([
-        this.getOverviewStatistics(),
-        this.getDefenseStatistics(startDate, endDate),
-        this.getEvaluationStatistics(startDate, endDate),
-        this.getScoreStatistics(startDate, endDate),
-      ]);
-
+      const data = await this.getAdminStatistics();
       return {
-        overview,
-        defenses,
-        evaluations,
-        scores,
+        overview: data,
+        defenses: data,
+        evaluations: data,
+        scores: data,
       };
     } catch (error) {
       console.error("Error fetching all statistics:", error);
