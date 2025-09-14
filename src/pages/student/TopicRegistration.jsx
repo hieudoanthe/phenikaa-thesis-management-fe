@@ -125,6 +125,9 @@ const TopicRegistration = () => {
 
   // Gọi API filter khi search thay đổi hoặc serverPage thay đổi
   useEffect(() => {
+    // Chỉ gọi filterTopics khi search có giá trị thực sự
+    if (!search.trim()) return;
+
     const doFilter = async () => {
       try {
         const payload = {
@@ -205,9 +208,20 @@ const TopicRegistration = () => {
     }
   };
 
-  const clearFilters = () => {
+  const clearFilters = async () => {
     setSearch("");
     setCurrentPage(1);
+    // Reload lại dữ liệu gốc từ getAvailableTopicList
+    try {
+      const res = await registrationService.getAvailableTopicList();
+      if (Array.isArray(res.data)) {
+        setTopics(res.data);
+      } else if (res.success) {
+        setTopics(res.data || []);
+      }
+    } catch (err) {
+      console.error("Lỗi khi reload danh sách đề tài:", err);
+    }
   };
 
   const filteredTopics = topics; // đã lọc từ server
@@ -394,11 +408,7 @@ const TopicRegistration = () => {
         </button>
       </div>
 
-      {error ? (
-        <div className="text-center py-10 px-5 text-red-600 bg-red-50 border border-red-200 rounded-lg my-5">
-          <p>{error}</p>
-        </div>
-      ) : (
+      {!error && (
         <>
           {/* Topics Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 mb-4">

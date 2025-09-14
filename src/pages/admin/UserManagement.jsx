@@ -17,7 +17,7 @@ const roleMapping = {
 
 // Ảnh đại diện mặc định khi không có avt từ backend
 const DEFAULT_AVATAR =
-  "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+  "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1757653001/c6e56503cfdd87da299f72dc416023d4_ghnzgz.jpg";
 
 // Mapping roleIds sang role value cho filter
 const roleValueMapping = {

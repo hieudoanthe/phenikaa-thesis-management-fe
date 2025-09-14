@@ -31,7 +31,7 @@ const registrationService = {
       const response = await apiGet(API_ENDPOINTS.GET_AVAILABLE_TOPIC_LIST);
       return {
         success: true,
-        data: response,
+        data: response.content || response, // Xử lý cả Page và List
         currentPeriod: currentPeriod.data,
       };
     } catch (error) {
@@ -52,8 +52,8 @@ const registrationService = {
         size: 10,
         sortBy: "topicId",
         sortDirection: "DESC",
-        userRole: "STUDENT",
         ...filter,
+        userRole: "STUDENT", // Đảm bảo userRole luôn là STUDENT
       };
       const res = await apiPost(API_ENDPOINTS.STUDENT_FILTER_TOPICS, payload);
       return { success: true, data: res };
@@ -69,7 +69,13 @@ const registrationService = {
         topicId,
         registrationPeriodId,
       });
-      return response;
+      // Backend trả về string "Registered successfully!" nên cần wrap thành object
+      return {
+        success: true,
+        message:
+          response ||
+          "Đăng ký đề tài thành công! Vui lòng chờ giảng viên duyệt.",
+      };
     } catch (error) {
       console.error("Lỗi khi đăng ký đề tài:", error);
       return { success: false, message: "Không thể đăng ký đề tài" };

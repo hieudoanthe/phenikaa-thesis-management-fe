@@ -8,6 +8,7 @@ import AddTopicModal from "../../components/modals/AddTopicModal.jsx";
 const ThesisManagement = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedYear, setSelectedYear] = useState("All");
   const [selectedApprovalStatus, setSelectedApprovalStatus] = useState("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
@@ -57,6 +58,15 @@ const ThesisManagement = () => {
     loadAcademicYears();
   }, []);
 
+  // Debounce search term để tránh gọi API quá nhiều khi gõ
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Helper hiển thị toast sử dụng hệ thống chung từ LecturerLayout
   const showToast = (message, type = "success") => {
     if (typeof window !== "undefined" && window.addToast) {
@@ -73,12 +83,13 @@ const ThesisManagement = () => {
     }
   };
 
-  // Hàm load thông tin profile của người đề xuất
+  // Hàm load thông tin profile của người đề xuất và người đăng ký
   const loadSuggestedByProfiles = async (topicsData) => {
     try {
       const profiles = {};
 
       for (const topic of topicsData) {
+        // Load profile của người đề xuất
         if (topic.suggestedBy && !profiles[topic.suggestedBy]) {
           try {
             const profile = await userService.getStudentProfileById(
@@ -94,10 +105,11 @@ const ThesisManagement = () => {
               email: profile.email || "",
               major: profile.major || "",
               className: profile.className || profile.class || "",
+              avt: profile.avt || profile.avatar || "",
             };
           } catch (error) {
             console.warn(
-              "Không thể lấy profile sinh viên, dùng dữ liệu fallback cho:",
+              "Không thể lấy profile sinh viên đề xuất, dùng dữ liệu fallback cho:",
               topic.suggestedBy,
               error
             );
@@ -107,13 +119,52 @@ const ThesisManagement = () => {
               email: "",
               major: "",
               className: "",
+              avt: "",
+            };
+          }
+        }
+
+        // Load profile của người đăng ký
+        if (topic.registeredBy && !profiles[topic.registeredBy]) {
+          try {
+            const profile = await userService.getStudentProfileById(
+              topic.registeredBy
+            );
+            profiles[topic.registeredBy] = {
+              fullName: profile.fullName || profile.name || "Không xác định",
+              studentId:
+                profile.userId ||
+                profile.studentId ||
+                profile.id ||
+                topic.registeredBy,
+              email: profile.email || "",
+              major: profile.major || "",
+              className: profile.className || profile.class || "",
+              avt: profile.avt || profile.avatar || "",
+            };
+          } catch (error) {
+            console.warn(
+              "Không thể lấy profile sinh viên đăng ký, dùng dữ liệu fallback cho:",
+              topic.registeredBy,
+              error
+            );
+            profiles[topic.registeredBy] = {
+              fullName: "Không xác định",
+              studentId: topic.registeredBy,
+              email: "",
+              major: "",
+              className: "",
+              avt: "",
             };
           }
         }
       }
       setSuggestedByProfiles(profiles);
     } catch (error) {
-      console.error("Lỗi khi load profiles của người đề xuất:", error);
+      console.error(
+        "Lỗi khi load profiles của người đề xuất và đăng ký:",
+        error
+      );
     }
   };
 
@@ -203,7 +254,7 @@ const ThesisManagement = () => {
       const filterParams = {
         page: page,
         size: pageSize,
-        searchPattern: searchTerm || undefined,
+        searchPattern: debouncedSearchTerm || undefined,
         academicYearId:
           selectedYear !== "All" ? parseInt(selectedYear) : undefined,
         approvalStatus:
@@ -317,125 +368,111 @@ const ThesisManagement = () => {
     return `${base}?receiverId=${encodeURIComponent(receiverId)}`;
   };
 
-  // Nhận thông báo từ Layout để tránh toast trùng; reload khi cần
-  useEffect(() => {
-    const handler = async (evt) => {
-      const detail = evt?.detail || {};
-      const isTopicEvent =
-        detail?.entity === "TOPIC" ||
-        detail?.topicChanged === true ||
-        /topic/i.test(String(detail?.type || "")) ||
-        detail?.type === "TOPIC_REGISTRATION" ||
-        detail?.type === "TOPIC_SUGGESTION" ||
-        detail?.type === "TOPIC_UPDATE" ||
-        detail?.action === "register" ||
-        detail?.action === "suggest" ||
-        detail?.action === "update";
+  // Tắt notification event listener - không reload từ thông báo
+  // useEffect(() => {
+  //   const handler = async (evt) => {
+  //     const detail = evt?.detail || {};
+  //     const isTopicEvent =
+  //       detail?.entity === "TOPIC" ||
+  //       detail?.topicChanged === true ||
+  //       /topic/i.test(String(detail?.type || "")) ||
+  //       detail?.type === "TOPIC_REGISTRATION" ||
+  //       detail?.type === "TOPIC_SUGGESTION" ||
+  //       detail?.type === "TOPIC_UPDATE" ||
+  //       detail?.action === "register" ||
+  //       detail?.action === "suggest" ||
+  //       detail?.action === "update";
 
-      const now = Date.now();
-      if (isTopicEvent && now - lastReloadRef.current > 2000) {
-        lastReloadRef.current = now;
-        console.log("Nhận được thông báo thay đổi đề tài, reload danh sách...");
-        await loadTopics();
-      }
-    };
-    window.addEventListener("app:notification", handler);
-    return () => window.removeEventListener("app:notification", handler);
-  }, []);
+  //     const now = Date.now();
+  //     if (isTopicEvent && now - lastReloadRef.current > 2000) {
+  //       lastReloadRef.current = now;
+  //       console.log("Nhận được thông báo thay đổi đề tài, reload danh sách...");
+  //       await loadTopics();
+  //     }
+  //   };
+  //   window.addEventListener("app:notification", handler);
+  //   return () => window.removeEventListener("app:notification", handler);
+  // }, []);
 
-  // Thêm polling tự động để kiểm tra thay đổi mỗi 30 giây
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      // Chỉ reload nếu user đang active và không có thay đổi gần đây
-      const now = Date.now();
-      if (now - lastReloadRef.current > 30000) {
-        // 30 giây
-        console.log("Tự động kiểm tra cập nhật đề tài...");
-        await loadTopics();
-        lastReloadRef.current = now;
-      }
-    }, 30000); // 30 giây
+  // Tắt polling tự động - chỉ reload khi cần thiết
+  // useEffect(() => {
+  //   const interval = setInterval(async () => {
+  //     const now = Date.now();
+  //     if (now - lastReloadRef.current > 60000) {
+  //       console.log("Tự động kiểm tra cập nhật đề tài...");
+  //       await loadTopics();
+  //       lastReloadRef.current = now;
+  //     }
+  //   }, 60000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
-    return () => clearInterval(interval);
-  }, []);
+  // Tắt fast polling - chỉ reload khi cần thiết
+  // useEffect(() => {
+  //   let fastInterval = null;
+  //   const startFastPolling = () => {
+  //     if (fastInterval) clearInterval(fastInterval);
+  //     fastInterval = setInterval(async () => {
+  //       const now = Date.now();
+  //       if (now - lastReloadRef.current > 30000) {
+  //         console.log("Fast polling: kiểm tra cập nhật đề tài...");
+  //         await loadTopics();
+  //         lastReloadRef.current = now;
+  //       }
+  //     }, 30000);
+  //   };
+  //   startFastPolling();
+  //   return () => {
+  //     if (fastInterval) clearInterval(fastInterval);
+  //   };
+  // }, []);
 
-  // Thêm polling nhanh hơn khi có thay đổi gần đây (10 giây)
-  useEffect(() => {
-    let fastInterval = null;
+  // Tắt visibility change listener - không reload khi chuyển tab
+  // useEffect(() => {
+  //   const handleVisibilityChange = async () => {
+  //     if (!document.hidden) {
+  //       const now = Date.now();
+  //       if (now - lastReloadRef.current > 30000) {
+  //         console.log("Tab trở nên visible, reload danh sách đề tài...");
+  //         await loadTopics();
+  //         lastReloadRef.current = now;
+  //       }
+  //     }
+  //   };
+  //   document.addEventListener("visibilitychange", handleVisibilityChange);
+  //   return () =>
+  //     document.removeEventListener("visibilitychange", handleVisibilityChange);
+  // }, []);
 
-    const startFastPolling = () => {
-      if (fastInterval) clearInterval(fastInterval);
+  // Tắt focus event listener - không reload khi quay lại tab
+  // useEffect(() => {
+  //   const handleFocus = async () => {
+  //     const now = Date.now();
+  //     if (now - lastReloadRef.current > 30000) {
+  //       console.log("User quay lại tab, reload danh sách đề tài...");
+  //       await loadTopics();
+  //       lastReloadRef.current = now;
+  //       showToast("Đã cập nhật danh sách đề tài!", "info");
+  //     }
+  //   };
+  //   window.addEventListener("focus", handleFocus);
+  //   return () => window.removeEventListener("focus", handleFocus);
+  // }, []);
 
-      fastInterval = setInterval(async () => {
-        const now = Date.now();
-        if (now - lastReloadRef.current > 10000) {
-          // 10 giây
-          console.log("Fast polling: kiểm tra cập nhật đề tài...");
-          await loadTopics();
-          lastReloadRef.current = now;
-        }
-      }, 10000); // 10 giây
-    };
-
-    // Bắt đầu fast polling khi component mount
-    startFastPolling();
-
-    return () => {
-      if (fastInterval) clearInterval(fastInterval);
-    };
-  }, []);
-
-  // Thêm listener cho visibility change (khi user chuyển tab)
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (!document.hidden) {
-        const now = Date.now();
-        if (now - lastReloadRef.current > 15000) {
-          // 15 giây
-          console.log("Tab trở nên visible, reload danh sách đề tài...");
-          await loadTopics();
-          lastReloadRef.current = now;
-        }
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
-
-  // Reload khi user quay lại tab (focus)
-  useEffect(() => {
-    const handleFocus = async () => {
-      const now = Date.now();
-      if (now - lastReloadRef.current > 10000) {
-        // 10 giây
-        console.log("User quay lại tab, reload danh sách đề tài...");
-        await loadTopics();
-        lastReloadRef.current = now;
-        showToast("Đã cập nhật danh sách đề tài!", "info");
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, []);
-
-  // Thêm listener cho online/offline events
-  useEffect(() => {
-    const handleOnline = async () => {
-      console.log("Kết nối mạng được khôi phục, reload danh sách đề tài...");
-      await loadTopics();
-      lastReloadRef.current = Date.now();
-      showToast(
-        "Kết nối mạng được khôi phục, đã cập nhật danh sách đề tài!",
-        "success"
-      );
-    };
-
-    window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
-  }, []);
+  // Tắt online/offline event listener - không reload khi mạng khôi phục
+  // useEffect(() => {
+  //   const handleOnline = async () => {
+  //     console.log("Kết nối mạng được khôi phục, reload danh sách đề tài...");
+  //     await loadTopics();
+  //     lastReloadRef.current = Date.now();
+  //     showToast(
+  //       "Kết nối mạng được khôi phục, đã cập nhật danh sách đề tài!",
+  //       "success"
+  //     );
+  //   };
+  //   window.addEventListener("online", handleOnline);
+  //   return () => window.removeEventListener("online", handleOnline);
+  // }, []);
 
   // Hàm xử lý khi tạo topic hoặc cập nhật topic thành công từ modal
   const handleTopicCreated = async (result) => {
@@ -465,35 +502,35 @@ const ThesisManagement = () => {
     if (typeof window !== "undefined") {
       window.forceReloadThesisManagement = forceReloadTopics;
 
-      // Thêm listener cho custom events từ các component khác
-      const handleCustomTopicEvent = async (event) => {
-        const { type, data } = event.detail || {};
-        console.log("Nhận được custom topic event:", type, data);
+      // Tắt custom topic event listener - không reload từ custom events
+      // const handleCustomTopicEvent = async (event) => {
+      //   const { type, data } = event.detail || {};
+      //   console.log("Nhận được custom topic event:", type, data);
 
-        if (
-          type === "TOPIC_CHANGED" ||
-          type === "STUDENT_REGISTRATION" ||
-          type === "TOPIC_SUGGESTION"
-        ) {
-          const now = Date.now();
-          if (now - lastReloadRef.current > 1000) {
-            // 1 giây
-            console.log("Reload danh sách đề tài từ custom event...");
-            await loadTopics();
-            lastReloadRef.current = now;
-            showToast("Đã cập nhật danh sách đề tài từ thông báo!", "info");
-          }
-        }
-      };
+      //   if (
+      //     type === "TOPIC_CHANGED" ||
+      //     type === "STUDENT_REGISTRATION" ||
+      //     type === "TOPIC_SUGGESTION"
+      //   ) {
+      //     const now = Date.now();
+      //     if (now - lastReloadRef.current > 1000) {
+      //       console.log("Reload danh sách đề tài từ custom event...");
+      //       await loadTopics();
+      //       lastReloadRef.current = now;
+      //       showToast("Đã cập nhật danh sách đề tài từ thông báo!", "info");
+      //     }
+      //   }
+      // };
 
-      window.addEventListener("thesis:topicChanged", handleCustomTopicEvent);
+      // window.addEventListener("thesis:topicChanged", handleCustomTopicEvent);
 
       return () => {
         delete window.forceReloadThesisManagement;
-        window.removeEventListener(
-          "thesis:topicChanged",
-          handleCustomTopicEvent
-        );
+        // Không cần remove event listener vì đã tắt
+        // window.removeEventListener(
+        //   "thesis:topicChanged",
+        //   handleCustomTopicEvent
+        // );
       };
     }
   }, []);
@@ -650,6 +687,7 @@ const ThesisManagement = () => {
 
   const clearFilters = () => {
     setSearchTerm("");
+    setDebouncedSearchTerm(""); // Reset cả debouncedSearchTerm
     setSelectedYear("All");
     setSelectedApprovalStatus("All");
     setSelectedDifficulty("All");
@@ -698,18 +736,17 @@ const ThesisManagement = () => {
   // Áp dụng phân trang server-side - không cần slice nữa
   const paginatedTopics = filteredTopics; // Sử dụng dữ liệu trực tiếp từ API
 
-  // Reset về trang đầu tiên khi filter thay đổi
-  useEffect(() => {
-    setCurrentPage(0);
-    // Gọi API filter khi filter thay đổi
-    filterTopics(0);
-  }, [
-    selectedYear,
-    selectedApprovalStatus,
-    selectedDifficulty,
-    selectedTopicStatus,
-    searchTerm,
-  ]);
+  // Tắt auto filter - chỉ filter khi user click "Áp dụng bộ lọc"
+  // useEffect(() => {
+  //   setCurrentPage(0);
+  //   filterTopics(0);
+  // }, [
+  //   selectedYear,
+  //   selectedApprovalStatus,
+  //   selectedDifficulty,
+  //   selectedTopicStatus,
+  //   debouncedSearchTerm,
+  // ]);
 
   // Debug khi suggestedByProfiles thay đổi (loại bỏ log không cần thiết)
   useEffect(() => {
@@ -1330,6 +1367,31 @@ const ThesisManagement = () => {
                             onChange={handleEditInputChange}
                             className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors duration-200 text-sm"
                           />
+                          {editRowData.registerId &&
+                            editRowData.registeredBy && (
+                              <div className="mt-1 text-xs">
+                                <button
+                                  onClick={() =>
+                                    handleViewStudentProfile(
+                                      editRowData.registeredBy
+                                    )
+                                  }
+                                  className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                                  title="Click để xem profile sinh viên đăng ký"
+                                >
+                                  {(() => {
+                                    const profile =
+                                      suggestedByProfiles[
+                                        editRowData.registeredBy
+                                      ];
+                                    const displayName =
+                                      profile?.fullName ||
+                                      editRowData.registeredBy;
+                                    return displayName;
+                                  })()}
+                                </button>
+                              </div>
+                            )}
                           {!editRowData.registerId &&
                             editRowData.suggestedBy && (
                               <div className="mt-1 text-xs">
@@ -1340,17 +1402,17 @@ const ThesisManagement = () => {
                                     )
                                   }
                                   className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                                  title="Click để xem profile sinh viên"
+                                  title="Click để xem profile sinh viên đề xuất"
                                 >
                                   {(() => {
                                     const profile =
                                       suggestedByProfiles[
                                         editRowData.suggestedBy
                                       ];
-                                    const displayName =
+                                    return (
                                       profile?.fullName ||
-                                      editRowData.suggestedBy;
-                                    return displayName;
+                                      editRowData.suggestedBy
+                                    );
                                   })()}
                                 </button>
                               </div>
@@ -1485,23 +1547,35 @@ const ThesisManagement = () => {
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                           <div className="text-sm">
                             {topic.registerId ? (
-                              <span className="font-medium text-gray-600 font-mono">
-                                {topic.registerId}
-                              </span>
+                              topic.registeredBy && (
+                                <button
+                                  onClick={() =>
+                                    handleViewStudentProfile(topic.registeredBy)
+                                  }
+                                  className="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer transition-colors duration-200"
+                                  title="Click để xem profile sinh viên đăng ký"
+                                >
+                                  {(() => {
+                                    const profile =
+                                      suggestedByProfiles[topic.registeredBy];
+                                    const displayName =
+                                      profile?.fullName || topic.registeredBy;
+                                    return displayName;
+                                  })()}
+                                </button>
+                              )
                             ) : topic.suggestedBy ? (
                               <button
                                 onClick={() =>
                                   handleViewStudentProfile(topic.suggestedBy)
                                 }
                                 className="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer transition-colors duration-200"
-                                title="Click để xem profile sinh viên"
+                                title="Click để xem profile sinh viên đề xuất"
                               >
                                 {(() => {
                                   const profile =
                                     suggestedByProfiles[topic.suggestedBy];
-                                  const displayName =
-                                    profile?.fullName || topic.suggestedBy;
-                                  return displayName;
+                                  return profile?.fullName || topic.suggestedBy;
                                 })()}
                               </button>
                             ) : null}

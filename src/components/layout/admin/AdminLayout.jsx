@@ -24,7 +24,7 @@ const AdminLayout = () => {
       case "/admin/dashboard":
         return {
           title: "Dashboard",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
+          subtitle: "Chào mừng bạn đến với hệ thống quản lý đồ án tốt nghiệp",
         };
       case "/admin/user-management":
         return {
@@ -98,7 +98,6 @@ const AdminLayout = () => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth <= 768;
 
-      // Chỉ tự động đóng sidebar khi chuyển từ desktop sang mobile
       // Không tự động đóng khi đang ở mobile
       if (mobile && !isMobile && isSidebarOpen) {
         setIsSidebarOpen(false);

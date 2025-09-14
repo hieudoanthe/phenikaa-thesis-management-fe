@@ -39,9 +39,6 @@ const StudentLayout = () => {
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
   const [timeTick, setTimeTick] = useState(0);
 
-  // Sử dụng hàm getUserIdFromToken từ authUtils
-  // const getUserIdFromToken = () => { ... } - Đã xóa, sử dụng từ authUtils
-
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
     const path = location.pathname;
@@ -71,12 +68,12 @@ const StudentLayout = () => {
       case "/student/submissions":
         return {
           title: "Tài liệu của tôi",
-          subtitle: "Xem và quản lý tài liệu của tôi",
+          subtitle: "Xem và quản lý tài liệu",
         };
       case "/student/chat":
         return {
           title: "Tin nhắn",
-          subtitle: "Trao đổi với giảng viên và nhóm",
+          subtitle: "Trao đổi với giảng viên",
         };
       case "/student/notifications":
         return {
@@ -97,7 +94,7 @@ const StudentLayout = () => {
       default:
         return {
           title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
+          subtitle: "Chào mừng bạn đến với hệ thống quản lý đồ án tốt nghiệp",
         };
     }
   };
@@ -155,11 +152,6 @@ const StudentLayout = () => {
     const id = setInterval(() => setTimeTick((t) => t + 1), 60000);
     return () => clearInterval(id);
   }, [isNotificationOpen]);
-
-  // Không cần force re-render avatar nữa vì header đã hoạt động tốt
-  // useEffect(() => {
-  //   setAvatarKey((prev) => prev + 1);
-  // }, [profileData.avt]);
 
   // Chỉ fetch profile data khi dropdown mở, không force refresh avatar
   useEffect(() => {
@@ -287,7 +279,7 @@ const StudentLayout = () => {
     return `${base}?receiverId=${encodeURIComponent(receiverId)}`;
   };
 
-  // Hiển thị thời gian tương đối theo createdAt (giống Lecturer)
+  // Hiển thị thời gian tương đối theo createdAt
   const formatRelativeTime = (createdAtMs) => {
     if (!createdAtMs) return "Vừa xong";
     const diff = Math.max(0, Date.now() - createdAtMs);
@@ -719,13 +711,13 @@ const StudentLayout = () => {
                         key={`header-avatar-${avatarKey}`}
                         src={
                           profileData.avt ||
-                          "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg"
+                          "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1757653001/c6e56503cfdd87da299f72dc416023d4_ghnzgz.jpg"
                         }
                         alt="User Avatar"
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.src =
-                            "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+                            "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1757653001/c6e56503cfdd87da299f72dc416023d4_ghnzgz.jpg";
                         }}
                       />
                     </div>
@@ -758,13 +750,13 @@ const StudentLayout = () => {
                             key={`dropdown-avatar-${avatarKey}`}
                             src={
                               profileData.avt ||
-                              "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg"
+                              "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1757653001/c6e56503cfdd87da299f72dc416023d4_ghnzgz.jpg"
                             }
                             alt="User Avatar"
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.src =
-                                "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1755329521/avt_default_mcotwe.jpg";
+                                "https://res.cloudinary.com/dj5jgcpoh/image/upload/v1757653001/c6e56503cfdd87da299f72dc416023d4_ghnzgz.jpg";
                             }}
                           />
                         </div>

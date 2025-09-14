@@ -124,19 +124,20 @@ const AssignmentsDetail = () => {
         </div>
 
         {showCreateModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+            <div className="relative top-16 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-xl bg-white">
               <div className="mt-3">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Tạo báo cáo mới
-                </h3>
+                <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 m-0">
+                    Tạo báo cáo mới
+                  </h3>
+                </div>
                 <form onSubmit={handleCreateSubmission}>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tiêu đề báo cáo
-                    </label>
+                  <div className="mb-4 relative">
                     <input
+                      id="create-title"
                       type="text"
+                      placeholder=" "
                       value={formData.reportTitle}
                       onChange={(e) =>
                         setFormData({
@@ -144,15 +145,20 @@ const AssignmentsDetail = () => {
                           reportTitle: e.target.value,
                         })
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                       required
                     />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mô tả
+                    <label
+                      htmlFor="create-title"
+                      className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm"
+                    >
+                      Tiêu đề báo cáo <span className="text-red-500">*</span>
                     </label>
+                  </div>
+                  <div className="mb-4 relative">
                     <textarea
+                      id="create-desc"
+                      placeholder=" "
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({
@@ -160,15 +166,19 @@ const AssignmentsDetail = () => {
                           description: e.target.value,
                         })
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                       rows="3"
                     />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Loại báo cáo
+                    <label
+                      htmlFor="create-desc"
+                      className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm"
+                    >
+                      Mô tả <span className="text-red-500">*</span>
                     </label>
+                  </div>
+                  <div className="mb-4 relative">
                     <select
+                      id="create-type"
                       value={formData.submissionType}
                       onChange={(e) =>
                         setFormData({
@@ -176,25 +186,35 @@ const AssignmentsDetail = () => {
                           submissionType: parseInt(e.target.value),
                         })
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     >
                       <option value={1}>Báo cáo tiến độ</option>
                       <option value={2}>Báo cáo cuối kỳ</option>
                       <option value={3}>Báo cáo khác</option>
                     </select>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      File đính kèm
+                    <label
+                      htmlFor="create-type"
+                      className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                    >
+                      Loại báo cáo <span className="text-red-500">*</span>
                     </label>
+                  </div>
+                  <div className="mb-4 relative">
                     <input
+                      id="create-file"
                       type="file"
                       onChange={(e) =>
                         setFormData({ ...formData, file: e.target.files[0] })
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif"
                     />
+                    <label
+                      htmlFor="create-file"
+                      className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                    >
+                      File đính kèm <span className="text-red-500">*</span>
+                    </label>
                     <p className="text-xs text-gray-500 mt-1">
                       Hỗ trợ: PDF, Word, Excel, PowerPoint, TXT, ZIP, RAR, JPG,
                       PNG, GIF (Tối đa 50MB)
