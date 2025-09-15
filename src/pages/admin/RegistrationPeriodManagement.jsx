@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
 import registrationPeriodService from "../../services/registrationPeriod.service";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import { API_ENDPOINTS } from "../../config/api";
 import academicYearService from "../../services/academicYear.service";
 
@@ -54,7 +67,7 @@ const RegistrationPeriodManagement = () => {
         setPeriods(result.data || []);
       }
     } catch (error) {
-      toast.error("Không thể tải danh sách đợt đăng ký");
+      showToast("Không thể tải danh sách đợt đăng ký");
     } finally {
       setLoading(false);
     }
@@ -76,17 +89,17 @@ const RegistrationPeriodManagement = () => {
       console.log("Kết quả API:", result); // Debug log
 
       if (result.success) {
-        toast.success(result.message);
+        showToast(result.message);
         setIsModalOpen(false);
         setEditingPeriod(null);
         resetForm();
         loadPeriods();
       } else {
-        toast.error(result.message);
+        showToast(result.message);
       }
     } catch (error) {
       console.error("Lỗi trong handleSubmit:", error); // Debug log
-      toast.error("Có lỗi xảy ra");
+      showToast("Có lỗi xảy ra");
     }
   };
 
@@ -94,13 +107,13 @@ const RegistrationPeriodManagement = () => {
     try {
       const result = await registrationPeriodService.startPeriod(periodId);
       if (result.success) {
-        toast.success(result.message);
+        showToast(result.message);
         loadPeriods();
       } else {
-        toast.error(result.message);
+        showToast(result.message);
       }
     } catch (error) {
-      toast.error("Có lỗi xảy ra");
+      showToast("Có lỗi xảy ra");
     }
   };
 
@@ -108,13 +121,13 @@ const RegistrationPeriodManagement = () => {
     try {
       const result = await registrationPeriodService.closePeriod(periodId);
       if (result.success) {
-        toast.success(result.message);
+        showToast(result.message);
         loadPeriods();
       } else {
-        toast.error(result.message);
+        showToast(result.message);
       }
     } catch (error) {
-      toast.error("Có lỗi xảy ra");
+      showToast("Có lỗi xảy ra");
     }
   };
 

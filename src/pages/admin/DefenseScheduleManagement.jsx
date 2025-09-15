@@ -1,6 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { evalService } from "../../services/evalService";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import academicYearService from "../../services/academicYear.service";
 import Select from "react-select";
 
@@ -31,7 +44,7 @@ const DefenseScheduleManagement = () => {
       const data = await evalService.getAllDefenseSchedules();
       setSchedules(data);
     } catch (error) {
-      toast.error("Lỗi khi tải danh sách lịch bảo vệ");
+      showToast("Lỗi khi tải danh sách lịch bảo vệ");
       console.error("Lỗi:", error);
     } finally {
       setLoading(false);
@@ -75,16 +88,16 @@ const DefenseScheduleManagement = () => {
           editingSchedule.scheduleId,
           formData
         );
-        toast.success("Cập nhật lịch bảo vệ thành công");
+        showToast("Cập nhật lịch bảo vệ thành công");
       } else {
         await evalService.createDefenseSchedule(formData);
-        toast.success("Tạo lịch bảo vệ thành công");
+        showToast("Tạo lịch bảo vệ thành công");
       }
 
       setIsModalOpen(false);
       loadSchedules();
     } catch (error) {
-      toast.error("Lỗi khi lưu lịch bảo vệ");
+      showToast("Lỗi khi lưu lịch bảo vệ");
       console.error("Lỗi:", error);
     }
   };
@@ -93,10 +106,10 @@ const DefenseScheduleManagement = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa lịch bảo vệ này?")) {
       try {
         await evalService.deleteDefenseSchedule(scheduleId);
-        toast.success("Xóa lịch bảo vệ thành công");
+        showToast("Xóa lịch bảo vệ thành công");
         loadSchedules();
       } catch (error) {
-        toast.error("Lỗi khi xóa lịch bảo vệ");
+        showToast("Lỗi khi xóa lịch bảo vệ");
         console.error("Lỗi:", error);
       }
     }
@@ -105,10 +118,10 @@ const DefenseScheduleManagement = () => {
   const handleActivateSchedule = async (scheduleId) => {
     try {
       await evalService.activateDefenseSchedule(scheduleId);
-      toast.success("Kích hoạt lịch bảo vệ thành công");
+      showToast("Kích hoạt lịch bảo vệ thành công");
       loadSchedules();
     } catch (error) {
-      toast.error("Lỗi khi kích hoạt lịch bảo vệ");
+      showToast("Lỗi khi kích hoạt lịch bảo vệ");
       console.error("Lỗi:", error);
     }
   };
@@ -116,10 +129,10 @@ const DefenseScheduleManagement = () => {
   const handleDeactivateSchedule = async (scheduleId) => {
     try {
       await evalService.deactivateDefenseSchedule(scheduleId);
-      toast.success("Hủy kích hoạt lịch bảo vệ thành công");
+      showToast("Hủy kích hoạt lịch bảo vệ thành công");
       loadSchedules();
     } catch (error) {
-      toast.error("Lỗi khi hủy kích hoạt lịch bảo vệ");
+      showToast("Lỗi khi hủy kích hoạt lịch bảo vệ");
       console.error("Lỗi:", error);
     }
   };

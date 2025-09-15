@@ -4,7 +4,6 @@ import { ToastContainer } from "react-toastify";
 import App from "./App.jsx";
 import Dashboard from "./pages/admin/Dashboard.jsx";
 import UserManagement from "./pages/admin/UserManagement.jsx";
-import LecturerHome from "./pages/lecturer/Home.jsx";
 import LecturerDashboard from "./pages/lecturer/Dashboard.jsx";
 import ThesisManagement from "./pages/lecturer/ThesisManagement.jsx";
 import AssignmentManagement from "./pages/lecturer/AssignmentManagement.jsx";
@@ -71,7 +70,6 @@ createRoot(document.getElementById("root")).render(
                   </LecturerRoute>
                 }
               >
-                <Route path="home" element={<LecturerHome />} />
                 <Route path="dashboard" element={<LecturerDashboard />} />
                 <Route path="thesis" element={<ThesisManagement />} />
                 <Route path="assignments" element={<AssignmentManagement />} />
@@ -166,15 +164,6 @@ createRoot(document.getElementById("root")).render(
                   element={<AcademicYearManagement />}
                 />
                 <Route path="user-management" element={<UserManagement />} />
-                <Route
-                  path="groups"
-                  element={
-                    <PlaceholderPage
-                      title="Quản lý Nhóm"
-                      description="Tính năng quản lý nhóm đang được phát triển."
-                    />
-                  }
-                />
                 <Route
                   path="assignments"
                   element={

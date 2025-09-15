@@ -3,6 +3,19 @@ import TopicService from "../../services/topic.service";
 import { assignmentService } from "../../services";
 import userService from "../../services/user.service";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import AddAssignmentModal from "../../components/modals/AddAssignmentModal";
 
@@ -267,11 +280,11 @@ const AssignmentManagement = () => {
           return cloned;
         });
       } else {
-        toast.error(res.message || "Không thể tải assignments");
+        showToast(res.message || "Không thể tải assignments", "error");
       }
     } catch (e) {
       console.error("Lỗi load assignments:", e);
-      toast.error("Có lỗi khi tải assignments");
+      showToast("Có lỗi khi tải assignments", "error");
     }
   };
 
@@ -328,7 +341,7 @@ const AssignmentManagement = () => {
 
   const handleEditAssignment = () => {
     if (!currentAssignment) {
-      toast.error("Chưa chọn assignment");
+      showToast("Chưa chọn assignment", "error");
       return;
     }
     setEditAssignmentForm({
@@ -344,7 +357,7 @@ const AssignmentManagement = () => {
 
   const handleDeleteAssignment = () => {
     if (!currentAssignment) {
-      toast.error("Chưa chọn assignment");
+      showToast("Chưa chọn assignment", "error");
       return;
     }
     setConfirmState({
@@ -359,16 +372,16 @@ const AssignmentManagement = () => {
             currentAssignment.id
           );
           if (res.success) {
-            toast.success("Xoá assignment thành công");
+            showToast("Xoá assignment thành công", "success");
             setSelectedAssignment(0);
             if (currentThesis?.id)
               await loadAssignmentsForTopic(currentThesis.id);
           } else {
-            toast.error(res.message || "Xoá assignment thất bại");
+            showToast(res.message || "Xoá assignment thất bại", "error");
           }
         } catch (e) {
           console.error(e);
-          toast.error("Có lỗi khi xoá assignment");
+          showToast("Có lỗi khi xoá assignment");
         } finally {
           setConfirmState({ open: false });
         }
@@ -472,14 +485,17 @@ const AssignmentManagement = () => {
         // Load thông tin profile của sinh viên
         await loadStudentProfiles(topicsData);
       } else {
-        toast.error(response.message || "Không thể lấy danh sách đề tài");
+        showToast(
+          response.message || "Không thể lấy danh sách đề tài",
+          "error"
+        );
         setThesisTopics([]);
         setTotalElements(0);
         setTotalPages(1);
       }
     } catch (error) {
       console.error("Lỗi khi lấy danh sách đề tài:", error);
-      toast.error("Có lỗi xảy ra khi lấy danh sách đề tài");
+      showToast("Có lỗi xảy ra khi lấy danh sách đề tài", "error");
       setThesisTopics([]);
       setTotalElements(0);
       setTotalPages(1);
@@ -538,83 +554,59 @@ const AssignmentManagement = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 font-sans">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 font-sans">
       {/* Left Sidebar - Thesis Topics List */}
-      <div className="w-full lg:w-80 xl:w-96 bg-white/90 backdrop-blur border-r border-gray-200 flex flex-col overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 bg-white">
-          <h2 className="text-xl font-semibold text-secondary-800 mb-4">
-            Đề tài đã chấp nhận
-          </h2>
-
-          {/* Hiển thị thông tin năng lực giảng viên */}
-          {supervisorCapacity && (
-            <div className="bg-primary-50 rounded-lg p-3 mb-4">
-              <div className="text-sm text-primary-700">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Năng lực giảng viên:</span>
-                  <span className="text-xs bg-primary-100 px-2 py-1 rounded">
-                    {supervisorCapacity.totalTopics} đề tài
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>Đã approve: {supervisorCapacity.approvedTopics}</div>
-                  <div>Còn trống: {supervisorCapacity.totalRemainingSlots}</div>
-                  <div>
-                    Sử dụng: {supervisorCapacity.utilizationRate?.toFixed(1)}%
-                  </div>
-                  <div>Đầy: {supervisorCapacity.fullTopics}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Refresh Button */}
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={async () => {
-                await fetchApprovedTopics(currentPage);
-                await fetchSupervisorCapacity();
-              }}
-              disabled={loading}
-              className="flex items-center gap-2 px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+      <div className="w-full lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col overflow-y-auto shadow-xl">
+        <div className="p-6 border-b border-slate-200/60 bg-gradient-to-r from-white to-slate-50/50">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
+                className="w-5 h-5 text-white"
                 fill="currentColor"
-                class="bi bi-arrow-repeat"
-                viewBox="0 0 16 16"
+                viewBox="0 0 20 20"
               >
-                <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9" />
-                <path
-                  fill-rule="evenodd"
-                  d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"
-                />
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Làm mới
-            </button>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-800">
+                Đề tài đã chấp nhận
+              </h2>
+            </div>
           </div>
+
+          {/* Bỏ hiển thị thông tin năng lực giảng viên theo yêu cầu */}
         </div>
 
-        <div className="flex-1 p-4 overflow-y-auto thin-scrollbar">
+        <div className="flex-1 p-6 overflow-y-auto thin-scrollbar">
           {loading ? (
             // Loading state
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mb-4"></div>
-              <p className="text-sm text-gray-500">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent absolute top-0 left-0"></div>
+              </div>
+              <p className="text-sm text-slate-600 mt-4 font-medium">
                 Đang tải danh sách đề tài...
               </p>
             </div>
           ) : thesisTopics.length === 0 ? (
             // Empty state
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="text-4xl mb-4">📚</div>
-              <p className="text-sm text-gray-500 text-center mb-2">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                <svg
+                  className="w-10 h-10 text-slate-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-700 mb-2">
                 Chưa có đề tài nào được approve
-              </p>
-              <p className="text-xs text-gray-400 text-center">
-                Các đề tài đã approve sẽ hiển thị ở đây
+              </h3>
+              <p className="text-sm text-slate-500 text-center max-w-xs">
+                Các đề tài đã approve sẽ hiển thị ở đây để quản lý nhiệm vụ
               </p>
             </div>
           ) : (
@@ -623,10 +615,10 @@ const AssignmentManagement = () => {
               {thesisTopics.map((thesis, index) => (
                 <div
                   key={`${thesis.id}-${currentPage}-${index}`}
-                  className={`bg-white/90 hover:bg-white rounded-xl p-4 mb-4 cursor-pointer transition-all duration-200 border hover:-translate-y-1 shadow-sm hover:shadow ${
+                  className={`group relative bg-white/95 hover:bg-white rounded-2xl p-5 mb-4 cursor-pointer transition-all duration-300 border hover:-translate-y-1 shadow-sm hover:shadow-lg ${
                     selectedThesis === index
-                      ? "border-primary-300 ring-1 ring-primary-100"
-                      : "border-gray-100"
+                      ? "border-blue-300 ring-2 ring-blue-100 shadow-lg shadow-blue-100/50"
+                      : "border-slate-200 hover:border-slate-300"
                   }`}
                   onClick={() => {
                     setSelectedThesis(index);
@@ -636,23 +628,31 @@ const AssignmentManagement = () => {
                     }
                   }}
                 >
-                  <h3 className="text-sm font-semibold text-secondary-800 mb-2 leading-tight line-clamp-2">
+                  {/* Selection indicator */}
+                  {selectedThesis === index && (
+                    <div className="absolute top-3 right-3 w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
+                  )}
+
+                  <h3 className="text-sm font-bold text-slate-800 mb-3 leading-tight line-clamp-2 group-hover:text-blue-700 transition-colors">
                     {thesis.title}
                   </h3>
-                  <div className="flex flex-col gap-1.5 mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        class="bi bi-person-fill-check text-gray-500"
-                        viewBox="0 0 16 16"
-                      >
-                        <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m1.679-4.493-1.335 2.226a.75.75 0 0 1-1.174.144l-.774-.773a.5.5 0 0 1 .708-.708l.547.548 1.17-1.951a.5.5 0 1 1 .858.514M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
-                        <path d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4" />
-                      </svg>
-                      <span className="text-xs text-gray-600">
+
+                  <div className="space-y-2.5 mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                        <svg
+                          className="w-3 h-3 text-blue-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-xs text-slate-600 font-medium">
                         {(() => {
                           const profile = studentProfiles[thesis.suggestedBy];
                           if (
@@ -665,87 +665,142 @@ const AssignmentManagement = () => {
                         })()}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        class="bi bi-calendar-week-fill text-gray-500"
-                        viewBox="0 0 16 16"
-                      >
-                        <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M9.5 7h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m3 0h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5M2 10.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5" />
-                      </svg>
-                      <span className="text-xs text-gray-600">
+
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
+                        <svg
+                          className="w-3 h-3 text-amber-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-xs text-slate-600 font-medium">
                         {thesis.startDate} - {thesis.endDate}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        fill="currentColor"
-                        class="bi bi-people-fill text-gray-500"
-                        viewBox="0 0 16 16"
-                      >
-                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
-                      </svg>
-                      <span className="text-xs text-gray-600">
+
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center">
+                        <svg
+                          className="w-3 h-3 text-green-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                        </svg>
+                      </div>
+                      <span className="text-xs text-slate-600 font-medium">
                         Còn {thesis.remainingSlots} chỗ trống
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
+
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                     <span
-                      className={`text-[11px] px-2 py-0.5 rounded-md border ${
+                      className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
                         thesis.status === "Approved"
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : "bg-amber-50 text-amber-700 border-amber-200"
+                          ? "bg-green-100 text-green-700 border border-green-200"
+                          : "bg-amber-100 text-amber-700 border border-amber-200"
                       }`}
                     >
                       {thesis.status}
                     </span>
-                    <span className="text-[11px] text-gray-500">
-                      {thesis.assignments?.length || 0} assignments
-                    </span>
+                    <div className="flex items-center gap-1 text-xs text-slate-500">
+                      <svg
+                        className="w-3 h-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="font-medium">
+                        {thesis.assignments?.length || 0} nhiệm vụ
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-600">
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-2xl border border-slate-200/60 shadow-sm">
+                  <div className="text-sm text-slate-600 font-medium">
                     Hiển thị{" "}
-                    {thesisTopics.length > 0 ? currentPage * pageSize + 1 : 0} -{" "}
-                    {currentPage * pageSize + thesisTopics.length} trên{" "}
-                    {totalElements} đề tài
+                    <span className="font-bold text-slate-800">
+                      {thesisTopics.length > 0 ? currentPage * pageSize + 1 : 0}
+                    </span>{" "}
+                    -{" "}
+                    <span className="font-bold text-slate-800">
+                      {currentPage * pageSize + thesisTopics.length}
+                    </span>{" "}
+                    trên{" "}
+                    <span className="font-bold text-slate-800">
+                      {totalElements}
+                    </span>{" "}
+                    đề tài
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => {
                         handlePageChange(currentPage - 1);
                       }}
                       disabled={currentPage === 0}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="group flex items-center gap-1 px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      ← Trước
+                      <svg
+                        className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="font-medium">Trước</span>
                     </button>
 
-                    <span className="text-sm text-gray-600">
-                      Trang {currentPage + 1} / {totalPages}
-                    </span>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                      <span className="text-sm font-semibold text-slate-700">
+                        {currentPage + 1}
+                      </span>
+                      <span className="text-sm text-slate-400">/</span>
+                      <span className="text-sm text-slate-600">
+                        {totalPages}
+                      </span>
+                    </div>
 
                     <button
                       onClick={() => {
                         handlePageChange(currentPage + 1);
                       }}
                       disabled={currentPage + 1 >= totalPages}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="group flex items-center gap-1 px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
                     >
-                      Sau →
+                      <span className="font-medium">Sau</span>
+                      <svg
+                        className="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -756,116 +811,207 @@ const AssignmentManagement = () => {
       </div>
 
       {/* Middle Panel - Assignments List */}
-      <div className="w-full lg:w-80 xl:w-96 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+      <div className="w-full lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col overflow-y-auto shadow-xl">
         {currentThesis && (
           <>
-            <div className="p-6 border-b border-gray-200 bg-white">
-              <h3 className="text-lg font-semibold text-secondary-800 mb-2">
-                Nhiệm vụ
-              </h3>
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                {currentThesis.title}
-              </p>
+            <div className="p-6 border-b border-slate-200/60 bg-gradient-to-r from-white to-slate-50/50">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">Nhiệm vụ</h3>
+                  <p className="text-sm text-slate-500">Quản lý assignments</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-2xl p-4 mb-6 border border-slate-200/50">
+                <h4 className="text-sm font-semibold text-slate-700 mb-2 line-clamp-2">
+                  {currentThesis.title}
+                </h4>
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>Đề tài đã được chọn</span>
+                </div>
+              </div>
+
               <button
-                className="w-full bg-primary-500 hover:bg-primary-600 text-white border-none rounded-lg py-2 px-4 text-sm font-medium cursor-pointer transition-colors duration-200 shadow-card"
+                className="group w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-none rounded-xl py-3 px-4 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                 onClick={handleNewAssignment}
               >
-                + Thêm Assignment
+                <div className="flex items-center justify-center gap-2">
+                  <svg
+                    className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>Thêm nhiệm vụ</span>
+                </div>
               </button>
             </div>
 
-            <div className="flex-1 p-4 overflow-y-auto thin-scrollbar">
+            <div className="flex-1 p-6 overflow-y-auto thin-scrollbar">
               {currentThesis.assignments.map((assignment, index) => (
                 <div
                   key={assignment.id}
-                  className={`bg-gray-50 hover:bg-gray-100 rounded-xl p-4 mb-4 cursor-pointer transition-all duration-200 border-2 hover:-translate-y-1 hover:shadow-card ${
+                  className={`group relative bg-white/95 hover:bg-white rounded-2xl p-5 mb-4 cursor-pointer transition-all duration-300 border hover:-translate-y-1 hover:shadow-lg ${
                     selectedAssignment === index
-                      ? "bg-info-50 border-info-300 shadow-lg shadow-info-200"
-                      : "border-transparent"
+                      ? "border-indigo-300 ring-2 ring-indigo-100 shadow-lg shadow-indigo-100/50 bg-gradient-to-r from-indigo-50/50 to-blue-50/30"
+                      : "border-slate-200 hover:border-slate-300"
                   }`}
                   onClick={() => setSelectedAssignment(index)}
                 >
-                  <h4 className="text-sm font-semibold text-secondary-800 mb-2 leading-tight">
+                  {/* Selection indicator */}
+                  {selectedAssignment === index && (
+                    <div className="absolute top-3 right-3 w-3 h-3 bg-indigo-500 rounded-full shadow-sm"></div>
+                  )}
+
+                  <h4 className="text-sm font-bold text-slate-800 mb-3 leading-tight group-hover:text-indigo-700 transition-colors">
                     {assignment.title}
                   </h4>
-                  <p className="text-xs text-gray-600 mb-3 leading-relaxed line-clamp-2">
+
+                  <p className="text-xs text-slate-600 mb-4 leading-relaxed line-clamp-2">
                     {assignment.description}
                   </p>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-gray-600">
-                      📅 {assignment.dueDate}
-                    </span>
+
+                  <div className="space-y-3 mb-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-gray-600">
-                        {assignment.progress}%
+                      <div className="w-4 h-4 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
+                        <svg
+                          className="w-2.5 h-2.5 text-amber-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-xs text-slate-600 font-medium">
+                        {assignment.dueDate}
                       </span>
-                      <button
-                        type="button"
-                        className="text-xs px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAssignment(index);
-                          setEditAssignmentForm({
-                            assignmentId: assignment.id,
-                            title: assignment.title || "",
-                            description: assignment.description || "",
-                            dueDate: assignment.dueDate || "",
-                            priority: 1,
-                            status: 1,
-                          });
-                          setShowEditAssignmentModal(true);
-                        }}
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs px-2 py-0.5 rounded border border-red-300 text-red-600 hover:bg-red-50"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAssignment(index);
-                          setConfirmState({
-                            open: true,
-                            title: "Xác nhận xoá assignment",
-                            message:
-                              "Bạn có chắc chắn muốn xoá assignment này? Hành động không thể hoàn tác.",
-                            confirmVariant: "danger",
-                            onConfirm: async () => {
-                              try {
-                                const res =
-                                  await assignmentService.deleteAssignment(
-                                    assignment.id
-                                  );
-                                if (res.success) {
-                                  toast.success("Đã xoá assignment");
-                                  if (currentThesis?.id)
-                                    await loadAssignmentsForTopic(
-                                      currentThesis.id
-                                    );
-                                } else {
-                                  toast.error(res.message || "Xoá thất bại");
-                                }
-                              } catch (err) {
-                                console.error(err);
-                                toast.error("Có lỗi khi xoá assignment");
-                              } finally {
-                                setConfirmState({ open: false });
-                              }
-                            },
-                          });
-                        }}
-                      >
-                        Xoá
-                      </button>
                     </div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${getProgressColor(
-                        assignment.progress
-                      )}`}
-                      style={{ width: `${assignment.progress}%` }}
-                    ></div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                          <svg
+                            className="w-2.5 h-2.5 text-blue-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-700">
+                          Tiến độ: {assignment.progress}%
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="group/edit p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAssignment(index);
+                            setEditAssignmentForm({
+                              assignmentId: assignment.id,
+                              title: assignment.title || "",
+                              description: assignment.description || "",
+                              dueDate: assignment.dueDate || "",
+                              priority: 1,
+                              status: 1,
+                            });
+                            setShowEditAssignmentModal(true);
+                          }}
+                        >
+                          <svg
+                            className="w-3 h-3 text-slate-600 group-hover/edit:text-indigo-600 transition-colors"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          className="group/delete p-1.5 rounded-lg border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAssignment(index);
+                            setConfirmState({
+                              open: true,
+                              title: "Xác nhận xoá assignment",
+                              message:
+                                "Bạn có chắc chắn muốn xoá assignment này? Hành động không thể hoàn tác.",
+                              confirmVariant: "danger",
+                              onConfirm: async () => {
+                                try {
+                                  const res =
+                                    await assignmentService.deleteAssignment(
+                                      assignment.id
+                                    );
+                                  if (res.success) {
+                                    showToast("Đã xoá assignment");
+                                    if (currentThesis?.id)
+                                      await loadAssignmentsForTopic(
+                                        currentThesis.id
+                                      );
+                                  } else {
+                                    showToast(res.message || "Xoá thất bại");
+                                  }
+                                } catch (err) {
+                                  console.error(err);
+                                  showToast("Có lỗi khi xoá assignment");
+                                } finally {
+                                  setConfirmState({ open: false });
+                                }
+                              },
+                            });
+                          }}
+                        >
+                          <svg
+                            className="w-3 h-3 text-red-600 group-hover/delete:text-red-700 transition-colors"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+                              clipRule="evenodd"
+                            />
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -875,94 +1021,254 @@ const AssignmentManagement = () => {
       </div>
 
       {/* Right Panel - Assignment Details & Tasks */}
-      <div className="flex-1 bg-white p-8 overflow-y-auto thin-scrollbar">
+      <div className="flex-1 bg-gradient-to-br from-white via-slate-50/30 to-blue-50/20 p-8 overflow-y-auto thin-scrollbar">
         {currentAssignment && (
           <>
             {/* Header Section */}
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-8 pb-5 border-b border-gray-200 gap-4">
-              <div>
-                <h1 className="text-2xl lg:text-3xl xl:text-4xl font-semibold text-secondary-800 leading-tight mb-2">
-                  {currentAssignment.title}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Đề tài: {currentThesis.title}
-                </p>
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-8 pb-6 border-b border-slate-200/60 gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg
+                      className="w-6 h-6 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-slate-800 leading-tight mb-1">
+                      {currentAssignment.title}
+                    </h1>
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>Đề tài: {currentThesis.title}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
+
               <div className="flex gap-3 w-full lg:w-auto">
                 <button
-                  className="flex items-center gap-1.5 bg-info-500 hover:bg-info-600 text-white border-none rounded-md py-2 px-4 text-sm font-medium cursor-pointer transition-colors duration-200"
+                  className="group flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-none rounded-xl py-3 px-5 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                   onClick={handleEditAssignment}
                 >
-                  <span className="text-sm">✏️</span>
-                  Sửa
+                  <svg
+                    className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                  <span>Sửa</span>
                 </button>
                 <button
-                  className="flex items-center gap-1.5 bg-error-500 hover:bg-error-600 text-white border-none rounded-md py-2 px-4 text-sm font-medium cursor-pointer transition-colors duration-200"
+                  className="group flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white border-none rounded-xl py-3 px-5 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                   onClick={handleDeleteAssignment}
                 >
-                  <span className="text-sm">🗑️</span>
-                  Xoá
+                  <svg
+                    className="w-4 h-4 group-hover:scale-110 transition-transform duration-200"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+                      clipRule="evenodd"
+                    />
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>Xoá</span>
                 </button>
               </div>
             </div>
 
             {/* Description Section */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-secondary-800 mb-4">
-                Mô tả
-              </h3>
-              <p className="text-base text-gray-700 leading-relaxed mb-5">
-                {currentAssignment.description}
-              </p>
-              <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">📅</span>
-                  <span className="text-sm text-gray-700">
-                    Hạn chót: {currentAssignment.dueDate}
-                  </span>
+            <div className="mb-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 text-slate-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">📊</span>
-                  <span className="text-sm text-gray-700">
-                    Tiến độ: {currentAssignment.progress}%
-                  </span>
+                <h3 className="text-xl font-bold text-slate-800">
+                  Mô tả chi tiết
+                </h3>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-slate-200/60 shadow-sm">
+                <p className="text-base text-slate-700 leading-relaxed">
+                  {currentAssignment.description}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-amber-800">
+                        Hạn chót
+                      </p>
+                      <p className="text-lg font-bold text-amber-900">
+                        {currentAssignment.dueDate}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-200/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-blue-800">
+                        Tiến độ
+                      </p>
+                      <p className="text-lg font-bold text-blue-900">
+                        {currentAssignment.progress}%
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Tasks Section */}
             <div className="mb-8">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-5 gap-4">
-                <h3 className="text-lg font-semibold text-secondary-800">
-                  Các công việc
-                </h3>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-200 rounded-xl flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-green-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    Các công việc
+                  </h3>
+                </div>
                 <button
-                  className="bg-primary-500 hover:bg-primary-600 text-white border-none rounded-md py-2 px-4 text-sm font-medium cursor-pointer transition-colors duration-200 shadow-card w-full sm:w-auto"
+                  className="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-none rounded-xl py-3 px-5 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
                   onClick={handleAddTask}
                 >
-                  + Thêm công việc
+                  <div className="flex items-center justify-center gap-2">
+                    <svg
+                      className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span>Thêm công việc</span>
+                  </div>
                 </button>
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-6">
                 {currentAssignment.tasks.map((task) => (
                   <div
                     key={task.id}
-                    className="bg-gray-50 rounded-xl p-5 border border-gray-200"
+                    className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                   >
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-6">
                       <div className="flex-1">
-                        <h4 className="text-base font-semibold text-secondary-800 mb-1">
-                          {task.name}
-                        </h4>
-                        <span className="text-sm text-gray-600">
-                          Người thực hiện: {task.assignee}
-                        </span>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-200 rounded-xl flex items-center justify-center">
+                            <svg
+                              className="w-4 h-4 text-green-600"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-800 group-hover:text-green-700 transition-colors">
+                            {task.name}
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <div className="w-4 h-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                            <svg
+                              className="w-2.5 h-2.5 text-blue-600"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                          <span className="font-medium">
+                            Người thực hiện:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {task.assignee}
+                            </span>
+                          </span>
+                        </div>
                       </div>
+
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="text-xs px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-100"
+                          className="group/edit p-2 rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200"
                           onClick={() => {
                             setEditTaskForm({
                               taskId: task.id,
@@ -985,11 +1291,17 @@ const AssignmentManagement = () => {
                             setShowEditTaskModal(true);
                           }}
                         >
-                          Sửa
+                          <svg
+                            className="w-4 h-4 text-slate-600 group-hover/edit:text-green-600 transition-colors"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
                         </button>
                         <button
                           type="button"
-                          className="text-xs px-2 py-0.5 rounded border border-red-300 text-red-600 hover:bg-red-50"
+                          className="group/delete p-2 rounded-xl border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200"
                           onClick={() => {
                             setConfirmState({
                               open: true,
@@ -1002,19 +1314,19 @@ const AssignmentManagement = () => {
                                   const res =
                                     await assignmentService.deleteTask(task.id);
                                   if (res.success) {
-                                    toast.success("Đã xoá công việc");
+                                    showToast("Đã xoá công việc");
                                     if (currentThesis?.id)
                                       await loadAssignmentsForTopic(
                                         currentThesis.id
                                       );
                                   } else {
-                                    toast.error(
+                                    showToast(
                                       res.message || "Xoá công việc thất bại"
                                     );
                                   }
                                 } catch (err) {
                                   console.error(err);
-                                  toast.error("Có lỗi khi xoá công việc");
+                                  showToast("Có lỗi khi xoá công việc");
                                 } finally {
                                   setConfirmState({ open: false });
                                 }
@@ -1022,31 +1334,51 @@ const AssignmentManagement = () => {
                             });
                           }}
                         >
-                          Xoá
+                          <svg
+                            className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+                              clipRule="evenodd"
+                            />
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${getProgressColor(
-                            task.progress
-                          )}`}
-                          style={{ width: `${task.progress}%` }}
-                        ></div>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
+                          <svg
+                            className="w-2.5 h-2.5 text-amber-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                        <span className="text-sm text-slate-600 font-medium">
+                          Hạn chót:{" "}
+                          <span className="font-semibold text-slate-700">
+                            {task.deadline}
+                          </span>
+                        </span>
                       </div>
-                      <span className="text-xs font-semibold text-gray-600 min-w-[40px] text-right">
-                        {task.progress}%
-                      </span>
-                    </div>
 
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                      <span className="text-xs text-gray-600">
-                        Hạn chót: {task.deadline}
-                      </span>
                       <span
-                        className={`text-xs font-semibold px-2 py-1 rounded-md border ${getStatusColor(
+                        className={`text-xs font-bold px-3 py-1.5 rounded-full border ${getStatusColor(
                           task.status
                         )}`}
                       >
@@ -1106,7 +1438,7 @@ const AssignmentManagement = () => {
                   };
 
                   if (!assignmentId || !payload.taskName) {
-                    toast.error("Vui lòng nhập tên công việc");
+                    showToast("Vui lòng nhập tên công việc");
                     return;
                   }
 
@@ -1115,18 +1447,18 @@ const AssignmentManagement = () => {
                     payload
                   );
                   if (res.success) {
-                    toast.success("Tạo công việc thành công");
+                    showToast("Tạo công việc thành công");
                     setShowAddTaskModal(false);
                     // reload assignments of current thesis
                     if (currentThesis?.id) {
                       await loadAssignmentsForTopic(currentThesis.id);
                     }
                   } else {
-                    toast.error(res.message || "Tạo công việc thất bại");
+                    showToast(res.message || "Tạo công việc thất bại");
                   }
                 } catch (err) {
                   console.error(err);
-                  toast.error("Có lỗi xảy ra khi tạo công việc");
+                  showToast("Có lỗi xảy ra khi tạo công việc");
                 }
               }}
             >
@@ -1307,16 +1639,16 @@ const AssignmentManagement = () => {
                     payload
                   );
                   if (res.success) {
-                    toast.success("Cập nhật assignment thành công");
+                    showToast("Cập nhật assignment thành công");
                     setShowEditAssignmentModal(false);
                     if (currentThesis?.id)
                       await loadAssignmentsForTopic(currentThesis.id);
                   } else {
-                    toast.error(res.message || "Cập nhật assignment thất bại");
+                    showToast(res.message || "Cập nhật assignment thất bại");
                   }
                 } catch (err) {
                   console.error(err);
-                  toast.error("Có lỗi khi cập nhật assignment");
+                  showToast("Có lỗi khi cập nhật assignment");
                 }
               }}
             >
@@ -1463,16 +1795,16 @@ const AssignmentManagement = () => {
                     payload
                   );
                   if (res.success) {
-                    toast.success("Cập nhật công việc thành công");
+                    showToast("Cập nhật công việc thành công");
                     setShowEditTaskModal(false);
                     if (currentThesis?.id)
                       await loadAssignmentsForTopic(currentThesis.id);
                   } else {
-                    toast.error(res.message || "Cập nhật công việc thất bại");
+                    showToast(res.message || "Cập nhật công việc thất bại");
                   }
                 } catch (err) {
                   console.error(err);
-                  toast.error("Có lỗi khi cập nhật công việc");
+                  showToast("Có lỗi khi cập nhật công việc");
                 }
               }}
             >

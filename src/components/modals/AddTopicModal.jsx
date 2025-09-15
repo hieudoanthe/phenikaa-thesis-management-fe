@@ -215,346 +215,355 @@ const AddTopicModal = ({
   };
 
   return (
-    <div className="fixed top-[70px] left-64 right-0 bottom-0 bg-white z-[1000] flex flex-col scrollbar-hide">
-      {/* Header cố định - click để đóng */}
-      <div
-        onClick={onClose}
-        className="flex justify-center items-center p-6 border-b border-gray-200 bg-white flex-shrink-0 cursor-pointer transition-colors duration-200 hover:bg-gray-50"
-      >
-        <h2 className="m-0 text-2xl font-semibold text-gray-800">
-          {isViewMode ? "Xem chi tiết đề tài" : "Tạo đề tài"}
-        </h2>
-      </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white rounded-t-xl flex-shrink-0">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            {isViewMode ? "Xem chi tiết đề tài" : "Tạo đề tài"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+            </svg>
+          </button>
+        </div>
 
-      {/* Form có thể cuộn */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex-1 overflow-y-auto p-6 bg-gray-50"
-      >
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-5 max-w-4xl mx-auto"
-        >
-          {/* Dòng 1: Mã đề tài + Tiêu đề đề tài */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="relative">
-              <input
-                id="topicCode"
-                name="topicCode"
-                value={form.topicCode}
-                onChange={handleChange}
-                placeholder=" "
-                autoComplete="off"
-                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
-              />
-              <label
-                htmlFor="topicCode"
-                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Mã đề tài *
-              </label>
+        {/* Form có thể cuộn */}
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50 rounded-b-xl">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-5 max-w-4xl mx-auto"
+          >
+            {/* Dòng 1: Mã đề tài + Tiêu đề đề tài */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="relative">
+                <input
+                  id="topicCode"
+                  name="topicCode"
+                  value={form.topicCode}
+                  onChange={handleChange}
+                  placeholder=" "
+                  autoComplete="off"
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white peer hover:border-gray-400"
+                />
+                <label
+                  htmlFor="topicCode"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Mã đề tài <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              <div className="relative">
+                <input
+                  id="title"
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder=" "
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white peer hover:border-gray-400"
+                />
+                <label
+                  htmlFor="title"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Tiêu đề đề tài <span className="text-red-500">*</span>
+                </label>
+              </div>
             </div>
 
-            <div className="relative">
-              <input
-                id="title"
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                placeholder=" "
-                required
-                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
-              />
-              <label
-                htmlFor="title"
-                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-              >
-                Tiêu đề đề tài *
-              </label>
-            </div>
-          </div>
-
-          {/* Mô tả chi tiết - full width */}
-          <div className="relative">
-            <textarea
-              id="description"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              placeholder=" "
-              rows={3}
-              required
-              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
-            />
-            <label
-              htmlFor="description"
-              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-            >
-              Mô tả chi tiết *
-            </label>
-          </div>
-
-          {/* Dòng 2: Mục tiêu + Phương pháp */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Mô tả chi tiết - full width */}
             <div className="relative">
               <textarea
-                id="objectives"
-                name="objectives"
-                value={form.objectives}
+                id="description"
+                name="description"
+                value={form.description}
                 onChange={handleChange}
                 placeholder=" "
                 rows={3}
                 required
-                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
               />
               <label
-                htmlFor="objectives"
+                htmlFor="description"
                 className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
               >
-                Mục tiêu *
+                Mô tả chi tiết <span className="text-red-500">*</span>
               </label>
             </div>
 
+            {/* Dòng 2: Mục tiêu + Phương pháp */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="relative">
+                <textarea
+                  id="objectives"
+                  name="objectives"
+                  value={form.objectives}
+                  onChange={handleChange}
+                  placeholder=" "
+                  rows={3}
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
+                />
+                <label
+                  htmlFor="objectives"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Mục tiêu <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              <div className="relative">
+                <textarea
+                  id="methodology"
+                  name="methodology"
+                  value={form.methodology}
+                  onChange={handleChange}
+                  placeholder=" "
+                  rows={3}
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
+                />
+                <label
+                  htmlFor="methodology"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Phương pháp <span className="text-red-500">*</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Kết quả mong đợi - full width */}
             <div className="relative">
               <textarea
-                id="methodology"
-                name="methodology"
-                value={form.methodology}
+                id="expectedOutcome"
+                name="expectedOutcome"
+                value={form.expectedOutcome}
                 onChange={handleChange}
                 placeholder=" "
                 rows={3}
                 required
-                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
               />
               <label
-                htmlFor="methodology"
+                htmlFor="expectedOutcome"
                 className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
               >
-                Phương pháp *
+                Kết quả mong đợi <span className="text-red-500">*</span>
               </label>
             </div>
-          </div>
 
-          {/* Kết quả mong đợi - full width */}
-          <div className="relative">
-            <textarea
-              id="expectedOutcome"
-              name="expectedOutcome"
-              value={form.expectedOutcome}
-              onChange={handleChange}
-              placeholder=" "
-              rows={3}
-              required
-              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer"
-            />
-            <label
-              htmlFor="expectedOutcome"
-              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-            >
-              Kết quả mong đợi *
-            </label>
-          </div>
-
-          {/* Dòng 3: Năm học + Số sinh viên + Mức độ khó */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="relative">
-              <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
-                Năm học *
-              </label>
-              <Select
-                name="academicYearId"
-                options={academicYearOptions}
-                value={
-                  academicYearOptions.find(
-                    (option) => option.value === form.academicYearId
-                  ) || null
-                }
-                onChange={(selectedOption) =>
-                  handleSelectChange(selectedOption, { name: "academicYearId" })
-                }
-                placeholder={loading ? "Đang tải..." : "Chọn năm học"}
-                isLoading={loading}
-                isDisabled={loading}
-                isClearable
-                styles={{
-                  control: (base, state) => ({
-                    ...base,
-                    minHeight: "50px",
-                    border: "2px solid #e2e8f0",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    backgroundColor: "#fff",
-                    boxShadow: state.isFocused
-                      ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
-                      : "none",
-                    borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
-                    "&:hover": {
-                      borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
-                    },
-                  }),
-                  valueContainer: (base) => ({
-                    ...base,
-                    padding: "8px 18px",
-                  }),
-                  placeholder: (base) => ({
-                    ...base,
-                    color: "#64748b",
-                    opacity: 1,
-                  }),
-                  singleValue: (base) => ({
-                    ...base,
-                    color: "#4a5568",
-                    fontWeight: 400,
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isSelected
-                      ? "#ff6600"
-                      : state.isFocused
-                      ? "#fff5f0"
-                      : "#fff",
-                    color: state.isSelected ? "#fff" : "#4a5568",
-                    fontWeight: state.isSelected ? 500 : 400,
-                    "&:hover": {
-                      backgroundColor: state.isSelected ? "#ff6600" : "#fff5f0",
+            {/* Dòng 3: Năm học + Số sinh viên + Mức độ khó */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="relative">
+                <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
+                  Năm học <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  name="academicYearId"
+                  options={academicYearOptions}
+                  value={
+                    academicYearOptions.find(
+                      (option) => option.value === form.academicYearId
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    handleSelectChange(selectedOption, {
+                      name: "academicYearId",
+                    })
+                  }
+                  placeholder={loading ? "Đang tải..." : "Chọn năm học"}
+                  isLoading={loading}
+                  isDisabled={loading}
+                  isClearable
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      minHeight: "50px",
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      backgroundColor: "#fff",
+                      boxShadow: state.isFocused
+                        ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
+                        : "none",
+                      borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
+                      "&:hover": {
+                        borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
+                      },
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      padding: "8px 18px",
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: "#64748b",
+                      opacity: 1,
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: "#4a5568",
+                      fontWeight: 400,
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? "#ff6600"
+                        : state.isFocused
+                        ? "#fff5f0"
+                        : "#fff",
                       color: state.isSelected ? "#fff" : "#4a5568",
-                    },
-                  }),
-                  menu: (base) => ({
-                    ...base,
-                    border: "2px solid #e2e8f0",
-                    borderRadius: "8px",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-                  }),
-                }}
-              />
-            </div>
+                      fontWeight: state.isSelected ? 500 : 400,
+                      "&:hover": {
+                        backgroundColor: state.isSelected
+                          ? "#ff6600"
+                          : "#fff5f0",
+                        color: state.isSelected ? "#fff" : "#4a5568",
+                      },
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                    }),
+                  }}
+                />
+              </div>
 
-            <div className="relative">
-              <input
-                id="maxStudents"
-                name="maxStudents"
-                value={form.maxStudents}
-                onChange={handleChange}
-                placeholder=" "
-                type="number"
-                min={1}
-                required
-                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
-              />
-              <label
-                htmlFor="maxStudents"
-                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              <div className="relative">
+                <input
+                  id="maxStudents"
+                  name="maxStudents"
+                  value={form.maxStudents}
+                  onChange={handleChange}
+                  placeholder=" "
+                  type="number"
+                  min={1}
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white peer hover:border-gray-400"
+                />
+                <label
+                  htmlFor="maxStudents"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Số sinh viên tối đa <span className="text-red-500">*</span>
+                </label>
+              </div>
+
+              <div className="relative">
+                <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
+                  Mức Độ Khó <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  name="difficultyLevel"
+                  options={difficultyOptions}
+                  value={
+                    difficultyOptions.find(
+                      (option) => option.value === form.difficultyLevel
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    handleSelectChange(selectedOption, {
+                      name: "difficultyLevel",
+                    })
+                  }
+                  placeholder="Chọn mức độ khó"
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      minHeight: "50px",
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      fontSize: "16px",
+                      backgroundColor: "#fff",
+                      boxShadow: state.isFocused
+                        ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
+                        : "none",
+                      borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
+                      "&:hover": {
+                        borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
+                      },
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      padding: "8px 18px",
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: "#64748b",
+                      opacity: 1,
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      color: "#4a5568",
+                      fontWeight: 400,
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? "#ff6600"
+                        : state.isFocused
+                        ? "#fff5f0"
+                        : "#fff",
+                      color: state.isSelected ? "#fff" : "#4a5568",
+                      fontWeight: state.isSelected ? 500 : 400,
+                      "&:hover": {
+                        backgroundColor: state.isSelected
+                          ? "#ff6600"
+                          : "#fff5f0",
+                        color: state.isSelected ? "#fff" : "#4a5568",
+                      },
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                    }),
+                  }}
+                />
+              </div>
+            </div>
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  onClose();
+                }}
+                className="px-6 py-2.5 text-base font-medium text-gray-600 bg-gray-100 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-700 min-w-[100px] shadow-sm hover:shadow-md"
               >
-                Số sinh viên tối đa *
-              </label>
-            </div>
-
-            <div className="relative">
-              <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
-                Mức Độ Khó *
-              </label>
-              <Select
-                name="difficultyLevel"
-                options={difficultyOptions}
-                value={
-                  difficultyOptions.find(
-                    (option) => option.value === form.difficultyLevel
-                  ) || null
-                }
-                onChange={(selectedOption) =>
-                  handleSelectChange(selectedOption, {
-                    name: "difficultyLevel",
-                  })
-                }
-                placeholder="Chọn mức độ khó"
-                isClearable
-                styles={{
-                  control: (base, state) => ({
-                    ...base,
-                    minHeight: "50px",
-                    border: "2px solid #e2e8f0",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    backgroundColor: "#fff",
-                    boxShadow: state.isFocused
-                      ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
-                      : "none",
-                    borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
-                    "&:hover": {
-                      borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
-                    },
-                  }),
-                  valueContainer: (base) => ({
-                    ...base,
-                    padding: "8px 18px",
-                  }),
-                  placeholder: (base) => ({
-                    ...base,
-                    color: "#64748b",
-                    opacity: 1,
-                  }),
-                  singleValue: (base) => ({
-                    ...base,
-                    color: "#4a5568",
-                    fontWeight: 400,
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isSelected
-                      ? "#ff6600"
-                      : state.isFocused
-                      ? "#fff5f0"
-                      : "#fff",
-                    color: state.isSelected ? "#fff" : "#4a5568",
-                    fontWeight: state.isSelected ? 500 : 400,
-                    "&:hover": {
-                      backgroundColor: state.isSelected ? "#ff6600" : "#fff5f0",
-                      color: state.isSelected ? "#fff" : "#4a5568",
-                    },
-                  }),
-                  menu: (base) => ({
-                    ...base,
-                    border: "2px solid #e2e8f0",
-                    borderRadius: "8px",
-                    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-                  }),
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[120px] transform hover:scale-105 disabled:transform-none"
+                style={{
+                  background: submitting
+                    ? "#9ca3af"
+                    : "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
                 }}
-              />
+              >
+                {submitting
+                  ? isViewMode
+                    ? "Đang cập nhật..."
+                    : "Đang tạo..."
+                  : isViewMode
+                  ? "Cập Nhật Đề Tài"
+                  : "Tạo Đề Tài"}
+              </button>
             </div>
-          </div>
-          {/* Buttons */}
-          <div className="flex justify-end gap-2 mt-5">
-            <button
-              type="button"
-              onClick={() => {
-                resetForm();
-                onClose();
-              }}
-              className="px-6 py-2.5 text-base font-medium text-gray-600 bg-gray-100 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-700 min-w-[100px]"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 shadow-sm hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[120px]"
-              style={{
-                background: submitting
-                  ? "#9ca3af"
-                  : "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
-              }}
-            >
-              {submitting
-                ? isViewMode
-                  ? "Đang cập nhật..."
-                  : "Đang tạo..."
-                : isViewMode
-                ? "Cập Nhật Đề Tài"
-                : "Tạo Đề Tài"}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

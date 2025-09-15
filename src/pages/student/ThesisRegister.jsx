@@ -3,8 +3,33 @@ import PropTypes from "prop-types";
 import { suggestTopicForStudent } from "../../services/suggest.service";
 import { userService } from "../../services";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import registrationPeriodService from "../../services/registrationPeriod.service";
 import lecturerCapacityService from "../../services/lecturerCapacity.service";
+
+// Department mapping
+const departmentMapping = {
+  CNTT: "Công nghệ thông tin",
+  KHMT: "Khoa học máy tính",
+  KTMT: "Kỹ thuật máy tính",
+  HTTT: "Hệ thống thông tin",
+  KTPM: "Kỹ thuật phần mềm",
+  ATTT: "An toàn thông tin",
+  MMT: "Mạng máy tính",
+  PM: "Phần mềm",
+};
 
 const initialForm = {
   tieuDe: "",
@@ -213,12 +238,12 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
       setSuccess(true);
       setForm(initialForm);
       setSearchQuery(""); // Reset search input
-      toast.success("Đề xuất đề tài thành công!");
+      showToast("Đề xuất đề tài thành công!");
       onClose?.();
     } catch (err) {
       const errorMessage = err?.message || "Có lỗi xảy ra, vui lòng thử lại!";
       setError(errorMessage);
-      toast.error(errorMessage);
+      showToast(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -731,7 +756,9 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                                     {l.email}
                                   </div>
                                   <div className="text-gray-500 text-xs truncate">
-                                    {l.department} • {l.specialization}
+                                    {departmentMapping[l.department] ||
+                                      l.department}{" "}
+                                    • {l.specialization}
                                   </div>
                                 </div>
                                 <span
@@ -904,7 +931,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   {form.giangVien.specialization}
                 </div>
                 <div className="text-gray-700 text-sm mb-3">
-                  {form.giangVien.department}
+                  {departmentMapping[form.giangVien.department] ||
+                    form.giangVien.department}
                 </div>
                 <span className="inline-flex items-center gap-1 text-xs font-bold rounded-lg px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800">
                   <div className="w-2 h-2 bg-green-500 rounded-sm"></div>

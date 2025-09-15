@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { statisticsService } from "../../services/statistics.service";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return toast.error(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return toast.success(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import {
   BarChart,
   Bar,
@@ -38,7 +51,7 @@ const Dashboard = () => {
       const data = await statisticsService.getAdminStatistics();
       setStatistics({ overview: data });
     } catch (error) {
-      toast.error("Lỗi khi tải dữ liệu thống kê");
+      showToast("Lỗi khi tải dữ liệu thống kê", "error");
       console.error("Error loading statistics:", error);
     } finally {
       setLoading(false);

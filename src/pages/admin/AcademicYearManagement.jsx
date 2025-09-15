@@ -4,6 +4,19 @@ import "../../styles/pages/admin/academic_year_management.css";
 import academicYearService from "../../services/academicYear.service";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return showToast(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const AcademicYearManagement = () => {
   const [academicYears, setAcademicYears] = useState([]);
   const [currentYear, setCurrentYear] = useState(null);
@@ -29,11 +42,11 @@ const AcademicYearManagement = () => {
         const activeYear = result.data.find((year) => (year.status || 0) === 1);
         setCurrentYear(activeYear);
       } else {
-        toast.error(result.message || "Không thể tải danh sách năm học");
+        showToast(result.message || "Không thể tải danh sách năm học");
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách năm học:", error);
-      toast.error("Lỗi khi tải danh sách năm học!");
+      showToast("Lỗi khi tải danh sách năm học!");
     } finally {
       setLoading(false);
     }
@@ -44,18 +57,18 @@ const AcademicYearManagement = () => {
       if (newStatus === "active") {
         const result = await academicYearService.activateAcademicYear(yearId);
         if (result.success) {
-          toast.success("Đã kích hoạt năm học thành công!");
+          showToast("Đã kích hoạt năm học thành công!");
           loadAcademicYears(); // Reload để cập nhật trạng thái
         } else {
-          toast.error(result.message || "Không thể kích hoạt năm học");
+          showToast(result.message || "Không thể kích hoạt năm học");
         }
       } else {
         // TODO: Implement deactivate nếu cần
-        toast.info("Chức năng vô hiệu hóa năm học sẽ được thêm sau");
+        showToast("Chức năng vô hiệu hóa năm học sẽ được thêm sau");
       }
     } catch (error) {
       console.error("Lỗi khi cập nhật trạng thái:", error);
-      toast.error("Lỗi khi cập nhật trạng thái!");
+      showToast("Lỗi khi cập nhật trạng thái!");
     }
   };
 

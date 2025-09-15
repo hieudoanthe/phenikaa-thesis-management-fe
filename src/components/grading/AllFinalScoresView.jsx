@@ -5,6 +5,19 @@ import {
 } from "../../services/grading.service";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const AllFinalScoresView = ({ evaluations }) => {
   const [finalScores, setFinalScores] = useState({});
   const [loading, setLoading] = useState(false);
@@ -50,7 +63,7 @@ const AllFinalScoresView = ({ evaluations }) => {
 
       setFinalScores(scores);
     } catch (error) {
-      toast.error("Lỗi khi tải điểm cuối cùng");
+      showToast("Lỗi khi tải điểm cuối cùng");
     } finally {
       setLoading(false);
     }
@@ -106,16 +119,16 @@ const AllFinalScoresView = ({ evaluations }) => {
 
   const handleExportComprehensivePDF = async (topicId) => {
     if (!topicId) {
-      toast.error("Không tìm thấy thông tin đề tài");
+      showToast("Không tìm thấy thông tin đề tài");
       return;
     }
 
     setPdfLoading((prev) => ({ ...prev, [topicId]: true }));
     try {
       await generateComprehensiveEvaluationPDF(topicId);
-      toast.success("Xuất PDF tổng hợp thành công!");
+      showToast("Xuất PDF tổng hợp thành công!");
     } catch (error) {
-      toast.error("Lỗi khi xuất PDF tổng hợp");
+      showToast("Lỗi khi xuất PDF tổng hợp");
       console.error("Error exporting comprehensive PDF:", error);
     } finally {
       setPdfLoading((prev) => ({ ...prev, [topicId]: false }));
@@ -171,12 +184,12 @@ const AllFinalScoresView = ({ evaluations }) => {
                   {scoreData.topicTitle}
                 </h4>
                 <p className="text-sm text-gray-500">
-                  Sinh viên: {scoreData.studentName} (ID: {scoreData.studentId})
+                  Sinh viên: {scoreData.studentName}
                 </p>
               </div>
               <div className="flex items-center space-x-3">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                  className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(
                     scoreData.status
                   )}`}
                 >

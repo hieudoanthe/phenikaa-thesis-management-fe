@@ -10,6 +10,18 @@ import { WS_ENDPOINTS } from "../../config/api";
 import userService from "../../services/user.service";
 import chatService from "../../services/chat.service";
 
+// Department mapping
+const departmentMapping = {
+  CNTT: "Công nghệ thông tin",
+  KHMT: "Khoa học máy tính",
+  KTMT: "Kỹ thuật máy tính",
+  HTTT: "Hệ thống thông tin",
+  KTPM: "Kỹ thuật phần mềm",
+  ATTT: "An toàn thông tin",
+  MMT: "Mạng máy tính",
+  PM: "Phần mềm",
+};
+
 // Trang Chat của Giảng viên - nhận tin nhắn từ sinh viên
 const LecturerChat = () => {
   const [conversations, setConversations] = useState([]);
@@ -62,7 +74,10 @@ const LecturerChat = () => {
                 student.fullName || "SV"
               )}&background=random`,
             specialization: student.specialization || "Chưa có chuyên ngành",
-            department: student.department || "Chưa có khoa",
+            department:
+              departmentMapping[student.department] ||
+              student.department ||
+              "Chưa có khoa",
           }));
 
           setStudents(formattedStudents);

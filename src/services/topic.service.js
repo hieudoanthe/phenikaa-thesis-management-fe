@@ -78,13 +78,8 @@ class TopicService {
         teacherId
       );
 
-      // Đảm bảo tham số được truyền đúng cách vào query string
-      const config = {
-        params: params,
-      };
-
-      // Sử dụng API mới với TeacherId
-      const response = await apiGet(apiUrl, config);
+      // Sử dụng API mới với TeacherId - truyền params trực tiếp
+      const response = await apiGet(apiUrl, { params });
 
       return {
         success: true,
@@ -236,15 +231,9 @@ class TopicService {
    */
   async getApprovedTopics(params = {}) {
     try {
-      // Đảm bảo tham số được truyền đúng cách vào query string
-      const config = {
-        params: params,
-      };
-
-      const response = await apiGet(
-        API_ENDPOINTS.GET_APPROVED_TOPICS_PAGED,
-        config
-      );
+      const response = await apiGet(API_ENDPOINTS.GET_APPROVED_TOPICS_PAGED, {
+        params,
+      });
 
       return {
         success: true,

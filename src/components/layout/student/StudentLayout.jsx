@@ -60,11 +60,6 @@ const StudentLayout = () => {
           title: "Đề tài của tôi",
           subtitle: "Theo dõi tiến độ và trạng thái đề tài đồ án tốt nghiệp",
         };
-      case "/student/group":
-        return {
-          title: "Nhóm",
-          subtitle: "Quản lý nhóm thực hiện luận văn",
-        };
       case "/student/submissions":
         return {
           title: "Tài liệu của tôi",
@@ -440,26 +435,40 @@ const StudentLayout = () => {
               if (inInitialBuffer) {
                 bufferedCountRef.current += 1;
               } else {
-                // Thay vì hiển thị từng toast riêng lẻ, chỉ tăng counter
-                bufferedCountRef.current += 1;
-                // Hiển thị toast tổng hợp sau 1 giây
-                if (bufferToastTimerRef.current) {
-                  clearTimeout(bufferToastTimerRef.current);
-                }
-                bufferToastTimerRef.current = setTimeout(() => {
-                  // Tôn trọng suppression flag
-                  const suppressUntil =
-                    window.__suppressNotificationToastUntil || 0;
-                  const suppressed = Date.now() <= suppressUntil;
-                  // Chỉ hiện toast khi có từ 2 thông báo trở lên và không bị suppress
-                  if (bufferedCountRef.current >= 2 && !suppressed) {
-                    toast.success(
-                      `Bạn có ${bufferedCountRef.current} thông báo mới`
-                    );
+                // Kiểm tra xem có phải thông báo quan trọng không (phê duyệt đề tài)
+                const isImportantNotification =
+                  messageText.includes("đề tài") ||
+                  messageText.includes("phê duyệt") ||
+                  messageText.includes("chấp nhận") ||
+                  messageText.includes("từ chối") ||
+                  messageText.includes("approve") ||
+                  messageText.includes("reject");
+
+                if (isImportantNotification) {
+                  // Hiển thị toast ngay lập tức cho thông báo quan trọng
+                  toast.success(messageText);
+                } else {
+                  // Thay vì hiển thị từng toast riêng lẻ, chỉ tăng counter
+                  bufferedCountRef.current += 1;
+                  // Hiển thị toast tổng hợp sau 1 giây
+                  if (bufferToastTimerRef.current) {
+                    clearTimeout(bufferToastTimerRef.current);
                   }
-                  bufferedCountRef.current = 0;
-                  bufferToastTimerRef.current = null;
-                }, 1000);
+                  bufferToastTimerRef.current = setTimeout(() => {
+                    // Tôn trọng suppression flag
+                    const suppressUntil =
+                      window.__suppressNotificationToastUntil || 0;
+                    const suppressed = Date.now() <= suppressUntil;
+                    // Chỉ hiện toast khi có từ 1 thông báo trở lên và không bị suppress
+                    if (bufferedCountRef.current >= 1 && !suppressed) {
+                      toast.success(
+                        `Bạn có ${bufferedCountRef.current} thông báo mới`
+                      );
+                    }
+                    bufferedCountRef.current = 0;
+                    bufferToastTimerRef.current = null;
+                  }, 1000);
+                }
               }
             }
 

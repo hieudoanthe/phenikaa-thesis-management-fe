@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import Select from "react-select";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import { useNotifications } from "../../contexts/NotificationContext";
 import userService from "../../services/user.service";
@@ -197,6 +198,48 @@ const NotiOfTeacher = () => {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
+  const statusOptions = [
+    { value: "all", label: "Tất cả" },
+    { value: "unread", label: "Chưa đọc" },
+    { value: "read", label: "Đã đọc" },
+  ];
+
+  const selectTheme = (theme) => ({
+    ...theme,
+    colors: {
+      ...theme.colors,
+      primary: "#ff6600",
+      primary25: "#ffe0cc",
+      primary50: "#ffb380",
+    },
+  });
+
+  const selectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderColor: state.isFocused ? "#ff6600" : base.borderColor,
+      boxShadow: state.isFocused ? "0 0 0 1px #ff6600" : base.boxShadow,
+      "&:hover": {
+        borderColor: state.isFocused ? "#ff6600" : base.borderColor,
+      },
+      minWidth: "160px",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#ff6600"
+        : state.isFocused
+        ? "#ffe0cc"
+        : base.backgroundColor,
+      color: state.isSelected ? "#fff" : base.color,
+    }),
+    dropdownIndicator: (base, state) => ({
+      ...base,
+      color: state.isFocused ? "#ff6600" : base.color,
+      "&:hover": { color: "#ff6600" },
+    }),
+  };
+
   return (
     <div className="p-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6 flex flex-col gap-4">
@@ -226,15 +269,16 @@ const NotiOfTeacher = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="block w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg"
             />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="all">Tất cả</option>
-              <option value="unread">Chưa đọc</option>
-              <option value="read">Đã đọc</option>
-            </select>
+            <Select
+              inputId="notiStatusSelect"
+              classNamePrefix="rs"
+              options={statusOptions}
+              value={statusOptions.find((o) => o.value === filterStatus)}
+              onChange={(opt) => setFilterStatus(opt ? opt.value : "all")}
+              isClearable={false}
+              theme={selectTheme}
+              styles={selectStyles}
+            />
             <button
               onClick={handleMarkAllAsRead}
               disabled={isMarkingAll || unreadCount === 0}

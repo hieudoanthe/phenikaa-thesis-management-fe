@@ -3,6 +3,19 @@ import Select from "react-select";
 import AddUserModal from "../../components/modals/AddUserModal.jsx";
 import ConfirmModal from "../../components/modals/ConfirmModal.jsx";
 import { toast, ToastContainer } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import { userService } from "../../services";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -100,7 +113,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Lỗi khi lấy danh sách users:", error);
       setError("Không thể tải danh sách người dùng");
-      toast.error("Lỗi khi tải danh sách người dùng!");
+      showToast("Lỗi khi tải danh sách người dùng!", "error");
     } finally {
       if (initial) setIsInitialLoading(false);
     }
@@ -259,11 +272,11 @@ const UserManagement = () => {
       // Refetch dữ liệu mới từ API để cập nhật giao diện
       await fetchUsers();
 
-      toast.success("Cập nhật người dùng thành công!");
+      showToast("Cập nhật người dùng thành công!", "success");
       cancelEdit();
     } catch (err) {
       console.error("Cập nhật người dùng thất bại:", err);
-      toast.error("Cập nhật người dùng thất bại!");
+      showToast("Cập nhật người dùng thất bại!", "error");
     }
   };
 
@@ -276,10 +289,10 @@ const UserManagement = () => {
       // Refetch dữ liệu mới từ API để cập nhật giao diện
       await fetchUsers();
 
-      toast.success("Cập nhật trạng thái người dùng thành công!");
+      showToast("Cập nhật trạng thái người dùng thành công!");
     } catch (err) {
       console.error("Cập nhật trạng thái thất bại:", err);
-      toast.error("Cập nhật trạng thái thất bại!");
+      showToast("Cập nhật trạng thái thất bại!");
     } finally {
       setStatusLoadingId(null);
     }
@@ -295,7 +308,7 @@ const UserManagement = () => {
       !userData.roleIds
     ) {
       console.error("Dữ liệu không đầy đủ");
-      toast.error("Dữ liệu không đầy đủ!");
+      showToast("Dữ liệu không đầy đủ!");
       throw new Error("Dữ liệu không đầy đủ");
     }
 
@@ -312,7 +325,7 @@ const UserManagement = () => {
       console.error("Lỗi khi tạo user:", error);
 
       // Hiển thị thông báo lỗi
-      toast.error("Lỗi khi thêm người dùng. Vui lòng thử lại!");
+      showToast("Lỗi khi thêm người dùng. Vui lòng thử lại!");
 
       // Throw error để modal biết có lỗi
       throw error;
@@ -341,10 +354,10 @@ const UserManagement = () => {
         setCurrentPage((p) => p - 1);
       }
 
-      toast.success("Xóa người dùng thành công!");
+      showToast("Xóa người dùng thành công!");
     } catch (err) {
       console.error("Xóa người dùng thất bại:", err);
-      toast.error("Xóa người dùng thất bại!");
+      showToast("Xóa người dùng thất bại!");
     } finally {
       setConfirmState({ open: false, userId: null, loading: false });
     }

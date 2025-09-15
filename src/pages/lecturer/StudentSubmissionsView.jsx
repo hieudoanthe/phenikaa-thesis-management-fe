@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Select from "react-select";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import * as submissionService from "../../services/submission.service";
 import { getUserIdFromToken } from "../../auth/authUtils";
 
@@ -22,12 +36,72 @@ const StudentSubmissionsView = () => {
     search: "",
   });
 
+  // Ref để tránh gọi API nhiều lần
+  const loadingRef = useRef(false);
+  const lastToastRef = useRef(0);
+
+  // React-Select options
+  const statusOptions = [
+    { value: "1", label: "Đã nộp" },
+    { value: "2", label: "Đang xem xét" },
+    { value: "3", label: "Đã duyệt" },
+    { value: "4", label: "Từ chối" },
+  ];
+
+  const submissionTypeOptions = [
+    { value: "", label: "Tất cả loại" },
+    { value: "1", label: "Báo cáo tiến độ" },
+    { value: "2", label: "Báo cáo cuối kỳ" },
+    { value: "3", label: "Báo cáo khác" },
+  ];
+
+  const selectTheme = (theme) => ({
+    ...theme,
+    colors: {
+      ...theme.colors,
+      primary: "#ff6600",
+      primary25: "#ffe0cc",
+      primary50: "#ffb380",
+    },
+  });
+
+  const selectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderColor: state.isFocused ? "#ff6600" : base.borderColor,
+      boxShadow: state.isFocused ? "0 0 0 1px #ff6600" : base.boxShadow,
+      "&:hover": {
+        borderColor: state.isFocused ? "#ff6600" : base.borderColor,
+      },
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#ff6600"
+        : state.isFocused
+        ? "#ffe0cc"
+        : base.backgroundColor,
+      color: state.isSelected ? "#fff" : base.color,
+    }),
+    dropdownIndicator: (base, state) => ({
+      ...base,
+      color: state.isFocused ? "#ff6600" : base.color,
+      "&:hover": { color: "#ff6600" },
+    }),
+  };
+
   useEffect(() => {
     loadSubmissions();
-  }, [currentPage, filters]);
+  }, [currentPage, filters.status, filters.submissionType, filters.search]);
 
   const loadSubmissions = async () => {
+    // Tránh gọi API nhiều lần cùng lúc
+    if (loadingRef.current) {
+      return;
+    }
+
     try {
+      loadingRef.current = true;
       setLoading(true);
       const response = await submissionService.getSubmissionsWithPagination(
         currentPage,
@@ -37,9 +111,15 @@ const StudentSubmissionsView = () => {
       setTotalPages(response.totalPages || 0);
     } catch (error) {
       console.error("Error loading submissions:", error);
-      toast.error("Lỗi khi tải danh sách báo cáo");
+      // Debounce toast để tránh hiển thị nhiều lần
+      const now = Date.now();
+      if (now - lastToastRef.current > 2000) {
+        showToast("Lỗi khi tải danh sách báo cáo", "error");
+        lastToastRef.current = now;
+      }
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   };
 
@@ -157,7 +237,7 @@ const StudentSubmissionsView = () => {
       setShowFileModal(true);
     } catch (error) {
       console.error("Error loading file:", error);
-      toast.error("Lỗi khi tải file");
+      showToast("Lỗi khi tải file", "error");
     } finally {
       setLoadingView(null);
     }
@@ -185,10 +265,10 @@ const StudentSubmissionsView = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success("File đã được tải về");
+      showToast("File đã được tải về", "success");
     } catch (error) {
       console.error("Error downloading file:", error);
-      toast.error("Lỗi khi tải file");
+      showToast("Lỗi khi tải file", "error");
     } finally {
       setLoadingDownload(null);
     }
@@ -208,54 +288,34 @@ const StudentSubmissionsView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Báo cáo của sinh viên
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Xem và quản lý các báo cáo mà sinh viên đã nộp
-          </p>
-        </div>
-
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trạng thái
-              </label>
-              <select
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters({ ...filters, status: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <label
+                htmlFor="typeSelect"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
-                <option value="">Tất cả trạng thái</option>
-                <option value="1">Đã nộp</option>
-                <option value="2">Đang xem xét</option>
-                <option value="3">Đã duyệt</option>
-                <option value="4">Từ chối</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Loại báo cáo
               </label>
-              <select
-                value={filters.submissionType}
-                onChange={(e) =>
-                  setFilters({ ...filters, submissionType: e.target.value })
+              <Select
+                inputId="typeSelect"
+                classNamePrefix="rs"
+                options={submissionTypeOptions}
+                value={submissionTypeOptions.find(
+                  (o) => o.value === String(filters.submissionType)
+                )}
+                onChange={(opt) =>
+                  setFilters({
+                    ...filters,
+                    submissionType: opt ? opt.value : "",
+                  })
                 }
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Tất cả loại</option>
-                <option value="1">Báo cáo tiến độ</option>
-                <option value="2">Báo cáo cuối kỳ</option>
-                <option value="3">Báo cáo khác</option>
-              </select>
+                isClearable={false}
+                theme={selectTheme}
+                styles={selectStyles}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -292,7 +352,6 @@ const StudentSubmissionsView = () => {
             </div>
           ) : submissions.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📄</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Chưa có báo cáo nào
               </h3>
@@ -499,7 +558,7 @@ const StudentSubmissionsView = () => {
                         }
                       } catch (error) {
                         console.error("Error downloading file:", error);
-                        toast.error("Lỗi khi tải file");
+                        showToast("Lỗi khi tải file", "error");
                       }
                     }}
                     className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -532,8 +591,9 @@ const StudentSubmissionsView = () => {
                         }}
                         onError={() => {
                           console.log("Error loading image");
-                          toast.error(
-                            "Không thể hiển thị hình ảnh này. Vui lòng tải về để xem."
+                          showToast(
+                            "Không thể hiển thị hình ảnh này. Vui lòng tải về để xem.",
+                            "error"
                           );
                         }}
                       />
@@ -601,7 +661,7 @@ const StudentSubmissionsView = () => {
                                     "Error downloading file:",
                                     error
                                   );
-                                  toast.error("Lỗi khi tải file");
+                                  showToast("Lỗi khi tải file", "error");
                                 }
                               }}
                               className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -643,7 +703,7 @@ const StudentSubmissionsView = () => {
                                 }
                               } catch (error) {
                                 console.error("Error downloading file:", error);
-                                toast.error("Lỗi khi tải file");
+                                showToast("Lỗi khi tải file", "error");
                               }
                             }}
                             className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"

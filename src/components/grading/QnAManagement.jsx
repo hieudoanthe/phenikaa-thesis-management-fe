@@ -6,6 +6,19 @@ import {
 } from "../../services/grading.service";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
   const [qnas, setQnas] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +42,7 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
       const data = await getQnAByTopic(topicId);
       setQnas(data);
     } catch (error) {
-      toast.error("Lỗi khi tải danh sách Q&A");
+      showToast("Lỗi khi tải danh sách Q&A");
     } finally {
       setLoading(false);
     }
@@ -47,7 +60,7 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
       };
 
       await addQuestion(qnaData);
-      toast.success("Thêm câu hỏi thành công!");
+      showToast("Thêm câu hỏi thành công!");
       setShowAddModal(false);
       setNewQuestion({
         questionerId: "",
@@ -57,17 +70,17 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
       });
       loadQnAs();
     } catch (error) {
-      toast.error("Lỗi khi thêm câu hỏi");
+      showToast("Lỗi khi thêm câu hỏi");
     }
   };
 
   const handleUpdateAnswer = async (qnaId, answer) => {
     try {
       await updateAnswer(qnaId, answer);
-      toast.success("Cập nhật câu trả lời thành công!");
+      showToast("Cập nhật câu trả lời thành công!");
       loadQnAs();
     } catch (error) {
-      toast.error("Lỗi khi cập nhật câu trả lời");
+      showToast("Lỗi khi cập nhật câu trả lời");
     }
   };
 
@@ -78,22 +91,18 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900">
-            Câu hỏi và trả lời trong bảo vệ
-          </h3>
-          {topicTitle && studentName && (
-            <p className="text-sm text-gray-600 mt-1">
-              Đề tài: <span className="font-medium">{topicTitle}</span> - Sinh
-              viên: <span className="font-medium">{studentName}</span>
-            </p>
-          )}
-        </div>
+      {/* Header - only action button */}
+      <div className="flex justify-end items-center">
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white rounded-md transition-colors"
+          style={{ backgroundColor: "#ff6600" }}
+          onMouseOver={(e) =>
+            (e.currentTarget.style.backgroundColor = "#e65c00")
+          }
+          onMouseOut={(e) =>
+            (e.currentTarget.style.backgroundColor = "#ff6600")
+          }
         >
           Thêm câu hỏi
         </button>
@@ -108,7 +117,6 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
           </div>
         ) : qnas.length === 0 ? (
           <div className="text-center py-8">
-            <div className="text-gray-400 text-4xl mb-4">❓</div>
             <h4 className="text-lg font-medium text-gray-900 mb-2">
               Chưa có câu hỏi nào
             </h4>
@@ -167,7 +175,14 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
                           handleUpdateAnswer(qna.qnaId, answer);
                         }
                       }}
-                      className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="mt-2 text-sm font-medium px-3 py-1 rounded"
+                      style={{ color: "#ff6600" }}
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.color = "#e65c00")
+                      }
+                      onMouseOut={(e) =>
+                        (e.currentTarget.style.color = "#ff6600")
+                      }
                     >
                       Thêm câu trả lời
                     </button>
@@ -283,13 +298,27 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  className="px-4 py-2 text-sm font-medium rounded-md transition-colors"
+                  style={{ backgroundColor: "#ffe0cc", color: "#8a4500" }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffcfad")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ffe0cc")
+                  }
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleAddQuestion}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white rounded-md transition-colors"
+                  style={{ backgroundColor: "#ff6600" }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#e65c00")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#ff6600")
+                  }
                 >
                   Thêm câu hỏi
                 </button>

@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const AddAssignmentModal = ({
   isOpen,
   onClose,
@@ -54,13 +67,13 @@ const AddAssignmentModal = ({
     e.preventDefault();
 
     if (!formData.topicId || !formData.title) {
-      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc!");
+      showToast("Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
 
     // Validate ngày hạn chót
     if (formData.dueDate && new Date(formData.dueDate) < new Date()) {
-      toast.error("Ngày hạn chót không được nhỏ hơn ngày hiện tại!");
+      showToast("Ngày hạn chót không được nhỏ hơn ngày hiện tại!");
       return;
     }
 
@@ -88,11 +101,11 @@ const AddAssignmentModal = ({
         priority: 1,
       });
 
-      toast.success("Tạo assignment thành công!");
+      showToast("Tạo assignment thành công!");
       onClose();
     } catch (error) {
       console.error("Lỗi khi tạo assignment:", error);
-      toast.error("Có lỗi xảy ra khi tạo assignment!");
+      showToast("Có lỗi xảy ra khi tạo assignment!");
     } finally {
       setSubmitting(false);
     }

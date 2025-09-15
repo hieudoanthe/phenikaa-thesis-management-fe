@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import * as submissionService from "../../services/submission.service";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import ConfirmModal from "../../components/modals/ConfirmModal";
@@ -135,7 +148,7 @@ const SubmissionManagement = () => {
       console.error("Error loading submissions:", error);
       if (!hasShownError) {
         setHasShownError(true);
-        toast.error("Lỗi khi tải dữ liệu");
+        showToast("Lỗi khi tải dữ liệu");
       }
     } finally {
       setLoading(false);
@@ -156,7 +169,7 @@ const SubmissionManagement = () => {
       console.error("Error loading confirmed topics:", error);
       if (!hasShownError) {
         setHasShownError(true);
-        toast.error("Lỗi khi tải dữ liệu");
+        showToast("Lỗi khi tải dữ liệu");
       }
     } finally {
       setLoadingTopics(false);
@@ -176,13 +189,13 @@ const SubmissionManagement = () => {
       };
 
       await submissionService.createSubmission(submissionData);
-      toast.success("Tạo báo cáo thành công");
+      showToast("Tạo báo cáo thành công");
       setShowCreateModal(false);
       resetForm();
       loadSubmissions();
     } catch (error) {
       console.error("Error creating submission:", error);
-      toast.error("Lỗi khi tạo báo cáo");
+      showToast("Lỗi khi tạo báo cáo");
     } finally {
       setLoading(false);
     }
@@ -204,13 +217,13 @@ const SubmissionManagement = () => {
         selectedSubmission.submissionId,
         submissionData
       );
-      toast.success("Cập nhật báo cáo thành công");
+      showToast("Cập nhật báo cáo thành công");
       setShowEditModal(false);
       resetForm();
       loadSubmissions();
     } catch (error) {
       console.error("Error updating submission:", error);
-      toast.error("Lỗi khi cập nhật báo cáo");
+      showToast("Lỗi khi cập nhật báo cáo");
     } finally {
       setLoading(false);
     }
@@ -227,13 +240,13 @@ const SubmissionManagement = () => {
     try {
       setLoading(true);
       await submissionService.deleteSubmission(submissionToDelete);
-      toast.success("Xóa báo cáo thành công");
+      showToast("Xóa báo cáo thành công");
       loadSubmissions();
       setShowDeleteModal(false);
       setSubmissionToDelete(null);
     } catch (error) {
       console.error("Error deleting submission:", error);
-      toast.error("Lỗi khi xóa báo cáo");
+      showToast("Lỗi khi xóa báo cáo");
     } finally {
       setLoading(false);
     }
@@ -248,11 +261,11 @@ const SubmissionManagement = () => {
     try {
       setLoading(true);
       await submissionService.updateSubmissionStatus(submissionId, newStatus);
-      toast.success("Cập nhật trạng thái thành công");
+      showToast("Cập nhật trạng thái thành công");
       loadSubmissions();
     } catch (error) {
       console.error("Error updating status:", error);
-      toast.error("Lỗi khi cập nhật trạng thái");
+      showToast("Lỗi khi cập nhật trạng thái");
     } finally {
       setLoading(false);
     }
@@ -471,7 +484,7 @@ const SubmissionManagement = () => {
       setShowFileModal(true);
     } catch (error) {
       console.error("Error loading file:", error);
-      toast.error("Lỗi khi tải file");
+      showToast("Lỗi khi tải file");
     } finally {
       setLoadingView(null);
     }
@@ -503,10 +516,10 @@ const SubmissionManagement = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success("File đã được tải về");
+      showToast("File đã được tải về");
     } catch (error) {
       console.error("Error downloading file:", error);
-      toast.error("Lỗi khi tải file");
+      showToast("Lỗi khi tải file");
     } finally {
       setLoadingDownload(null);
     }
@@ -1194,12 +1207,12 @@ const SubmissionManagement = () => {
                             currentSubmission.filePath
                           );
                         } else {
-                          toast.error(
+                          showToast(
                             "Không thể tìm thấy thông tin file để tải về"
                           );
                         }
                       } else {
-                        toast.error(
+                        showToast(
                           "Không thể tìm thấy thông tin file để tải về"
                         );
                       }
@@ -1208,7 +1221,7 @@ const SubmissionManagement = () => {
                         "Error downloading file from modal:",
                         error
                       );
-                      toast.error("Lỗi khi tải file");
+                      showToast("Lỗi khi tải file");
                     }
                   }}
                   className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -1251,7 +1264,7 @@ const SubmissionManagement = () => {
                       }}
                       onError={() => {
                         console.log("Error loading image");
-                        toast.error(
+                        showToast(
                           "Không thể hiển thị hình ảnh này. Vui lòng tải về để xem."
                         );
                       }}
@@ -1268,7 +1281,7 @@ const SubmissionManagement = () => {
                       }}
                       onError={() => {
                         console.log("Error loading PDF");
-                        toast.error(
+                        showToast(
                           "Không thể hiển thị PDF này. Vui lòng tải về để xem."
                         );
                       }}
@@ -1305,7 +1318,7 @@ const SubmissionManagement = () => {
                               }
                             } catch (error) {
                               console.error("Error downloading file:", error);
-                              toast.error("Lỗi khi tải file");
+                              showToast("Lỗi khi tải file");
                             }
                           }}
                           className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"

@@ -180,14 +180,18 @@
   margin-bottom: 24px;
 }
 
+.calendar-grid {
+  margin-bottom: 16px;
+}
+
 .calendar-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 2px;
   margin-bottom: 8px;
 }
 
-.calendar-header span {
+.calendar-day-header {
   font-size: 12px;
   font-weight: 600;
   color: #6c757d;
@@ -195,10 +199,10 @@
   padding: 8px 4px;
 }
 
-.calendar-grid {
+.calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 2px;
 }
 
 .calendar-day {
@@ -211,17 +215,58 @@
   color: #495057;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  min-height: 32px;
 }
 
 .calendar-day:hover {
   background-color: #f8f9fa;
 }
 
-.calendar-day.highlighted {
+.calendar-day.other-month {
+  color: #adb5bd;
+}
+
+.calendar-day.today {
   background-color: #e3f2fd;
   color: #1976d2;
   font-weight: 600;
+}
+
+.calendar-day.has-defense {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px #bbdefb;
+}
+
+.calendar-day.has-defense:hover {
+  background-color: #bbdefb;
+  transform: scale(1.05);
+}
+
+.calendar-footer {
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.defense-summary {
+  text-align: left;
+}
+
+.defense-days-list {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.defense-day-item {
+  padding: 4px 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.defense-day-item:last-child {
+  border-bottom: none;
 }
 
 /* Danh sách lịch bảo vệ */

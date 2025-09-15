@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import Select from "react-select";
 import userService from "../../services/user.service";
+import TopicService from "../../services/topic.service";
 import useAuth from "../../hooks/useAuth";
 import { getUserIdFromToken, getToken } from "../../auth/authUtils";
 import { useProfileTeacher } from "../../contexts/ProfileTeacherContext";
@@ -41,10 +42,21 @@ const TeacherProfile = () => {
   // State cho avatar file
   const [avatarFile, setAvatarFile] = useState(null);
 
+  // State cho đề tài hướng dẫn
+  const [guidanceTopics, setGuidanceTopics] = useState([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const [topicsError, setTopicsError] = useState(null);
+  const [studentProfiles, setStudentProfiles] = useState({});
+
   // Đồng bộ dữ liệu khi context thay đổi
   useEffect(() => {
     setTempFormData(profileData);
   }, [profileData]);
+
+  // Load đề tài hướng dẫn khi component mount
+  useEffect(() => {
+    loadGuidanceTopics();
+  }, []);
 
   // Xử lý thay đổi input
   const handleInputChange = (field, value) => {
@@ -117,23 +129,6 @@ const TeacherProfile = () => {
         return;
       }
 
-      if (
-        !tempFormData.maxStudents ||
-        tempFormData.maxStudents < 1 ||
-        tempFormData.maxStudents > 15
-      ) {
-        setStatusMessage("Số lượng sinh viên tối đa phải từ 1-15");
-        return;
-      }
-
-      // Validation số lượng sinh viên hiện tại không được vượt quá số lượng tối đa
-      if (profileData.currentStudents > tempFormData.maxStudents) {
-        setStatusMessage(
-          "Số lượng sinh viên tối đa không được nhỏ hơn số lượng sinh viên hiện tại"
-        );
-        return;
-      }
-
       setStatusMessage("Đang cập nhật...");
 
       // Tạo FormData để gửi multipart request
@@ -144,7 +139,6 @@ const TeacherProfile = () => {
         phoneNumber: tempFormData.phoneNumber,
         department: tempFormData.department,
         specialization: tempFormData.specialization,
-        maxStudents: tempFormData.maxStudents,
         userId: getUserIdFromToken(),
       };
 
@@ -229,6 +223,18 @@ const TeacherProfile = () => {
     }
   };
 
+  // Department mapping
+  const departmentMapping = {
+    CNTT: "Công nghệ thông tin",
+    KHMT: "Khoa học máy tính",
+    KTMT: "Kỹ thuật máy tính",
+    HTTT: "Hệ thống thông tin",
+    KTPM: "Kỹ thuật phần mềm",
+    ATTT: "An toàn thông tin",
+    MMT: "Mạng máy tính",
+    PM: "Phần mềm",
+  };
+
   // Options cho react-select
   const departmentOptions = [
     { value: "CNTT", label: "Công nghệ thông tin" },
@@ -249,6 +255,114 @@ const TeacherProfile = () => {
   // Hàm helper để lấy option hiện tại cho react-select
   const getCurrentOption = (value, options) => {
     return options.find((option) => option.value === value) || null;
+  };
+
+  // Transform API data để phù hợp với UI
+  const transformThesisData = (apiData) => {
+    if (!apiData || !Array.isArray(apiData)) return [];
+
+    return apiData.map((topic) => ({
+      id: topic.topicId,
+      title: topic.title,
+      description: topic.description,
+      student: topic.suggestedBy
+        ? `Sinh viên ID: ${topic.suggestedBy}`
+        : "Chưa có sinh viên",
+      studentId: topic.suggestedBy?.toString() || "Không có",
+      suggestedBy: topic.suggestedBy,
+      status: topic.approvalStatus === "APPROVED" ? "Đã duyệt" : "Đang chờ",
+      startDate: topic.createdAt
+        ? new Date(topic.createdAt).toISOString().split("T")[0]
+        : "Không có",
+      endDate: topic.updatedAt
+        ? new Date(topic.updatedAt).toISOString().split("T")[0]
+        : "Không có",
+      maxStudents: topic.maxStudents,
+      remainingSlots: topic.maxStudents,
+    }));
+  };
+
+  // Helper: tải profile theo danh sách userId và lưu vào state
+  const fetchProfilesForIds = async (userIds = []) => {
+    const uniqueIds = Array.from(
+      new Set(
+        (userIds || []).filter(
+          (id) => typeof id === "number" || typeof id === "string"
+        )
+      )
+    );
+    const need = uniqueIds.filter((id) => !studentProfiles[id]);
+    if (need.length === 0) return studentProfiles;
+
+    const fetched = {};
+    for (const uid of need) {
+      try {
+        const profile = await userService.getStudentProfileById(uid);
+        fetched[uid] = {
+          fullName: profile.fullName || profile.name || "Không xác định",
+          studentId: profile.userId || profile.studentId || profile.id || uid,
+          email: profile.email || "",
+          major: profile.major || "",
+          className: profile.className || profile.class || "",
+        };
+      } catch (e) {
+        fetched[uid] = {
+          fullName: "Không xác định",
+          studentId: uid,
+          email: "",
+          major: "",
+          className: "",
+        };
+      }
+    }
+    const merged = { ...studentProfiles, ...fetched };
+    setStudentProfiles(merged);
+    return merged;
+  };
+
+  // Load danh sách đề tài hướng dẫn
+  const loadGuidanceTopics = async () => {
+    try {
+      setTopicsLoading(true);
+      setTopicsError(null);
+
+      const response = await TopicService.getApprovedTopics({
+        page: 0,
+        size: 100,
+      });
+
+      if (response.success && response.data) {
+        let topicsData = [];
+
+        if (Array.isArray(response.data)) {
+          topicsData = response.data;
+        } else if (Array.isArray(response.data?.content)) {
+          topicsData = response.data.content;
+        } else if (Array.isArray(response.data?.data)) {
+          topicsData = response.data.data;
+        } else {
+          topicsData = [];
+        }
+
+        const transformedData = transformThesisData(topicsData);
+        setGuidanceTopics(transformedData);
+
+        // Load thông tin profile của sinh viên
+        const userIds = topicsData
+          .map((topic) => topic.suggestedBy)
+          .filter((id) => id);
+        await fetchProfilesForIds(userIds);
+      } else {
+        setTopicsError(response.message || "Không thể lấy danh sách đề tài");
+        setGuidanceTopics([]);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách đề tài:", error);
+      setTopicsError("Có lỗi xảy ra khi lấy danh sách đề tài");
+      setGuidanceTopics([]);
+    } finally {
+      setTopicsLoading(false);
+    }
   };
 
   // Loading state
@@ -364,7 +478,10 @@ const TeacherProfile = () => {
                   Chuyên ngành: {profileData.specialization || "Chưa cập nhật"}
                 </p>
                 <p className="text-sm text-gray-600 mb-3">
-                  Khoa: {profileData.department || "Chưa cập nhật"}
+                  Khoa:{" "}
+                  {departmentMapping[profileData.department] ||
+                    profileData.department ||
+                    "Chưa cập nhật"}
                 </p>
               </div>
 
@@ -384,52 +501,11 @@ const TeacherProfile = () => {
                 </div>
               </div>
 
-              {/* Student Capacity Progress */}
-              <div className="mb-4">
-                <div className="text-sm mb-2">
-                  <span className="text-gray-600">
-                    Số lượng sinh viên có thể hướng dẫn
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-lg h-3 mb-2">
-                  <div
-                    className="bg-blue-600 h-3 rounded-lg transition-all duration-300"
-                    style={{
-                      width: `${
-                        profileData.maxStudents && profileData.maxStudents > 0
-                          ? Math.min(
-                              ((profileData.currentStudents || 0) /
-                                profileData.maxStudents) *
-                                100,
-                              100
-                            )
-                          : 0
-                      }%`,
-                    }}
-                  ></div>
-                </div>
-                <div className="text-right text-sm font-medium text-gray-900">
-                  {profileData.currentStudents || 0}/
-                  {profileData.maxStudents || 0} sinh viên
-                </div>
-              </div>
-
               {/* Current Topics */}
               <div className="mb-6">
                 <div className="text-center text-sm text-gray-600">
-                  Số đề tài đang hướng dẫn: {profileData.currentTopics || 0}
+                  Số đề tài đang hướng dẫn: {guidanceTopics.length}
                 </div>
-                {profileData.maxStudents &&
-                  profileData.maxStudents > 0 &&
-                  (profileData.currentStudents || 0) <
-                    profileData.maxStudents && (
-                    <div className="text-center mt-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-green-100 text-green-800">
-                        <FaCheckCircle className="w-3 h-3 mr-1" />
-                        Có thể nhận thêm đề tài
-                      </span>
-                    </div>
-                  )}
               </div>
 
               {/* Action Buttons */}
@@ -608,7 +684,9 @@ const TeacherProfile = () => {
                           />
                         ) : (
                           <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                            {profileData.department || "Chưa cập nhật"}
+                            {departmentMapping[profileData.department] ||
+                              profileData.department ||
+                              "Chưa cập nhật"}
                           </div>
                         )}
                       </div>
@@ -672,32 +750,6 @@ const TeacherProfile = () => {
                           </div>
                         )}
                       </div>
-
-                      {/* Max Students */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Số lượng sinh viên tối đa
-                        </label>
-                        {isEditing ? (
-                          <input
-                            type="number"
-                            min="1"
-                            max="15"
-                            value={tempFormData.maxStudents}
-                            onChange={(e) =>
-                              handleInputChange(
-                                "maxStudents",
-                                parseInt(e.target.value)
-                              )
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          />
-                        ) : (
-                          <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                            {profileData.maxStudents || "Chưa cập nhật"}
-                          </div>
-                        )}
-                      </div>
                     </div>
 
                     {/* Status Message */}
@@ -724,17 +776,155 @@ const TeacherProfile = () => {
 
                 {activeTab === "guidance-topics" && (
                   <div className="space-y-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Đề tài hướng dẫn
-                    </h3>
-
-                    <div className="text-center py-12 text-gray-500">
-                      <FaBookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg">Chức năng đang được phát triển</p>
-                      <p className="text-sm">
-                        Sẽ có sớm trong phiên bản tiếp theo
-                      </p>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Đề tài hướng dẫn
+                      </h3>
+                      <button
+                        onClick={loadGuidanceTopics}
+                        disabled={topicsLoading}
+                        className="flex items-center gap-2 px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          className="bi bi-arrow-repeat"
+                          viewBox="0 0 16 16"
+                        >
+                          <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41m-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9" />
+                          <path
+                            fillRule="evenodd"
+                            d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5 5 0 0 0 8 3M3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9z"
+                          />
+                        </svg>
+                        Làm mới
+                      </button>
                     </div>
+
+                    {topicsLoading ? (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                        <p className="text-sm text-gray-500">
+                          Đang tải danh sách đề tài...
+                        </p>
+                      </div>
+                    ) : topicsError ? (
+                      <div className="text-center py-8">
+                        <div className="text-red-600 text-6xl mb-4">⚠️</div>
+                        <p className="text-lg font-medium text-gray-900 mb-2">
+                          Có lỗi xảy ra
+                        </p>
+                        <p className="text-gray-600 mb-4">{topicsError}</p>
+                        <button
+                          onClick={loadGuidanceTopics}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Thử lại
+                        </button>
+                      </div>
+                    ) : guidanceTopics.length === 0 ? (
+                      <div className="text-center py-12 text-gray-500">
+                        <FaBookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                        <p className="text-lg">
+                          Chưa có đề tài nào được hướng dẫn
+                        </p>
+                        <p className="text-sm">
+                          Các đề tài đã được approve sẽ hiển thị ở đây
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {guidanceTopics.map((topic) => (
+                          <div
+                            key={topic.id}
+                            className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-md transition-shadow duration-200"
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex-1">
+                                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                                  {topic.title}
+                                </h4>
+                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                  {topic.description}
+                                </p>
+                              </div>
+                              <span
+                                className={`text-xs px-2 py-1 rounded-md border ${
+                                  topic.status === "Đã duyệt"
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-amber-50 text-amber-700 border-amber-200"
+                                }`}
+                              >
+                                {topic.status}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  fill="currentColor"
+                                  className="bi bi-person-fill-check text-gray-500"
+                                  viewBox="0 0 16 16"
+                                >
+                                  <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m1.679-4.493-1.335 2.226a.75.75 0 0 1-1.174.144l-.774-.773a.5.5 0 0 1 .708-.708l.547.548 1.17-1.951a.5.5 0 1 1 .858.514M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+                                  <path d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4" />
+                                </svg>
+                                <span className="text-gray-600">
+                                  {(() => {
+                                    const profile =
+                                      studentProfiles[topic.suggestedBy];
+                                    if (
+                                      profile &&
+                                      profile.fullName !== "Không xác định"
+                                    ) {
+                                      return profile.fullName;
+                                    }
+                                    return topic.student;
+                                  })()}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  fill="currentColor"
+                                  className="bi bi-calendar-week-fill text-gray-500"
+                                  viewBox="0 0 16 16"
+                                >
+                                  <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M9.5 7h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m3 0h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5M2 10.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5" />
+                                </svg>
+                                <span className="text-gray-600">
+                                  {topic.startDate} - {topic.endDate}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  fill="currentColor"
+                                  className="bi bi-people-fill text-gray-500"
+                                  viewBox="0 0 16 16"
+                                >
+                                  <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                                </svg>
+                                <span className="text-gray-600">
+                                  Còn {topic.remainingSlots} chỗ trống
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

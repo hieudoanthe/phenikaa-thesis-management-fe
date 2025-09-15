@@ -78,11 +78,6 @@ const LecturerLayout = () => {
 
     switch (path) {
       case "/lecturer":
-      case "/lecturer/home":
-        return {
-          title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
-        };
       case "/lecturer/dashboard":
         return {
           title: "Trang chủ",
@@ -92,6 +87,11 @@ const LecturerLayout = () => {
         return {
           title: "Quản lý đồ án",
           subtitle: "Quản lý và tạo mới các đề tài",
+        };
+      case "/lecturer/assignments":
+        return {
+          title: "Giao nhiệm vụ",
+          subtitle: "Phân công và theo dõi nhiệm vụ cho sinh viên",
         };
       case "/lecturer/students":
         return {
@@ -108,10 +108,15 @@ const LecturerLayout = () => {
           title: "Báo cáo sinh viên",
           subtitle: "Xem và quản lý các báo cáo mà sinh viên đã nộp",
         };
-      case "/lecturer/schedule":
+      case "/lecturer/chat":
         return {
-          title: "Lịch trình",
-          subtitle: "Quản lý lịch bảo vệ và họp hội đồng",
+          title: "Trò chuyện",
+          subtitle: "Trao đổi với sinh viên",
+        };
+      case "/lecturer/notifications":
+        return {
+          title: "Thông báo",
+          subtitle: "Quản lý thông báo",
         };
       case "/lecturer/settings":
         return {
@@ -403,7 +408,14 @@ const LecturerLayout = () => {
         connectTimeRef.current > 0 &&
         now - connectTimeRef.current < bufferInitialMsRef.current;
       if (!isBuffering) {
-        showToast(message, "success");
+        // Chỉ hiển thị toast cho thông báo quan trọng
+        const isImportant =
+          /đề tài|phê duyệt|chấp nhận|từ chối|approve|reject|topic/i.test(
+            message
+          );
+        if (isImportant) {
+          showToast(message, "info");
+        }
       } else {
         bufferedCountRef.current += 1;
       }
@@ -501,7 +513,7 @@ const LecturerLayout = () => {
               bufferedCountRef.current = 0;
               if (count > 0 && !summaryShownRef.current) {
                 summaryShownRef.current = true;
-                showToast(`Bạn có ${count} thông báo mới`, "success");
+                showToast(`Bạn có ${count} thông báo mới`, "info");
               }
             }, Math.max(0, delay));
           }
@@ -540,7 +552,7 @@ const LecturerLayout = () => {
               bufferedCountRef.current = 0;
               if (count > 0 && !summaryShownRef.current) {
                 summaryShownRef.current = true;
-                showToast(`Bạn có ${count} thông báo mới`, "success");
+                showToast(`Bạn có ${count} thông báo mới`, "info");
               }
             }, Math.max(0, delay));
           }

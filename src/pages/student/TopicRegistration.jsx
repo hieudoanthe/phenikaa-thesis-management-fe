@@ -6,6 +6,19 @@ import registrationPeriodService from "../../services/registrationPeriod.service
 import ThesisRegisterModal from "./ThesisRegister.jsx";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const difficultyMap = {
   ADVANCED: {
     label: "Khó",
@@ -178,7 +191,7 @@ const TopicRegistration = () => {
     setRegisteringId(topicId);
     try {
       if (!selectedPeriodId) {
-        toast.error("Vui lòng chọn đợt đăng ký");
+        showToast("Vui lòng chọn đợt đăng ký", "error");
         return;
       }
       const res = await registrationService.registerTopic(
@@ -193,16 +206,16 @@ const TopicRegistration = () => {
             topic.topicId === topicId ? { ...topic, status: "Pending" } : topic
           )
         );
-        toast.success(
+        showToast(
           res.message ||
             "Đăng ký đề tài thành công! Vui lòng chờ giảng viên duyệt."
         );
       } else {
-        toast.error(res.message || "Đăng ký đề tài thất bại");
+        showToast(res.message || "Đăng ký đề tài thất bại");
       }
     } catch (err) {
       console.error("Lỗi khi đăng ký:", err);
-      toast.error("Đã xảy ra lỗi khi đăng ký đề tài");
+      showToast("Đã xảy ra lỗi khi đăng ký đề tài");
     } finally {
       setRegisteringId(null);
     }

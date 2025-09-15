@@ -5,6 +5,19 @@ import useAuthHook from "../../hooks/useAuth";
 import Select from "react-select";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const PhenikaaLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuthHook();
@@ -78,7 +91,7 @@ const PhenikaaLogin = () => {
         rememberMe
       );
 
-      toast.success("Đăng nhập thành công!");
+      showToast("Đăng nhập thành công!");
 
       // Chuyển hướng dựa trên role từ user data (ưu tiên) hoặc role từ form
       const userRole = user?.role || role;
@@ -87,7 +100,7 @@ const PhenikaaLogin = () => {
       if (userRole === "ADMIN") {
         navigate("/admin/dashboard");
       } else if (userRole === "TEACHER") {
-        navigate("/lecturer/home");
+        navigate("/lecturer/dashboard");
       } else if (userRole === "STUDENT") {
         navigate("/student/home");
       } else {
@@ -161,7 +174,7 @@ const PhenikaaLogin = () => {
         }
       }
 
-      toast.error(errorMessage);
+      showToast(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,19 @@ import React, { useState, useEffect } from "react";
 import { getFinalScore } from "../../services/grading.service";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return toast.success(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const FinalScoreView = ({ topicId }) => {
   const [finalScore, setFinalScore] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,7 +31,7 @@ const FinalScoreView = ({ topicId }) => {
       const data = await getFinalScore(topicId);
       setFinalScore(data);
     } catch (error) {
-      toast.error("Lỗi khi tải điểm cuối cùng");
+      showToast("Lỗi khi tải điểm cuối cùng");
     } finally {
       setLoading(false);
     }
@@ -81,7 +94,7 @@ const FinalScoreView = ({ topicId }) => {
           Kết quả điểm cuối cùng
         </h3>
         <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+          className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(
             finalScore.status
           )}`}
         >

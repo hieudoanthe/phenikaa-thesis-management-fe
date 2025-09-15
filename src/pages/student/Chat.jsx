@@ -11,6 +11,18 @@ import { WS_ENDPOINTS } from "../../config/api";
 import userService from "../../services/user.service";
 import chatService from "../../services/chat.service";
 
+// Department mapping
+const departmentMapping = {
+  CNTT: "Công nghệ thông tin",
+  KHMT: "Khoa học máy tính",
+  KTMT: "Kỹ thuật máy tính",
+  HTTT: "Hệ thống thông tin",
+  KTPM: "Kỹ thuật phần mềm",
+  ATTT: "An toàn thông tin",
+  MMT: "Mạng máy tính",
+  PM: "Phần mềm",
+};
+
 // Trang Chat của Sinh viên - giao diện giống Slack/Teams, học thuật
 const StudentChat = () => {
   const location = useLocation();
@@ -102,7 +114,10 @@ const StudentChat = () => {
                 teacher.fullName || "GV"
               )}&background=random`, // API trả về avt
             specialization: teacher.specialization || "Chưa có chuyên ngành",
-            department: teacher.department || "Chưa có khoa",
+            department:
+              departmentMapping[teacher.department] ||
+              teacher.department ||
+              "Chưa có khoa",
           }));
 
           setTeachers(formattedTeachers);

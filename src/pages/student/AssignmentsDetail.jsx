@@ -5,6 +5,19 @@ import { getUserIdFromToken } from "../../auth/authUtils";
 import * as submissionService from "../../services/submission.service";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 const AssignmentsDetail = () => {
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState([]);
@@ -80,11 +93,11 @@ const AssignmentsDetail = () => {
       try {
         window.__suppressNotificationToastUntil = Date.now() + 3000;
       } catch (_) {}
-      toast.success("Tạo báo cáo thành công");
+      showToast("Tạo báo cáo thành công");
     } catch (err) {
       const message =
         err?.response?.data?.message || err?.message || "Lỗi khi tạo báo cáo";
-      toast.error(message);
+      showToast(message);
     } finally {
       setSubmitting(false);
     }

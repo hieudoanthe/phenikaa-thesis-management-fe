@@ -33,7 +33,7 @@ const AdminRoute = ({ children }) => {
   if (userRole !== "ADMIN") {
     // Redirect về trang tương ứng với role của user
     if (userRole === "TEACHER") {
-      return <Navigate to="/lecturer/home" replace />;
+      return <Navigate to="/lecturer/dashboard" replace />;
     } else if (userRole === "STUDENT") {
       return <Navigate to="/student/home" replace />;
     } else {

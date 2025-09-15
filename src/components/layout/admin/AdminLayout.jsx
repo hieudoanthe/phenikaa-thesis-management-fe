@@ -32,11 +32,6 @@ const AdminLayout = () => {
           subtitle: "Quản lý tài khoản sinh viên, giảng viên và admin",
         };
 
-      case "/admin/groups":
-        return {
-          title: "Quản lý nhóm",
-          subtitle: "Theo dõi và quản lý các nhóm thực hiện luận văn",
-        };
       case "/admin/assignments":
         return {
           title: "Quản lý nhiệm vụ",

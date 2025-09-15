@@ -2,6 +2,19 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { toast } from "react-toastify";
 
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
+
 // Mapping role theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
 const roleOptions = [
   { value: 1, label: "Sinh viên", role: "STUDENT" },
@@ -68,18 +81,18 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
         });
 
         // Hiển thị toast thành công và đóng modal ngay
-        toast.success("Thêm người dùng thành công!");
+        showToast("Thêm người dùng thành công!");
         onClose();
       } catch (error) {
         // Nếu có lỗi, không đóng modal và hiển thị toast lỗi
         console.error("Lỗi khi thêm người dùng:", error);
-        toast.error("Có lỗi xảy ra khi thêm người dùng!");
+        showToast("Có lỗi xảy ra khi thêm người dùng!");
       } finally {
         setSubmitting(false);
       }
     } else {
       // Hiển thị thông báo lỗi nếu form không hợp lệ
-      toast.error("Vui lòng điền đầy đủ thông tin!");
+      showToast("Vui lòng điền đầy đủ thông tin!");
     }
   };
 

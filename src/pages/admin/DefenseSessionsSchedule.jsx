@@ -3,6 +3,19 @@ import Select from "react-select";
 import { evalService } from "../../services/evalService";
 import studentAssignmentService from "../../services/studentAssignment.service";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return showToast(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import { useLocation } from "react-router-dom"; // Import useLocation
 import userService from "../../services/user.service";
 
@@ -177,7 +190,7 @@ const DefenseSessionsSchedule = () => {
           }
         } catch (error) {
           console.error("Lỗi khi tìm buổi bảo vệ:", error);
-          toast.error("Không thể tìm thông tin buổi bảo vệ");
+          showToast("Không thể tìm thông tin buổi bảo vệ");
         }
       };
 
@@ -215,7 +228,7 @@ const DefenseSessionsSchedule = () => {
           }
         } catch (error) {
           console.error("Lỗi khi tìm buổi bảo vệ:", error);
-          toast.error("Không thể tìm thông tin buổi bảo vệ");
+          showToast("Không thể tìm thông tin buổi bảo vệ");
         }
       };
 
@@ -259,7 +272,7 @@ const DefenseSessionsSchedule = () => {
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách lịch bảo vệ:", error);
-      toast.error("Lỗi khi tải danh sách lịch bảo vệ");
+      showToast("Lỗi khi tải danh sách lịch bảo vệ");
     }
   };
 
@@ -270,7 +283,7 @@ const DefenseSessionsSchedule = () => {
       setSessions(data);
     } catch (error) {
       console.error("Lỗi khi tải danh sách session:", error);
-      toast.error("Lỗi khi tải danh sách session");
+      showToast("Lỗi khi tải danh sách session");
     } finally {
       setLoading(false);
     }
@@ -284,7 +297,7 @@ const DefenseSessionsSchedule = () => {
       setSessions(data);
     } catch (error) {
       console.error("Lỗi khi tải danh sách session:", error);
-      toast.error("Lỗi khi tải danh sách session");
+      showToast("Lỗi khi tải danh sách session");
     } finally {
       setLoading(false);
     }
@@ -347,7 +360,7 @@ const DefenseSessionsSchedule = () => {
   const handleModalSubmit = async (formData) => {
     try {
       if (!selectedSchedule) {
-        toast.error("Vui lòng chọn lịch bảo vệ trước");
+        showToast("Vui lòng chọn lịch bảo vệ trước");
         return;
       }
 
@@ -381,7 +394,7 @@ const DefenseSessionsSchedule = () => {
       };
 
       await evalService.createDefenseSession(sessionData);
-      toast.success("Tạo buổi bảo vệ thành công!");
+      showToast("Tạo buổi bảo vệ thành công!");
 
       // Reload sessions
       if (selectedSchedule) {
@@ -389,13 +402,13 @@ const DefenseSessionsSchedule = () => {
       }
     } catch (error) {
       console.error("Lỗi khi tạo buổi bảo vệ:", error);
-      toast.error("Lỗi khi tạo buổi bảo vệ");
+      showToast("Lỗi khi tạo buổi bảo vệ");
     }
   };
 
   const handleExport = () => {
     // TODO: Export dữ liệu
-    toast.info("Chức năng export sẽ được phát triển!");
+    showToast("Chức năng export sẽ được phát triển!");
   };
 
   const handleSessionClick = (session) => {
@@ -451,12 +464,10 @@ const DefenseSessionsSchedule = () => {
         )
       );
 
-      toast.success(
-        `Đã cập nhật trạng thái thành: ${getStatusLabel(newStatus)}`
-      );
+      showToast(`Đã cập nhật trạng thái thành: ${getStatusLabel(newStatus)}`);
     } catch (error) {
       console.error("Lỗi khi cập nhật trạng thái:", error);
-      toast.error("Lỗi khi cập nhật trạng thái");
+      showToast("Lỗi khi cập nhật trạng thái");
     }
   };
 
@@ -468,7 +479,7 @@ const DefenseSessionsSchedule = () => {
       setAvailableStudents(students);
     } catch (error) {
       console.error("Lỗi khi tải danh sách sinh viên:", error);
-      toast.error("Lỗi khi tải danh sách sinh viên");
+      showToast("Lỗi khi tải danh sách sinh viên");
       // Fallback to empty array
       setAvailableStudents([]);
     } finally {
@@ -486,7 +497,7 @@ const DefenseSessionsSchedule = () => {
       setAssignedStudents(students);
     } catch (error) {
       console.error("Lỗi khi tải danh sách sinh viên đã gán:", error);
-      toast.error("Lỗi khi tải danh sách sinh viên đã gán");
+      showToast("Lỗi khi tải danh sách sinh viên đã gán");
       // Fallback to empty array
       setAssignedStudents([]);
     } finally {
@@ -498,7 +509,7 @@ const DefenseSessionsSchedule = () => {
   const handleAssignStudent = async (studentId) => {
     try {
       if (!selectedSessionDetail) {
-        toast.error("Không tìm thấy thông tin buổi bảo vệ");
+        showToast("Không tìm thấy thông tin buổi bảo vệ");
         return;
       }
 
@@ -519,13 +530,11 @@ const DefenseSessionsSchedule = () => {
         setAvailableStudents(
           availableStudents.filter((s) => s.studentId !== studentId)
         );
-        toast.success(
-          `Đã gán sinh viên ${student.studentName} vào buổi bảo vệ`
-        );
+        showToast(`Đã gán sinh viên ${student.studentName} vào buổi bảo vệ`);
       }
     } catch (error) {
       console.error("Lỗi khi gán sinh viên:", error);
-      toast.error("Lỗi khi gán sinh viên");
+      showToast("Lỗi khi gán sinh viên");
     }
   };
 
@@ -533,7 +542,7 @@ const DefenseSessionsSchedule = () => {
   const handleUnassignStudent = async (studentId) => {
     try {
       if (!selectedSessionDetail) {
-        toast.error("Không tìm thấy thông tin buổi bảo vệ");
+        showToast("Không tìm thấy thông tin buổi bảo vệ");
         return;
       }
 
@@ -550,11 +559,11 @@ const DefenseSessionsSchedule = () => {
           assignedStudents.filter((s) => s.studentId !== studentId)
         );
         setAvailableStudents([...availableStudents, student]);
-        toast.success(`Đã hủy gán sinh viên ${student.studentName}`);
+        showToast(`Đã hủy gán sinh viên ${student.studentName}`);
       }
     } catch (error) {
       console.error("Lỗi khi hủy gán sinh viên:", error);
-      toast.error("Lỗi khi hủy gán sinh viên");
+      showToast("Lỗi khi hủy gán sinh viên");
     }
   };
 
@@ -1141,7 +1150,7 @@ const CreateScheduleModal = ({
         setTeacherOptions(options);
       } catch (e) {
         console.error("Lỗi khi tải danh sách giảng viên:", e);
-        toast.error("Không thể tải danh sách giảng viên");
+        showToast("Không thể tải danh sách giảng viên");
         setTeacherOptions([]);
       } finally {
         setLoadingTeachers(false);
@@ -1227,7 +1236,7 @@ const CreateScheduleModal = ({
 
     // Kiểm tra giới hạn theo lịch bảo vệ
     if (!selectedSchedule || !selectedSchedule.value) {
-      toast.error("Vui lòng chọn lịch bảo vệ trước");
+      showToast("Vui lòng chọn lịch bảo vệ trước");
       return;
     }
     if (scheduleStart && scheduleEnd) {
@@ -1248,7 +1257,7 @@ const CreateScheduleModal = ({
         chosen.getDate()
       );
       if (chosenOnly < startOnly || chosenOnly > endOnly) {
-        toast.error(
+        showToast(
           "Ngày phải nằm trong khoảng thời gian của lịch bảo vệ đã chọn"
         );
         return;
@@ -1257,7 +1266,7 @@ const CreateScheduleModal = ({
 
     // Kiểm tra ngày có phải là thứ 2-6 không
     if (!isWeekday(formData.date)) {
-      toast.error("Chỉ được phép tạo buổi bảo vệ từ thứ 2 đến thứ 6!");
+      showToast("Chỉ được phép tạo buổi bảo vệ từ thứ 2 đến thứ 6!");
       return;
     }
 

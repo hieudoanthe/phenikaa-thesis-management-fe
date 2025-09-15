@@ -1,10 +1,35 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { toast } from "react-toastify";
+
+// Helper hiển thị toast sử dụng react-toastify
+const showToast = (message, type = "success") => {
+  try {
+    if (type === "error") return showToast(message);
+    if (type === "warning") return toast.warn(message);
+    if (type === "info") return toast.info(message);
+    return showToast(message);
+  } catch (err) {
+    console.error("Không thể hiển thị toast:", err);
+    (type === "success" ? console.log : console.error)(message);
+  }
+};
 import studentAssignmentService from "../../services/studentAssignment.service";
 import { API_ENDPOINTS } from "../../config/api";
 import { apiGet } from "../../services/mainHttpClient";
 import { useNavigate } from "react-router-dom";
+
+// Department mapping
+const departmentMapping = {
+  CNTT: "Công nghệ thông tin",
+  KHMT: "Khoa học máy tính",
+  KTMT: "Kỹ thuật máy tính",
+  HTTT: "Hệ thống thông tin",
+  KTPM: "Kỹ thuật phần mềm",
+  ATTT: "An toàn thông tin",
+  MMT: "Mạng máy tính",
+  PM: "Phần mềm",
+};
 
 const StudentPeriodManagement = () => {
   const [selectedPeriod, setSelectedPeriod] = useState(null);
@@ -91,11 +116,11 @@ const StudentPeriodManagement = () => {
         }
       } else {
         setPeriods([]);
-        toast.warning("Không có đợt đăng ký nào");
+        showToast("Không có đợt đăng ký nào");
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách đợt đăng ký:", error);
-      toast.error("Lỗi khi tải danh sách đợt đăng ký");
+      showToast("Lỗi khi tải danh sách đợt đăng ký");
       setPeriods([]);
     } finally {
       setLoading(false);
@@ -121,7 +146,7 @@ const StudentPeriodManagement = () => {
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách giảng viên:", error);
-      toast.error("Không thể tải danh sách giảng viên");
+      showToast("Không thể tải danh sách giảng viên");
     } finally {
       setLoadingTeachers(false);
     }
@@ -226,10 +251,10 @@ const StudentPeriodManagement = () => {
       setLoadingProfiles(false);
 
       setStudents(studentsWithProfiles);
-      toast.success(`Đã tải ${studentsWithProfiles.length} sinh viên`);
+      showToast(`Đã tải ${studentsWithProfiles.length} sinh viên`);
     } catch (error) {
       console.error("Lỗi khi tải danh sách sinh viên:", error);
-      toast.error("Lỗi khi tải danh sách sinh viên");
+      showToast("Lỗi khi tải danh sách sinh viên");
       setStudents([]);
     } finally {
       setLoading(false);
@@ -385,7 +410,7 @@ const StudentPeriodManagement = () => {
     try {
       const assignment = assignedStudents.get(student.studentId);
       if (!assignment) {
-        toast.error("Không tìm thấy thông tin gán của sinh viên");
+        showToast("Không tìm thấy thông tin gán của sinh viên");
         return;
       }
 
@@ -395,7 +420,7 @@ const StudentPeriodManagement = () => {
       );
 
       if (result.success) {
-        toast.success("Hủy gán sinh viên thành công!");
+        showToast("Hủy gán sinh viên thành công!");
 
         // Cập nhật state
         const newAssignedStudents = new Map(assignedStudents);
@@ -407,11 +432,11 @@ const StudentPeriodManagement = () => {
           loadStudentsByPeriod(selectedPeriod.value);
         }
       } else {
-        toast.error(result.message || "Không thể hủy gán sinh viên");
+        showToast(result.message || "Không thể hủy gán sinh viên");
       }
     } catch (error) {
       console.error("Lỗi khi hủy gán sinh viên:", error);
-      toast.error("Lỗi khi hủy gán sinh viên");
+      showToast("Lỗi khi hủy gán sinh viên");
     }
   };
 
@@ -431,7 +456,7 @@ const StudentPeriodManagement = () => {
 
       if (!sessions || sessions.length === 0) {
         console.warn("Không có buổi bảo vệ nào có sẵn");
-        toast.warning("Không có buổi bảo vệ nào có sẵn để gán sinh viên");
+        showToast("Không có buổi bảo vệ nào có sẵn để gán sinh viên");
         setAvailableSessions([]);
         return;
       }
@@ -460,7 +485,7 @@ const StudentPeriodManagement = () => {
       setShowAssignmentModal(true);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách buổi bảo vệ:", error);
-      toast.error("Không thể lấy danh sách buổi bảo vệ");
+      showToast("Không thể lấy danh sách buổi bảo vệ");
     } finally {
       setLoadingSessions(false);
     }
@@ -480,7 +505,7 @@ const StudentPeriodManagement = () => {
         selectedStudent: !!selectedStudent,
         selectedSessionId: !!selectedSessionId,
       });
-      toast.error("Vui lòng chọn sinh viên và buổi bảo vệ");
+      showToast("Vui lòng chọn sinh viên và buổi bảo vệ");
       return;
     }
 
@@ -502,7 +527,7 @@ const StudentPeriodManagement = () => {
       );
 
       if (result.success) {
-        toast.success("Gán sinh viên vào buổi bảo vệ thành công!");
+        showToast("Gán sinh viên vào buổi bảo vệ thành công!");
 
         // Cập nhật state assignedStudents ngay lập tức
         const selectedSession = availableSessions.find(
@@ -528,13 +553,11 @@ const StudentPeriodManagement = () => {
           loadStudentsByPeriod(selectedPeriod.value);
         }
       } else {
-        toast.error(
-          result.message || "Không thể gán sinh viên vào buổi bảo vệ"
-        );
+        showToast(result.message || "Không thể gán sinh viên vào buổi bảo vệ");
       }
     } catch (error) {
       console.error("Lỗi khi gán sinh viên:", error);
-      toast.error("Lỗi khi gán sinh viên vào buổi bảo vệ");
+      showToast("Lỗi khi gán sinh viên vào buổi bảo vệ");
     } finally {
       setAssigningStudent(false);
     }
@@ -887,7 +910,12 @@ const StudentPeriodManagement = () => {
                             {student.teacherInfo?.specialization || "N/A"}
                           </div>
                           <div className="text-gray-500 text-xs">
-                            Khoa: {student.teacherInfo?.department || "N/A"}
+                            Khoa:{" "}
+                            {departmentMapping[
+                              student.teacherInfo?.department
+                            ] ||
+                              student.teacherInfo?.department ||
+                              "N/A"}
                           </div>
                         </div>
                       </td>
