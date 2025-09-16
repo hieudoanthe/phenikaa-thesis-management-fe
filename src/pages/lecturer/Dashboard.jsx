@@ -420,6 +420,7 @@ const LecturerDashboard = () => {
       gradient: "from-blue-50 to-blue-100",
       accent: "bg-blue-400",
       iconTint: "text-blue-400",
+      headerLabel: "Đã duyệt",
     },
     {
       key: "rejected",
@@ -452,6 +453,7 @@ const LecturerDashboard = () => {
       gradient: "from-red-50 to-red-100",
       accent: "bg-red-400",
       iconTint: "text-red-400",
+      headerLabel: "Từ chối",
     },
     {
       key: "pending",
@@ -484,6 +486,7 @@ const LecturerDashboard = () => {
       gradient: "from-yellow-50 to-yellow-100",
       accent: "bg-yellow-400",
       iconTint: "text-yellow-400",
+      headerLabel: "Cần duyệt",
     },
   ];
 
@@ -579,12 +582,29 @@ const LecturerDashboard = () => {
         {summaryItems.map((item, index) => (
           <div
             key={item.key}
-            className="relative overflow-hidden bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            className="relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300 bg-white"
           >
-            {/* Inner gradient panel with border like sample */}
-            <div
-              className={`mx-5 my-4 rounded-xl ${item.theme} bg-gradient-to-r ${item.gradient} p-4 flex items-center justify-between border border-current`}
-            >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                    index === 0
+                      ? "bg-blue-50 text-blue-600"
+                      : index === 1
+                      ? "bg-red-50 text-red-600"
+                      : "bg-yellow-50 text-yellow-600"
+                  }`}
+                >
+                  {item.icon}
+                </div>
+                <span className="text-base md:text-lg font-bold text-gray-700">
+                  {item.headerLabel}
+                </span>
+              </div>
+            </div>
+            {/* Body */}
+            <div className="px-5 py-4 flex items-center justify-between">
               <div className="pr-4">
                 <p className="text-sm text-gray-700">{item.subtitle}</p>
                 <p
@@ -714,14 +734,17 @@ const LecturerDashboard = () => {
               <span className="text-xl">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="25"
-                  height="25"
-                  fill="currentColor"
-                  className="bi bi-door-open"
-                  viewBox="0 0 16 16"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  className="size-6"
                 >
-                  <path d="M8.5 10c-.276 0-.5-.448-.5-1s.224-1 .5-1 .5.448.5 1-.224 1-.5 1" />
-                  <path d="M10.828.122A.5.5 0 0 1 11 .5V1h.5A1.5 1.5 0 0 1 13 2.5V15h1.5a.5.5 0 0 1 0 1h-13a.5.5 0 0 1 0-1H3V1.5a.5.5 0 0 1 .43-.495l7-1a.5.5 0 0 1 .398.117M11.5 2H11v13h1V2.5a.5.5 0 0 0-.5-.5M4 1.934V15h6V1.077z" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
+                  />
                 </svg>
               </span>
             </div>

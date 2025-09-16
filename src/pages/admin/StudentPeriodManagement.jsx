@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Select from "react-select";
 import { toast } from "react-toastify";
 
@@ -40,6 +40,8 @@ const StudentPeriodManagement = () => {
   const [viewType, setViewType] = useState("all"); // "all", "registered", "suggested"
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 6;
 
   // State cho việc gán sinh viên vào buổi bảo vệ
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
@@ -62,12 +64,19 @@ const StudentPeriodManagement = () => {
     loadTeachers();
   }, []);
 
-  // Load sinh viên khi chọn đợt và teachersMap đã sẵn sàng
+  // Load sinh viên khi chọn đợt
   useEffect(() => {
-    if (selectedPeriod && !loadingTeachers) {
+    if (selectedPeriod) {
       loadStudentsByPeriod(selectedPeriod.value);
     }
-  }, [selectedPeriod, viewType, loadingTeachers]);
+  }, [selectedPeriod, viewType]);
+
+  // Reset trang khi bộ lọc/thông tin thay đổi
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [selectedPeriod, viewType, searchQuery, filterStatus]);
+
+  // (moved paginatedStudents below after filteredStudents is defined)
 
   // Kiểm tra assignment status khi students thay đổi
   useEffect(() => {
@@ -136,13 +145,20 @@ const StudentPeriodManagement = () => {
         const teachersMapData = new Map();
         teachers.forEach((teacher) => {
           teachersMapData.set(teacher.userId, {
-            fullName: teacher.fullName || `Giảng viên ${teacher.userId}`,
+            fullName:
+              teacher.fullName ||
+              teacher.name ||
+              (teacher.firstName && teacher.lastName
+                ? `${teacher.firstName} ${teacher.lastName}`
+                : null) ||
+              `Giảng viên ${teacher.userId}`,
             specialization: teacher.specialization || "Chưa có chuyên ngành",
             department: teacher.department || "Chưa có khoa",
             email: teacher.phoneNumber || "Chưa có thông tin liên lạc",
           });
         });
         setTeachersMap(teachersMapData);
+        return teachersMapData;
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách giảng viên:", error);
@@ -150,6 +166,7 @@ const StudentPeriodManagement = () => {
     } finally {
       setLoadingTeachers(false);
     }
+    return new Map();
   };
 
   const loadStudentsByPeriod = async (periodId) => {
@@ -177,10 +194,10 @@ const StudentPeriodManagement = () => {
       }
 
       // Đảm bảo teachersMap đã được load trước khi xử lý sinh viên
-      if (teachersMap.size === 0) {
-        console.log("TeachersMap chưa được load, đang load lại...");
-        await loadTeachers();
-      }
+      const localTeachersMap =
+        teachersMap.size === 0 && !loadingTeachers
+          ? await loadTeachers()
+          : teachersMap;
 
       // Lấy thông tin profile cho từng sinh viên và giảng viên
       setLoadingProfiles(true);
@@ -192,7 +209,7 @@ const StudentPeriodManagement = () => {
             );
 
             // Lấy thông tin giảng viên hướng dẫn từ teachersMap
-            const teacherInfo = teachersMap.get(student.supervisorId) || {
+            const teacherInfo = localTeachersMap.get(student.supervisorId) || {
               fullName: `Giảng viên ${student.supervisorId}`,
               specialization: "Chưa có chuyên ngành",
               department: "Chưa có khoa",
@@ -203,6 +220,9 @@ const StudentPeriodManagement = () => {
               fullName:
                 profile?.fullName ||
                 profile?.name ||
+                (profile?.firstName && profile?.lastName
+                  ? `${profile.firstName} ${profile.lastName}`
+                  : null) ||
                 `Sinh viên ${student.studentId}`,
               studentCode:
                 profile?.studentCode ||
@@ -225,7 +245,7 @@ const StudentPeriodManagement = () => {
             );
 
             // Lấy thông tin giảng viên hướng dẫn từ teachersMap
-            const teacherInfo = teachersMap.get(student.supervisorId) || {
+            const teacherInfo = localTeachersMap.get(student.supervisorId) || {
               fullName: `Giảng viên ${student.supervisorId}`,
               specialization: "Chưa có chuyên ngành",
               department: "Chưa có khoa",
@@ -338,6 +358,13 @@ const StudentPeriodManagement = () => {
 
     return matchesSearch && matchesStatus;
   });
+
+  // Danh sách sinh viên theo trang (client-side pagination)
+  const paginatedStudents = useMemo(() => {
+    const start = currentPage * pageSize;
+    const end = start + pageSize;
+    return (filteredStudents || []).slice(start, end);
+  }, [filteredStudents, currentPage, pageSize]);
 
   const viewTypeOptions = [
     { value: "all", label: "Tất cả sinh viên" },
@@ -606,7 +633,7 @@ const StudentPeriodManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -678,100 +705,7 @@ const StudentPeriodManagement = () => {
           </div>
         </div>
 
-        {/* Statistics */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Thống kê</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 text-blue-600"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold text-blue-900">
-                    {students.length}
-                  </div>
-                  <div className="text-sm text-blue-700">Tổng số sinh viên</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 text-green-600"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold text-green-900">
-                    {
-                      students.filter((s) => s.suggestionStatus === "APPROVED")
-                        .length
-                    }
-                  </div>
-                  <div className="text-sm text-green-700">Đã duyệt</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 text-yellow-600"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold text-yellow-900">
-                    {
-                      students.filter((s) => s.suggestionStatus === "PENDING")
-                        .length
-                    }
-                  </div>
-                  <div className="text-sm text-yellow-700">Chờ duyệt</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-8 h-8 text-red-600"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="ml-4">
-                  <div className="text-2xl font-bold text-red-900">
-                    {
-                      students.filter((s) => s.suggestionStatus === "REJECTED")
-                        .length
-                    }
-                  </div>
-                  <div className="text-sm text-red-700">Từ chối</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Statistics section removed as requested */}
 
         {/* Student List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -849,7 +783,7 @@ const StudentPeriodManagement = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStudents.map((student, index) => (
+                  {paginatedStudents.map((student, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -950,6 +884,41 @@ const StudentPeriodManagement = () => {
                   ))}
                 </tbody>
               </table>
+              {/* Pagination */}
+              {Math.ceil(filteredStudents.length / pageSize) > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-gray-600">
+                    Trang {currentPage + 1} /{" "}
+                    {Math.max(1, Math.ceil(filteredStudents.length / pageSize))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-50"
+                      onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                      disabled={currentPage === 0}
+                    >
+                      Trước
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-50"
+                      onClick={() =>
+                        setCurrentPage((p) =>
+                          Math.min(
+                            Math.ceil(filteredStudents.length / pageSize) - 1,
+                            p + 1
+                          )
+                        )
+                      }
+                      disabled={
+                        currentPage >=
+                        Math.ceil(filteredStudents.length / pageSize) - 1
+                      }
+                    >
+                      Sau
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -92,6 +92,13 @@ const Dashboard = () => {
       )
     : [];
 
+  const isAllZero = (arr = [], key = "value") => {
+    if (!Array.isArray(arr) || arr.length === 0) return true;
+    return arr.every(
+      (item) => (key ? Number(item[key] || 0) : Number(item || 0)) === 0
+    );
+  };
+
   // Dữ liệu cho biểu đồ đánh giá theo loại
   const evaluationTypeData = statistics.overview?.evaluationsByStatus
     ? Object.entries(statistics.overview.evaluationsByStatus).map(
@@ -140,6 +147,66 @@ const Dashboard = () => {
         { month: "T4", sessions: 0, students: 0 },
         { month: "T5", sessions: 0, students: 0 },
         { month: "T6", sessions: 0, students: 0 },
+      ];
+
+  // Dữ liệu cho biểu đồ trạng thái đề tài (lọc bỏ giá trị 0 để tránh label đè nhau)
+  const topicsStatusData = statistics.overview?.topicsByStatus
+    ? Object.entries(statistics.overview.topicsByStatus)
+        .map(([status, count]) => ({
+          name:
+            status === "ACTIVE"
+              ? "Hoạt động"
+              : status === "INACTIVE"
+              ? "Tạm dừng"
+              : status === "COMPLETED"
+              ? "Hoàn thành"
+              : status === "CANCELLED"
+              ? "Hủy bỏ"
+              : status,
+          value: count || 0,
+          color:
+            status === "ACTIVE"
+              ? "#10B981"
+              : status === "INACTIVE"
+              ? "#F59E0B"
+              : status === "COMPLETED"
+              ? "#3B82F6"
+              : status === "CANCELLED"
+              ? "#EF4444"
+              : "#6B7280",
+        }))
+        .filter((d) => d.value > 0)
+    : [];
+
+  const topicsStatusTotal = Array.isArray(topicsStatusData)
+    ? topicsStatusData.reduce((sum, d) => sum + (Number(d.value) || 0), 0)
+    : 0;
+
+  // Dữ liệu cho biểu đồ phân bố điểm số
+  const scoreData = statistics.overview?.scoreDistribution
+    ? Object.entries(statistics.overview.scoreDistribution).map(
+        ([range, count]) => ({
+          range: range,
+          count: count || 0,
+          color: range.includes("0-2")
+            ? "#EF4444"
+            : range.includes("2-4")
+            ? "#F59E0B"
+            : range.includes("4-6")
+            ? "#3B82F6"
+            : range.includes("6-8")
+            ? "#10B981"
+            : range.includes("8-10")
+            ? "#8B5CF6"
+            : "#6B7280",
+        })
+      )
+    : [
+        { range: "0-2", count: 0, color: "#EF4444" },
+        { range: "2-4", count: 0, color: "#F59E0B" },
+        { range: "4-6", count: 0, color: "#3B82F6" },
+        { range: "6-8", count: 0, color: "#10B981" },
+        { range: "8-10", count: 0, color: "#8B5CF6" },
       ];
 
   // Dữ liệu mẫu cho bảng buổi bảo vệ
@@ -311,32 +378,38 @@ const Dashboard = () => {
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
             </div>
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={evaluationTypeData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: "#e5e7eb" }}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: "#e5e7eb" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    }}
-                  />
-                  <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {isAllZero(evaluationTypeData) ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Chưa có dữ liệu để hiển thị
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={evaluationTypeData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                    <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
@@ -349,34 +422,40 @@ const Dashboard = () => {
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
             </div>
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={defenseStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {defenseStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {isAllZero(defenseStatusData) ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Chưa có dữ liệu để hiển thị
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={defenseStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {defenseStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>
@@ -392,59 +471,66 @@ const Dashboard = () => {
               <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
             </div>
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={trendData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: "#e5e7eb" }}
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: "#e5e7eb" }}
-                  />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: "#e5e7eb" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    }}
-                  />
-                  <Legend />
-                  <Area
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="sessions"
-                    stackId="1"
-                    stroke="#3B82F6"
-                    fill="#3B82F6"
-                    fillOpacity={0.6}
-                    name="Buổi bảo vệ"
-                  />
-                  <Area
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="students"
-                    stackId="2"
-                    stroke="#10B981"
-                    fill="#10B981"
-                    fillOpacity={0.6}
-                    name="Sinh viên"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {isAllZero(trendData, "sessions") &&
+              isAllZero(trendData, "students") ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Chưa có dữ liệu để hiển thị
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={trendData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                    <Legend />
+                    <Area
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="sessions"
+                      stackId="1"
+                      stroke="#3B82F6"
+                      fill="#3B82F6"
+                      fillOpacity={0.6}
+                      name="Buổi bảo vệ"
+                    />
+                    <Area
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="students"
+                      stackId="2"
+                      stroke="#10B981"
+                      fill="#10B981"
+                      fillOpacity={0.6}
+                      name="Sinh viên"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
@@ -457,58 +543,42 @@ const Dashboard = () => {
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
             </div>
             <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={
-                    statistics.overview?.scoreDistribution
-                      ? Object.entries(
-                          statistics.overview.scoreDistribution
-                        ).map(([range, count]) => ({
-                          range: range,
-                          count: count || 0,
-                          color: range.includes("0-2")
-                            ? "#EF4444"
-                            : range.includes("2-4")
-                            ? "#F59E0B"
-                            : range.includes("4-6")
-                            ? "#3B82F6"
-                            : range.includes("6-8")
-                            ? "#10B981"
-                            : range.includes("8-10")
-                            ? "#8B5CF6"
-                            : "#6B7280",
-                        }))
-                      : [
-                          { range: "0-2", count: 0, color: "#EF4444" },
-                          { range: "2-4", count: 0, color: "#F59E0B" },
-                          { range: "4-6", count: 0, color: "#3B82F6" },
-                          { range: "6-8", count: 0, color: "#10B981" },
-                          { range: "8-10", count: 0, color: "#8B5CF6" },
-                        ]
-                  }
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="range"
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: "#e5e7eb" }}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    axisLine={{ stroke: "#e5e7eb" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    }}
-                  />
-                  <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {isAllZero(scoreData, "count") ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Chưa có dữ liệu để hiển thị
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={scoreData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="range"
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                      {scoreData.map((entry, index) => (
+                        <Cell key={`bar-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>
@@ -600,72 +670,56 @@ const Dashboard = () => {
               <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
             </div>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={
-                      statistics.overview?.topicsByStatus
-                        ? Object.entries(
-                            statistics.overview.topicsByStatus
-                          ).map(([status, count]) => ({
-                            name:
-                              status === "ACTIVE"
-                                ? "Hoạt động"
-                                : status === "INACTIVE"
-                                ? "Tạm dừng"
-                                : status === "COMPLETED"
-                                ? "Hoàn thành"
-                                : status === "CANCELLED"
-                                ? "Hủy bỏ"
-                                : status,
-                            value: count || 0,
-                            color:
-                              status === "ACTIVE"
-                                ? "#10B981"
-                                : status === "INACTIVE"
-                                ? "#F59E0B"
-                                : status === "COMPLETED"
-                                ? "#3B82F6"
-                                : status === "CANCELLED"
-                                ? "#EF4444"
-                                : "#6B7280",
-                          }))
-                        : [
-                            { name: "Hoạt động", value: 0, color: "#10B981" },
-                            { name: "Tạm dừng", value: 0, color: "#F59E0B" },
-                            { name: "Hoàn thành", value: 0, color: "#3B82F6" },
-                            { name: "Hủy bỏ", value: 0, color: "#EF4444" },
-                          ]
-                    }
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {[
-                      { name: "Hoạt động", value: 45, color: "#10B981" },
-                      { name: "Tạm dừng", value: 12, color: "#F59E0B" },
-                      { name: "Hoàn thành", value: 28, color: "#3B82F6" },
-                      { name: "Hủy bỏ", value: 5, color: "#EF4444" },
-                    ].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {isAllZero(topicsStatusData) ? (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Chưa có dữ liệu để hiển thị
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={topicsStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent, cx, cy, outerRadius }) => {
+                        if (topicsStatusData.length === 1) {
+                          const x = cx - outerRadius - 12;
+                          const y = cy;
+                          return (
+                            <text
+                              x={x}
+                              y={y}
+                              fill={topicsStatusData[0]?.color || "#374151"}
+                              textAnchor="end"
+                              dominantBaseline="central"
+                              style={{ fontSize: 12, fontWeight: 600 }}
+                            >
+                              {`${name} ${(percent * 100).toFixed(0)}%`}
+                            </text>
+                          );
+                        }
+                        return `${name} ${(percent * 100).toFixed(0)}%`;
+                      }}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {topicsStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 

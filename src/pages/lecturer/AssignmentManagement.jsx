@@ -20,8 +20,8 @@ import ConfirmModal from "../../components/modals/ConfirmModal";
 import AddAssignmentModal from "../../components/modals/AddAssignmentModal";
 
 const AssignmentManagement = () => {
-  const [selectedThesis, setSelectedThesis] = useState(0);
-  const [selectedAssignment, setSelectedAssignment] = useState(0);
+  const [selectedThesis, setSelectedThesis] = useState(-1);
+  const [selectedAssignment, setSelectedAssignment] = useState(-1);
   const [showNewAssignmentModal, setShowNewAssignmentModal] = useState(false);
   const [showEditAssignmentModal, setShowEditAssignmentModal] = useState(false);
 
@@ -373,7 +373,7 @@ const AssignmentManagement = () => {
           );
           if (res.success) {
             showToast("Xoá assignment thành công", "success");
-            setSelectedAssignment(0);
+            setSelectedAssignment(-1);
             if (currentThesis?.id)
               await loadAssignmentsForTopic(currentThesis.id);
           } else {
@@ -533,8 +533,8 @@ const AssignmentManagement = () => {
       setCurrentPage(targetPage);
 
       // Reset selection khi chuyển trang
-      setSelectedThesis(0);
-      setSelectedAssignment(0);
+      setSelectedThesis(-1);
+      setSelectedAssignment(-1);
 
       // Gọi API để lấy dữ liệu trang mới
       await fetchApprovedTopics(targetPage);
@@ -558,24 +558,26 @@ const AssignmentManagement = () => {
       {/* Left Sidebar - Thesis Topics List */}
       <div className="w-full lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col overflow-y-auto shadow-xl">
         <div className="p-6 border-b border-slate-200/60 bg-gradient-to-r from-white to-slate-50/50">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-gradient-to-br from-secondary/80 to-secondary-light/100 text-white">
               <svg
-                className="w-5 h-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
                 fill="currentColor"
-                viewBox="0 0 20 20"
+                className="w-5 h-5 text-white"
               >
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  fillRule="evenodd"
+                  d="M3 4a1 1 0 011-1h16a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h16a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h16a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h16a1 1 0 110 2H4a1 1 0 01-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800">
-                Đề tài đã chấp nhận
-              </h2>
+              <h2 className="text-xl font-bold text-slate-800">Nhiệm vụ</h2>
+              <p className="text-sm text-slate-500">Quản lý nhiệm vụ</p>
             </div>
           </div>
-
-          {/* Bỏ hiển thị thông tin năng lực giảng viên theo yêu cầu */}
         </div>
 
         <div className="flex-1 p-6 overflow-y-auto thin-scrollbar">
@@ -622,7 +624,7 @@ const AssignmentManagement = () => {
                   }`}
                   onClick={() => {
                     setSelectedThesis(index);
-                    setSelectedAssignment(0);
+                    setSelectedAssignment(-1);
                     if (thesis.id) {
                       loadAssignmentsForTopic(thesis.id);
                     }
@@ -633,7 +635,7 @@ const AssignmentManagement = () => {
                     <div className="absolute top-3 right-3 w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
                   )}
 
-                  <h3 className="text-sm font-bold text-slate-800 mb-3 leading-tight line-clamp-2 group-hover:text-blue-700 transition-colors">
+                  <h3 className="text-sm font-medium text-slate-800 mb-3 leading-tight line-clamp-2 group-hover:text-blue-700 transition-colors">
                     {thesis.title}
                   </h3>
 
@@ -665,52 +667,9 @@ const AssignmentManagement = () => {
                         })()}
                       </span>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
-                        <svg
-                          className="w-3 h-3 text-amber-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                      <span className="text-xs text-slate-600 font-medium">
-                        {thesis.startDate} - {thesis.endDate}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center">
-                        <svg
-                          className="w-3 h-3 text-green-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                        </svg>
-                      </div>
-                      <span className="text-xs text-slate-600 font-medium">
-                        Còn {thesis.remainingSlots} chỗ trống
-                      </span>
-                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <span
-                      className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
-                        thesis.status === "Approved"
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "bg-amber-100 text-amber-700 border border-amber-200"
-                      }`}
-                    >
-                      {thesis.status}
-                    </span>
+                  <div className="flex items-center justify-end pt-3 border-t border-slate-100">
                     <div className="flex items-center gap-1 text-xs text-slate-500">
                       <svg
                         className="w-3 h-3"
@@ -815,26 +774,6 @@ const AssignmentManagement = () => {
         {currentThesis && (
           <>
             <div className="p-6 border-b border-slate-200/60 bg-gradient-to-r from-white to-slate-50/50">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800">Nhiệm vụ</h3>
-                  <p className="text-sm text-slate-500">Quản lý assignments</p>
-                </div>
-              </div>
-
               <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-2xl p-4 mb-6 border border-slate-200/50">
                 <h4 className="text-sm font-semibold text-slate-700 mb-2 line-clamp-2">
                   {currentThesis.title}
@@ -846,7 +785,8 @@ const AssignmentManagement = () => {
               </div>
 
               <button
-                className="group w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-none rounded-xl py-3 px-4 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                className="group w-full text-white border-none rounded-xl py-3 px-4 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                style={{ backgroundColor: "#ff6600" }}
                 onClick={handleNewAssignment}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -1024,73 +964,8 @@ const AssignmentManagement = () => {
       <div className="flex-1 bg-gradient-to-br from-white via-slate-50/30 to-blue-50/20 p-8 overflow-y-auto thin-scrollbar">
         {currentAssignment && (
           <>
-            {/* Header Section */}
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-8 pb-6 border-b border-slate-200/60 gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <svg
-                      className="w-6 h-6 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-slate-800 leading-tight mb-1">
-                      {currentAssignment.title}
-                    </h1>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Đề tài: {currentThesis.title}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 w-full lg:w-auto">
-                <button
-                  className="group flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white border-none rounded-xl py-3 px-5 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                  onClick={handleEditAssignment}
-                >
-                  <svg
-                    className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                  </svg>
-                  <span>Sửa</span>
-                </button>
-                <button
-                  className="group flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white border-none rounded-xl py-3 px-5 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                  onClick={handleDeleteAssignment}
-                >
-                  <svg
-                    className="w-4 h-4 group-hover:scale-110 transition-transform duration-200"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
-                      clipRule="evenodd"
-                    />
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>Xoá</span>
-                </button>
-              </div>
-            </div>
+            {/* Header Section removed per request */}
+            <div className="mb-8 pb-6 border-b border-slate-200/60"></div>
 
             {/* Description Section */}
             <div className="mb-10">
@@ -1196,7 +1071,8 @@ const AssignmentManagement = () => {
                   </h3>
                 </div>
                 <button
-                  className="group bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-none rounded-xl py-3 px-5 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
+                  className="group text-white border-none rounded-xl py-3 px-5 text-sm font-semibold cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
+                  style={{ backgroundColor: "#ff6600" }}
                   onClick={handleAddTask}
                 >
                   <div className="flex items-center justify-center gap-2">
