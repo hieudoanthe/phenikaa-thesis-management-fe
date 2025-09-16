@@ -5,9 +5,16 @@ export const APP_CONFIG = {
   DEBUG_MODE: import.meta.env.VITE_DEBUG_MODE === "true",
 };
 
+// Base URLs from environment
+const HTTP_BASE_URL = import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080";
+const WS_BASE_URL_ENV = import.meta.env.VITE_WS_BASE_URL || null;
+
+// Derive WS base from HTTP base if not explicitly provided
+const WS_BASE_URL = WS_BASE_URL_ENV || HTTP_BASE_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+
 // Academic Year API Configuration
 export const ACADEMIC_YEAR_API_CONFIG = {
-  BASE_URL: "http://localhost:8080",
+  BASE_URL: HTTP_BASE_URL,
 };
 
 // API Endpoints
@@ -187,7 +194,7 @@ export const API_ENDPOINTS = {
 // WebSocket Endpoints
 export const WS_ENDPOINTS = {
   // Notification
-  NOTIFICATIONS: "ws://localhost:8080/ws/notifications",
+  NOTIFICATIONS: `${WS_BASE_URL}/ws/notifications`,
   // Chat
-  CHAT: "ws://localhost:8080/ws/chat",
+  CHAT: `${WS_BASE_URL}/ws/chat`,
 };

@@ -29,6 +29,9 @@ const PhenikaaLogin = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  const BASE_URL =
+    import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080";
+
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
   // Helper function để chuyển đổi role thành tên hiển thị
@@ -51,10 +54,11 @@ const PhenikaaLogin = () => {
     setError("");
 
     try {
-      const response = await axios.post(
-        "http://localhost:8080/api/auth/login",
-        { username, password, role }
-      );
+      const response = await axios.post(`${BASE_URL}/api/auth/login`, {
+        username,
+        password,
+        role,
+      });
 
       // Xử lý linh hoạt response data từ server
       let accessToken, refreshToken, user;
