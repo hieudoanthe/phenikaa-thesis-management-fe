@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "../../styles/common/design-tokens.css";
-import "../../styles/pages/admin/academic_year_management.css";
 import academicYearService from "../../services/academicYear.service";
 import { toast } from "react-toastify";
 
@@ -109,13 +107,13 @@ const AcademicYearManagement = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 1:
-        return "Active";
+        return "Hoạt động";
       case 0:
-        return "Inactive";
+        return "Không hoạt động";
       case 2:
-        return "Upcoming";
+        return "Sắp tới";
       default:
-        return "Unknown";
+        return "Không rõ";
     }
   };
 
@@ -150,30 +148,42 @@ const AcademicYearManagement = () => {
   }
 
   return (
-    <div className="academic-year-management">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       {/* Thẻ năm học hiện tại */}
       {currentYear && (
-        <div className="current-year-card">
-          <div className="current-year-info">
-            <div className="current-year-label">Current Academic Year</div>
-            <div className="current-year-name">{currentYear.yearName}</div>
-            <div className="current-year-status">
-              <span className="status-dot active"></span>
-              Active
+        <div className="bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <div className="text-sm text-gray-300 mb-2">Năm học hiện tại</div>
+              <div className="text-2xl font-bold text-white mb-2">
+                {currentYear.yearName}
+              </div>
+              <div className="inline-flex items-center gap-2 text-sm text-gray-300">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-400"></span>
+                Hoạt động
+              </div>
             </div>
-          </div>
-          <div className="current-year-period">
-            {currentYear.startDate ? formatDate(currentYear.startDate) : "N/A"}{" "}
-            - {currentYear.endDate ? formatDate(currentYear.endDate) : "N/A"}
+            <div className="text-sm text-gray-300">
+              {currentYear.startDate
+                ? formatDate(currentYear.startDate)
+                : "N/A"}
+              <span className="mx-2">-</span>
+              {currentYear.endDate ? formatDate(currentYear.endDate) : "N/A"}
+            </div>
           </div>
         </div>
       )}
 
       {/* Bảng danh sách năm học */}
-      <div className="academic-year-table-container">
-        <div className="table-header">
-          <h2>Danh sách năm học</h2>
-          <button className="add-year-btn" onClick={() => setIsModalOpen(true)}>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 m-0">
+            Danh sách năm học
+          </h2>
+          <button
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
+            onClick={() => setIsModalOpen(true)}
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
             </svg>
@@ -181,38 +191,154 @@ const AcademicYearManagement = () => {
           </button>
         </div>
 
-        <div className="table-wrapper">
-          <table className="academic-year-table">
-            <thead>
+        {/* Mobile cards */}
+        <div className="sm:hidden space-y-3">
+          {currentItems
+            .filter((year) => year && year.academicYearId)
+            .map((year) => (
+              <div
+                key={year.academicYearId}
+                className="border border-gray-200 rounded-lg p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-base font-semibold text-gray-900 truncate">
+                      {year.yearName}
+                    </div>
+                    <div className="mt-1 text-sm text-gray-600">
+                      <div>
+                        Bắt đầu:{" "}
+                        {year.startDate ? formatDate(year.startDate) : "N/A"}
+                      </div>
+                      <div>
+                        Kết thúc:{" "}
+                        {year.endDate ? formatDate(year.endDate) : "N/A"}
+                      </div>
+                    </div>
+                    <div className="mt-1 inline-flex items-center gap-2 text-sm">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${
+                          (year.status || 0) === 1
+                            ? "bg-green-500"
+                            : (year.status || 0) === 2
+                            ? "bg-blue-500"
+                            : "bg-gray-400"
+                        }`}
+                      ></span>
+                      {getStatusText(year.status || 0)}
+                    </div>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <button
+                      className="p-2 text-info-500 hover:bg-info-50 rounded-lg"
+                      onClick={() => handleEdit(year)}
+                      title="Chỉnh sửa"
+                    >
+                      <i className="bi bi-pen"></i>
+                    </button>
+                    <button
+                      className="p-2 text-error-500 hover:bg-error-50 rounded-lg"
+                      onClick={() => handleDelete(year.academicYearId)}
+                      title="Xóa"
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={(year.status || 0) === 1}
+                      onChange={(e) =>
+                        handleStatusToggle(
+                          year.academicYearId,
+                          e.target.checked ? "active" : "inactive"
+                        )
+                      }
+                    />
+                    <span>Kích hoạt</span>
+                  </label>
+                </div>
+              </div>
+            ))}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
+          <style>
+            {`
+              table th::after,
+              table th::before {
+                display: none !important;
+              }
+              table th {
+                position: relative;
+              }
+              table th:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                right: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 0;
+                height: 0;
+                border: none;
+                display: none !important;
+              }
+            `}
+          </style>
+          <table
+            className="min-w-full divide-y divide-gray-200"
+            style={{ borderCollapse: "separate", borderSpacing: 0 }}
+          >
+            <thead className="bg-gray-50">
               <tr>
-                <th>Year Name</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Status</th>
-                <th>Created At</th>
-                <th>Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tên năm học
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ngày bắt đầu
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ngày kết thúc
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Trạng thái
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ngày tạo
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Hành động
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white divide-y divide-gray-200">
               {currentItems
                 .filter((year) => year && year.academicYearId) // Sử dụng academicYearId
                 .map((year) => (
                   <tr
                     key={year.academicYearId}
                     className={
-                      (year.status || 0) === 1 ? "current-year-row" : ""
+                      (year.status || 0) === 1
+                        ? "bg-blue-50 border-l-4 border-l-primary-500"
+                        : ""
                     }
                   >
-                    <td className="year-name">{year.yearName}</td>
+                    <td className="font-semibold text-gray-900 border-l border-gray-200 pl-4">
+                      {year.yearName}
+                    </td>
                     <td>
                       {year.startDate ? formatDate(year.startDate) : "N/A"}
                     </td>
                     <td>{year.endDate ? formatDate(year.endDate) : "N/A"}</td>
                     <td>
-                      <div className="status-toggle">
-                        <label className="switch">
+                      <div className="flex items-center gap-3">
+                        <label className="inline-flex items-center">
                           <input
                             type="checkbox"
+                            className="w-4 h-4 text-primary-500 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
                             checked={(year.status || 0) === 1}
                             onChange={(e) =>
                               handleStatusToggle(
@@ -221,50 +347,34 @@ const AcademicYearManagement = () => {
                               )
                             }
                           />
-                          <span
-                            className="slider"
-                            style={{
-                              backgroundColor: getStatusColor(year.status || 0),
-                            }}
-                          ></span>
+                          <span className="ml-2 text-sm text-gray-700">
+                            {getStatusText(year.status || 0)}
+                          </span>
                         </label>
-                        <span className="status-text">
-                          {getStatusText(year.status || 0)}
-                        </span>
                       </div>
                     </td>
                     <td>
                       {year.createdAt ? formatDate(year.createdAt) : "N/A"}
                     </td>
-                    <td className="actions">
-                      <button
-                        className="action-btn edit-btn"
-                        onClick={() => handleEdit(year)}
-                        title="Chỉnh sửa"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="p-2 text-info-500 hover:bg-info-50 rounded-lg"
+                          onClick={() => handleEdit(year)}
+                          title="Chỉnh sửa"
+                          aria-label="Chỉnh sửa"
                         >
-                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                        </svg>
-                      </button>
-                      <button
-                        className="action-btn delete-btn"
-                        onClick={() => handleDelete(year.academicYearId)}
-                        title="Xóa"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
+                          <i className="bi bi-pen"></i>
+                        </button>
+                        <button
+                          className="p-2 text-error-500 hover:bg-error-50 rounded-lg"
+                          onClick={() => handleDelete(year.academicYearId)}
+                          title="Xóa"
+                          aria-label="Xóa"
                         >
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                        </svg>
-                      </button>
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -273,29 +383,43 @@ const AcademicYearManagement = () => {
         </div>
 
         {/* Phân trang */}
-        <div className="pagination-container">
-          <div className="pagination-info">
-            Showing {indexOfFirstItem + 1}-
-            {Math.min(indexOfLastItem, academicYears.length)} of{" "}
-            {academicYears.length} entries
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-sm text-gray-600">
+            Tổng {academicYears.length} năm học
           </div>
-          <div className="pagination-controls">
+          <div className="inline-flex items-center bg-white border border-gray-200 rounded-[14px] overflow-hidden shadow-sm self-center sm:self-auto">
             <button
-              className="pagination-btn"
+              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+            >
+              Đầu
+            </button>
+            <button
+              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(currentPage - 1)}
+              aria-label="Trang trước"
             >
-              &lt; Previous
+              <i className="bi bi-chevron-left"></i>
             </button>
-            <button className="pagination-btn active" disabled>
+            <span className="px-3 py-2 text-sm bg-primary-500 text-white">
               {currentPage}
-            </button>
+            </span>
             <button
-              className="pagination-btn"
+              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(currentPage + 1)}
+              aria-label="Trang sau"
             >
-              Next &gt;
+              <i className="bi bi-chevron-right"></i>
+            </button>
+            <button
+              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+            >
+              Cuối
             </button>
           </div>
         </div>
@@ -359,98 +483,134 @@ const AcademicYearModal = ({ isOpen, onClose, editingYear, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{editingYear ? "Chỉnh sửa năm học" : "Thêm năm học mới"}</h3>
-          <button className="modal-close" onClick={onClose}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-            </svg>
-          </button>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h2 className="text-xl font-semibold text-gray-900 m-0">
+            {editingYear ? "Chỉnh sửa năm học" : "Thêm năm học mới"}
+          </h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-group">
-            <div className="floating-input-group">
+        {/* Form */}
+        <form className="p-6 space-y-6" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column */}
+            <div className="space-y-5">
+              <div className="relative">
+                <input
+                  id="yearName"
+                  type="text"
+                  placeholder=" "
+                  value={formData.yearName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, yearName: e.target.value })
+                  }
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
+                />
+                <label
+                  htmlFor="yearName"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Tên năm học <span className="text-red-500">*</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-5">
+              <div className="relative">
+                <select
+                  id="status"
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
+                >
+                  <option value="active">Hoạt động</option>
+                  <option value="inactive">Không hoạt động</option>
+                </select>
+                <label
+                  htmlFor="status"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Trạng thái
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="relative">
               <input
-                type="text"
-                id="yearName"
-                value={formData.yearName}
+                type="date"
+                id="startDate"
+                value={formData.startDate}
                 onChange={(e) =>
-                  setFormData({ ...formData, yearName: e.target.value })
+                  setFormData({ ...formData, startDate: e.target.value })
                 }
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
                 placeholder=" "
                 required
               />
-              <label htmlFor="yearName" className="floating-label">
-                Tên năm học
-              </label>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <div className="floating-input-group">
-                <input
-                  type="date"
-                  id="startDate"
-                  value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
-                  }
-                  placeholder=" "
-                  required
-                />
-                <label htmlFor="startDate" className="floating-label">
-                  Ngày bắt đầu
-                </label>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <div className="floating-input-group">
-                <input
-                  type="date"
-                  id="endDate"
-                  value={formData.endDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
-                  }
-                  placeholder=" "
-                  required
-                />
-                <label htmlFor="endDate" className="floating-label">
-                  Ngày kết thúc
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <div className="floating-input-group">
-              <select
-                id="status"
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
-                }
+              <label
+                htmlFor="startDate"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <label htmlFor="status" className="floating-label">
-                Trạng thái
+                Ngày bắt đầu <span className="text-red-500">*</span>
+              </label>
+            </div>
+
+            <div className="relative">
+              <input
+                type="date"
+                id="endDate"
+                value={formData.endDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, endDate: e.target.value })
+                }
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
+                placeholder=" "
+                required
+              />
+              <label
+                htmlFor="endDate"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Ngày kết thúc <span className="text-red-500">*</span>
               </label>
             </div>
           </div>
 
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 text-base font-medium text-gray-600 bg-gray-100 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-700 min-w-[100px]"
+            >
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              {editingYear ? "Cập nhật" : "Thêm"}
+            <button
+              type="submit"
+              className="px-6 py-2.5 text-base font-medium text-white bg-primary-500 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-primary-400 min-w-[120px]"
+            >
+              {editingYear ? "Cập nhật" : "Thêm năm học"}
             </button>
           </div>
         </form>

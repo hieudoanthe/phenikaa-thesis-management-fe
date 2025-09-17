@@ -124,6 +124,13 @@ const DefenseSessionsSchedule = () => {
 
   // Tạo days of week (chỉ từ thứ 2 đến thứ 6)
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  const weekDayLabels = {
+    Mon: "Thứ 2",
+    Tue: "Thứ 3",
+    Wed: "Thứ 4",
+    Thu: "Thứ 5",
+    Fri: "Thứ 6",
+  };
 
   // Options cho react-select
   const periodOptions = [
@@ -638,8 +645,19 @@ const DefenseSessionsSchedule = () => {
               </div>
 
               <button
-                className="bg-[#ea580c] hover:brightness-95 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
-                onClick={() => setIsModalOpen(true)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-white ${
+                  selectedSchedule && selectedSchedule.value
+                    ? "bg-primary-500 hover:bg-primary-400"
+                    : "bg-gray-300 cursor-not-allowed"
+                }`}
+                onClick={() => {
+                  if (!selectedSchedule || !selectedSchedule.value) {
+                    showToast("Vui lòng chọn lịch bảo vệ trước", "warning");
+                    return;
+                  }
+                  setIsModalOpen(true);
+                }}
+                disabled={!selectedSchedule || !selectedSchedule.value}
               >
                 <svg
                   className="w-5 h-5"
@@ -709,7 +727,7 @@ const DefenseSessionsSchedule = () => {
                   placeholder="Tìm kiếm buổi bảo vệ..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
                 />
               </div>
 
@@ -717,7 +735,7 @@ const DefenseSessionsSchedule = () => {
                 <button
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                     viewMode === "grid"
-                      ? "bg-blue-600 text-white"
+                      ? "bg-primary-500 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                   onClick={() => setViewMode("grid")}
@@ -733,7 +751,7 @@ const DefenseSessionsSchedule = () => {
                 <button
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                     viewMode === "list"
-                      ? "bg-blue-600 text-white"
+                      ? "bg-primary-500 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                   onClick={() => setViewMode("list")}
@@ -749,7 +767,7 @@ const DefenseSessionsSchedule = () => {
               </div>
 
               <button
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                className="bg-primary-500 hover:bg-primary-400 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
                 onClick={handleExport}
               >
                 <svg
@@ -804,7 +822,7 @@ const DefenseSessionsSchedule = () => {
             {weekDays.map((day, dayIndex) => (
               <div key={dayIndex} className="min-w-[200px]">
                 <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-gray-300">
-                  {day}
+                  {weekDayLabels[day] || day}
                 </div>
                 {timeSlots.map((time, timeIndex) => {
                   const session = getSessionForTimeSlot(day, time);
@@ -1074,7 +1092,7 @@ const DefenseSessionsSchedule = () => {
         <button
           type="button"
           onClick={handleBackToTop}
-          className="fixed bottom-6 right-6 z-50 p-3 rounded-lg bg-[#ea580c] text-white shadow-lg hover:brightness-95 transition-colors"
+          className="fixed bottom-6 right-6 z-50 p-3 rounded-lg bg-primary-500 text-white shadow-lg hover:bg-primary-400 transition-colors"
           aria-label="Quay về đầu trang"
         >
           <svg
@@ -1623,7 +1641,7 @@ const CreateScheduleModal = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#ea580c] hover:brightness-95 text-white rounded-lg font-medium transition-colors duration-200"
+              className="px-4 py-2 bg-primary-500 hover:bg-primary-400 text-white rounded-lg font-medium transition-colors duration-200"
             >
               Tạo buổi bảo vệ
             </button>

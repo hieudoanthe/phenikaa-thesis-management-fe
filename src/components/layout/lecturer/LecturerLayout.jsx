@@ -9,7 +9,7 @@ import {
 import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { WS_ENDPOINTS, APP_CONFIG } from "../../../config/api";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import userService from "../../../services/user.service";
 
@@ -784,18 +784,19 @@ const LecturerLayout = () => {
         }`}
       >
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 sticky top-0 z-30">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center flex-1">
               {/* Hamburger Menu Button - Chỉ hiện trên mobile */}
               <button
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-4 text-gray-600"
+                className="md:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-2 sm:mr-3 md:mr-4 text-gray-600"
                 onClick={handleToggleSidebar}
                 aria-label="Mở/đóng menu"
               >
                 <svg
-                  width="24"
-                  height="24"
+                  width="20"
+                  height="20"
+                  className="sm:w-6 sm:h-6 md:w-6 md:h-6"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -809,11 +810,11 @@ const LecturerLayout = () => {
                 </svg>
               </button>
 
-              <div className="animate-fade-in-up">
-                <h1 className="text-2xl font-bold text-gray-900 m-0 leading-tight">
+              <div className="animate-fade-in-up min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 m-0 leading-tight truncate">
                   {currentPage.title}
                 </h1>
-                <p className="text-sm text-gray-600 m-0 leading-relaxed mt-1">
+                <p className="hidden sm:block text-xs sm:text-sm text-gray-600 m-0 leading-relaxed mt-0.5 sm:mt-1 truncate">
                   {currentPage.subtitle}
                 </p>
               </div>
@@ -844,13 +845,13 @@ const LecturerLayout = () => {
 
                 {/* Notification Dropdown Menu */}
                 {isNotificationOpen && (
-                  <div className="absolute top-full right-0 w-[22rem] sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
-                    <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                  <div className="fixed top-20 left-4 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 ring-1 ring-black/5 z-50 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:w-96 sm:mt-3 animate-fade-in-up">
+                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                       <h3 className="text-base font-semibold text-gray-900 m-0">
                         Thông báo
                       </h3>
                       <button
-                        className={`text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100 ${
+                        className={`text-info text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100 ${
                           isMarkingAllAsRead
                             ? "opacity-50 cursor-not-allowed"
                             : ""
@@ -868,62 +869,63 @@ const LecturerLayout = () => {
                         )}
                       </button>
                     </div>
-                    <div className="max-h-[240px] overflow-y-auto thin-scrollbar pr-1">
-                      {notificationsState.length === 0 && (
-                        <div className="p-6 text-center text-gray-500">
+                    <div className="max-h-[60vh] sm:max-h-[240px] overflow-y-auto thin-scrollbar divide-y divide-gray-100">
+                      {notificationsState.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-500">
                           Không có thông báo
                         </div>
-                      )}
-                      {notificationsState.slice(0, 5).map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-4 border-b border-gray-100 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
-                            !notification.isRead ? "bg-yellow-50" : ""
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <h4 className="text-sm font-semibold text-gray-900 m-0 mb-1">
-                              {notification.title}
-                            </h4>
-                            <p className="text-sm text-gray-600 m-0 mb-2 leading-relaxed">
-                              {notification.message}
-                              {notification.studentName && (
-                                <>
-                                  {" "}
-                                  — Đề xuất bởi:{" "}
-                                  <button
-                                    type="button"
-                                    className="text-blue-600 hover:text-blue-800 underline"
-                                    onClick={() =>
-                                      handleOpenStudentProfile(
-                                        notification.studentId
-                                      )
-                                    }
-                                  >
-                                    {notification.studentName}
-                                  </button>
-                                </>
-                              )}
-                            </p>
-                            <span className="text-xs text-gray-500">
-                              {formatRelativeTime(
-                                notification.createdAt,
-                                timeTick
-                              )}
-                            </span>
+                      ) : (
+                        notificationsState.slice(0, 5).map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`px-4 py-3 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
+                              !notification.isRead ? "bg-yellow-50/40" : ""
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-semibold text-gray-900 m-0 mb-0.5 truncate">
+                                {notification.title}
+                              </h4>
+                              <p className="text-sm text-gray-600 m-0 mb-1 leading-relaxed break-words">
+                                {notification.message}
+                                {notification.studentName && (
+                                  <>
+                                    {" "}
+                                    — Đề xuất bởi:{" "}
+                                    <button
+                                      type="button"
+                                      className="text-blue-600 hover:text-blue-800 underline"
+                                      onClick={() =>
+                                        handleOpenStudentProfile(
+                                          notification.studentId
+                                        )
+                                      }
+                                    >
+                                      {notification.studentName}
+                                    </button>
+                                  </>
+                                )}
+                              </p>
+                              <span className="text-xs text-gray-500">
+                                {formatRelativeTime(
+                                  notification.createdAt,
+                                  timeTick
+                                )}
+                              </span>
+                            </div>
+                            {!notification.isRead && (
+                              <div className="w-2 h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
+                            )}
                           </div>
-                          {!notification.isRead && (
-                            <div className="w-2 h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
-                          )}
-                        </div>
-                      ))}
+                        ))
+                      )}
                       {notificationsState.length > 5 && (
-                        <div className="p-4 text-center text-sm text-gray-500 border-t border-gray-100">
+                        <div className="px-4 py-3 text-center text-sm text-gray-500">
                           Và {notificationsState.length - 5} thông báo khác...
                         </div>
                       )}
                     </div>
-                    <div className="p-4 border-t border-gray-100 text-center">
+                    <div className="px-4 py-3 border-t border-gray-100 text-center">
                       <button
                         onClick={() => {
                           navigate("/lecturer/notifications");
@@ -1091,19 +1093,6 @@ const LecturerLayout = () => {
             <Outlet />
           </div>
         </main>
-        <ToastContainer
-          position="bottom-right"
-          autoClose={3500}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss={false}
-          draggable
-          pauseOnHover
-          theme="colored"
-          limit={3}
-        />
         {isStudentProfileOpen && studentProfile && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">

@@ -9,7 +9,7 @@ import {
 import { useProfileStudent } from "../../../contexts/ProfileStudentContext";
 import { WS_ENDPOINTS } from "../../../config/api";
 import notificationService from "../../../services/notification.service";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StudentAiChatWidget from "../../common/StudentAiChatWidget.jsx";
 
@@ -625,7 +625,7 @@ const StudentLayout = () => {
                   <h1 className="text-2xl font-bold text-gray-900 m-0 leading-tight">
                     {currentPage.title}
                   </h1>
-                  <p className="text-sm text-gray-600 m-0 leading-relaxed mt-1">
+                  <p className="hidden sm:block text-sm text-gray-600 m-0 leading-relaxed mt-1">
                     {currentPage.subtitle}
                   </p>
                 </div>
@@ -647,54 +647,62 @@ const StudentLayout = () => {
                     >
                       <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                     </svg>
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                      {unreadCount}
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {unreadCount}
+                      </span>
+                    )}
                   </div>
 
                   {/* Notification Dropdown Menu */}
                   {isNotificationOpen && (
-                    <div className="absolute top-full right-0 w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
-                      <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                    <div className="fixed top-20 left-4 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 ring-1 ring-black/5 z-50 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:w-96 sm:mt-3 animate-fade-in-up">
+                      <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                         <h3 className="text-base font-semibold text-gray-900 m-0">
                           Thông báo
                         </h3>
                         <button
-                          className="text-info text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100"
+                          className="text-info text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100"
                           onClick={handleMarkAllAsRead}
                         >
                           Đánh dấu tất cả đã đọc
                         </button>
                       </div>
-                      <div className="max-h-[240px] overflow-y-auto thin-scrollbar pr-1">
-                        {notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={`p-4 border-b border-gray-100 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
-                              !notification.isRead ? "bg-yellow-50" : ""
-                            }`}
-                          >
-                            <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-gray-900 m-0 mb-1">
-                                {notification.title}
-                              </h4>
-                              <p className="text-sm text-gray-600 m-0 mb-2 leading-relaxed">
-                                {notification.message}
-                              </p>
-                              <span className="text-xs text-gray-500">
-                                {formatRelativeTime(
-                                  notification.createdAt,
-                                  timeTick
-                                )}
-                              </span>
-                            </div>
-                            {!notification.isRead && (
-                              <div className="w-2 h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
-                            )}
+                      <div className="max-h-[60vh] sm:max-h-[240px] overflow-y-auto thin-scrollbar divide-y divide-gray-100">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-gray-500">
+                            Không có thông báo nào
                           </div>
-                        ))}
+                        ) : (
+                          notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={`px-4 py-3 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
+                                !notification.isRead ? "bg-yellow-50/40" : ""
+                              }`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-semibold text-gray-900 m-0 mb-0.5 truncate">
+                                  {notification.title}
+                                </h4>
+                                <p className="text-sm text-gray-600 m-0 mb-1 leading-relaxed break-words">
+                                  {notification.message}
+                                </p>
+                                <span className="text-xs text-gray-500">
+                                  {formatRelativeTime(
+                                    notification.createdAt,
+                                    timeTick
+                                  )}
+                                </span>
+                              </div>
+                              {!notification.isRead && (
+                                <div className="w-2 h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
+                              )}
+                            </div>
+                          ))
+                        )}
                       </div>
-                      <div className="p-4 border-t border-gray-100 text-center">
+                      <div className="px-4 py-3 border-t border-gray-100 text-center">
                         <button
                           className="text-info text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
                           onClick={() => {
@@ -882,19 +890,6 @@ const StudentLayout = () => {
           </main>
         </div>
       </div>
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3500}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss={false}
-        draggable
-        pauseOnHover
-        theme="colored"
-        limit={3}
-      />
       <StudentAiChatWidget />
     </>
   );

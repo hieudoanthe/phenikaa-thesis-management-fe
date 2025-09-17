@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import PropTypes from "prop-types";
@@ -12,17 +12,27 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
     }
   };
 
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+
   // Menu items cho admin
   const menuItems = [
     {
-      path: "/admin/dashboard",
+      path: "/admin/statistics",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="currentColor"
+          className="bi bi-clipboard-data-fill"
+          viewBox="0 0 16 16"
+        >
+          <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z" />
+          <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5zM10 8a1 1 0 1 1 2 0v5a1 1 0 1 1-2 0zm-6 4a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0zm4-3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1" />
         </svg>
       ),
-      text: "Trang chủ",
-      tooltip: "Trang chủ",
+      text: "Thống kê",
+      tooltip: "Thống kê",
     },
     {
       path: "/admin/user-management",
@@ -62,46 +72,6 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
     },
 
     {
-      path: "/admin/registration-period",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          fill="currentColor"
-          className="bi bi-calendar-event"
-          viewBox="0 0 16 16"
-        >
-          <path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z" />
-          <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" />
-        </svg>
-      ),
-      text: "Quản lý đợt đăng ký",
-      tooltip: "Quản lý đợt đăng ký",
-    },
-
-    {
-      path: "/admin/defense-schedule",
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
-        </svg>
-      ),
-      text: "Quản lý lịch bảo vệ",
-      tooltip: "Quản lý lịch bảo vệ",
-    },
-    {
-      path: "/admin/defense-sessions",
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-        </svg>
-      ),
-      text: "Quản lý buổi bảo vệ",
-      tooltip: "Quản lý buổi bảo vệ",
-    },
-
-    {
       path: "/admin/student-period",
       icon: (
         <svg
@@ -117,24 +87,6 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
       ),
       text: "Quản lý sinh viên",
       tooltip: "Quản lý sinh viên",
-    },
-    {
-      path: "/admin/statistics",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          fill="currentColor"
-          className="bi bi-clipboard-data-fill"
-          viewBox="0 0 16 16"
-        >
-          <path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0zm3 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z" />
-          <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5zM10 8a1 1 0 1 1 2 0v5a1 1 0 1 1-2 0zm-6 4a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0zm4-3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1" />
-        </svg>
-      ),
-      text: "Thống kê",
-      tooltip: "Thống kê",
     },
     {
       path: "/admin/notifications",
@@ -158,9 +110,21 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
     },
   ];
 
+  // Chia menu thành 2 phần: trước nhóm và sau nhóm
+  const firstBlockPaths = [
+    "/admin/statistics",
+    "/admin/user-management",
+    "/admin/academic-year",
+  ];
+  const firstItems = menuItems.filter((m) => firstBlockPaths.includes(m.path));
+  const restItems = menuItems.filter(
+    (m) =>
+      !firstBlockPaths.includes(m.path) && m.path !== "/admin/student-period"
+  );
+
   return (
     <div
-      className={`h-full flex flex-col bg-gradient-to-br from-secondary to-secondary-light text-white transition-all duration-500 ease-in-out overflow-hidden ${
+      className={`h-full flex flex-col bg-gradient-to-br from-secondary to-secondary-light text-white transition-all duration-500 ease-in-out overflow-visible ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >
@@ -209,7 +173,244 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
             isCollapsed ? "space-y-1" : "space-y-2"
           }`}
         >
-          {menuItems.map((item, index) => (
+          {firstItems.map((item, index) => (
+            <li key={item.path}>
+              <NavLink
+                to={item.path}
+                className={`flex items-center rounded-lg transition-all duration-500 ease-in-out hover:bg-white/10 ${
+                  isCollapsed
+                    ? "px-2 py-3 justify-center h-12"
+                    : "px-3 py-3 gap-3 h-12"
+                } ${
+                  location.pathname === item.path
+                    ? "bg-white/20 text-white font-semibold"
+                    : "text-white/80 hover:text-white"
+                }`}
+                onClick={handleMenuClick}
+                title={item.tooltip}
+              >
+                <span className="flex-shrink-0">{item.icon}</span>
+                <span
+                  className={`transition-all duration-500 ease-in-out transform ${
+                    isCollapsed
+                      ? "opacity-0 translate-x-2 scale-95 w-0 overflow-hidden"
+                      : "opacity-100 translate-x-0 scale-100"
+                  }`}
+                  style={{
+                    transitionDelay: isCollapsed ? "0ms" : `${index * 50}ms`,
+                  }}
+                >
+                  {item.text}
+                </span>
+              </NavLink>
+            </li>
+          ))}
+
+          {/* Nhóm: Quản lý đăng ký trực tuyến */}
+          <li
+            className="relative"
+            onMouseEnter={() => {
+              if (isCollapsed) setIsRegistrationOpen(true);
+            }}
+            onMouseLeave={() => {
+              if (isCollapsed) setIsRegistrationOpen(false);
+            }}
+          >
+            <button
+              type="button"
+              className={`w-full flex items-center rounded-lg transition-all duration-500 ease-in-out ${
+                isCollapsed
+                  ? "px-2 py-3 justify-center h-12"
+                  : "px-3 py-3 gap-3 h-12"
+              } ${
+                [
+                  "/admin/registration-period",
+                  "/admin/defense-schedule",
+                  "/admin/defense-sessions",
+                ].includes(location.pathname)
+                  ? "bg-white/20 text-white font-semibold"
+                  : "text-white/80 hover:text-white"
+              }`}
+              onClick={() => setIsRegistrationOpen((o) => !o)}
+              title="Quản lý đăng ký trực tuyến"
+            >
+              <span className="flex-shrink-0">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M3 4h18v2H3V4zm0 6h18v2H3v-2zm0 6h18v2H3v-2z" />
+                </svg>
+              </span>
+              <div
+                className={`transition-all duration-500 ease-in-out transform ${
+                  isCollapsed
+                    ? "opacity-0 translate-x-2 scale-95 w-0 overflow-hidden"
+                    : "opacity-100 translate-x-0 scale-100"
+                }`}
+              >
+                <div className="block">Quản lý ĐKTT</div>
+              </div>
+              {!isCollapsed && (
+                <span className="ml-auto text-white/80">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className={`${
+                      isRegistrationOpen ? "rotate-180" : ""
+                    } transition-transform`}
+                  >
+                    <path d="M7 10l5 5 5-5z" />
+                  </svg>
+                </span>
+              )}
+            </button>
+
+            {/* Dropdown items - expanded mode */}
+            {!isCollapsed && isRegistrationOpen && (
+              <ul className="mt-1 ml-4 border-l border-white/20">
+                <li>
+                  <NavLink
+                    to="/admin/registration-period"
+                    className={`flex items-center gap-3 pl-1 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                      location.pathname === "/admin/registration-period"
+                        ? "bg-white/20 text-white"
+                        : "text-white/80"
+                    }`}
+                    onClick={handleMenuClick}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
+                    <span>Quản lý đợt đăng ký</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/admin/defense-schedule"
+                    className={`flex items-center gap-3 pl-1 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                      location.pathname === "/admin/defense-schedule"
+                        ? "bg-white/20 text-white"
+                        : "text-white/80"
+                    }`}
+                    onClick={handleMenuClick}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
+                    <span>Quản lý lịch bảo vệ</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/admin/defense-sessions"
+                    className={`flex items-center gap-3 pl-1 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                      location.pathname === "/admin/defense-sessions"
+                        ? "bg-white/20 text-white"
+                        : "text-white/80"
+                    }`}
+                    onClick={handleMenuClick}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
+                    <span>Quản lý buổi bảo vệ</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/admin/student-period"
+                    className={`flex items-center gap-3 pl-1 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                      location.pathname === "/admin/student-period"
+                        ? "bg-white/20 text-white"
+                        : "text-white/80"
+                    }`}
+                    onClick={handleMenuClick}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
+                    <span>Quản lý sinh viên</span>
+                  </NavLink>
+                </li>
+              </ul>
+            )}
+
+            {/* Dropdown items - collapsed hover flyout */}
+            {/* Hover flyout with optional gap (bridge keeps it open) */}
+            {isCollapsed && isRegistrationOpen && (
+              <>
+                {/* Invisible hover bridge so moving across the gap doesn't close */}
+                <div
+                  className="absolute left-full top-0 h-12 w-4 z-40"
+                  onMouseEnter={() => setIsRegistrationOpen(true)}
+                  onMouseLeave={() => setIsRegistrationOpen(false)}
+                />
+                <ul
+                  className="absolute left-full top-0 ml-3 w-56 bg-secondary/95 text-white rounded-lg shadow-xl p-2 space-y-1 z-50"
+                  onMouseEnter={() => setIsRegistrationOpen(true)}
+                  onMouseLeave={() => setIsRegistrationOpen(false)}
+                >
+                  <li>
+                    <NavLink
+                      to="/admin/registration-period"
+                      className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                        location.pathname === "/admin/registration-period"
+                          ? "bg-white/20 text-white"
+                          : "text-white/80"
+                      }`}
+                      onClick={handleMenuClick}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white/70"></span>
+                      <span>Quản lý đợt đăng ký</span>
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/admin/defense-schedule"
+                      className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                        location.pathname === "/admin/defense-schedule"
+                          ? "bg-white/20 text-white"
+                          : "text-white/80"
+                      }`}
+                      onClick={handleMenuClick}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white/70"></span>
+                      <span>Quản lý lịch bảo vệ</span>
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/admin/defense-sessions"
+                      className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                        location.pathname === "/admin/defense-sessions"
+                          ? "bg-white/20 text-white"
+                          : "text-white/80"
+                      }`}
+                      onClick={handleMenuClick}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white/70"></span>
+                      <span>Quản lý buổi bảo vệ</span>
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink
+                      to="/admin/student-period"
+                      className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-white/10 ${
+                        location.pathname === "/admin/student-period"
+                          ? "bg-white/20 text-white"
+                          : "text-white/80"
+                      }`}
+                      onClick={handleMenuClick}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white/70"></span>
+                      <span>Quản lý sinh viên</span>
+                    </NavLink>
+                  </li>
+                </ul>
+              </>
+            )}
+          </li>
+
+          {/* Phần còn lại sau nhóm */}
+          {restItems.map((item, index) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}
@@ -256,18 +457,12 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           }`}
         >
           <img
-            src="/logo.png"
-            alt="Logo"
+            src="/phenikaa.png"
+            alt="Phenikaa Logo"
             className={`${
               isCollapsed ? "w-12 h-12" : "w-16 h-16"
             } object-contain`}
           />
-          {!isCollapsed && (
-            <div className="text-center">
-              <div className="text-sm font-semibold text-white">Phenikaa</div>
-              <div className="text-xs text-white/70">University</div>
-            </div>
-          )}
         </div>
       </div>
     </div>

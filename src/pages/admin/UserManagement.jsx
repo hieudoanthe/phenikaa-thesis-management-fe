@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import AddUserModal from "../../components/modals/AddUserModal.jsx";
 import ConfirmModal from "../../components/modals/ConfirmModal.jsx";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
     if (type === "info") return toast.info(message);
-    return showToast(message);
+    return toast.success(message);
   } catch (err) {
     console.error("Không thể hiển thị toast:", err);
     (type === "success" ? console.log : console.error)(message);
@@ -67,20 +67,20 @@ const UserManagement = () => {
   const [statusLoadingId, setStatusLoadingId] = useState(null);
   // Phân trang phía server
   const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = 6;
+  const [pageSize, setPageSize] = useState(6);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
   // Fetch users từ API (server-side paging)
   const fetchUsers = async (page = currentPage, options = {}) => {
-    const { initial = false } = options;
+    const { initial = false, size } = options;
     try {
       if (initial) setIsInitialLoading(true);
 
       // Tạo params cho API call với server-side pagination
       const apiParams = {
         page: page,
-        size: pageSize, // Sử dụng pageSize = 6 thay vì 1000
+        size: typeof size === "number" ? size : pageSize,
       };
 
       // Gọi API với server-side pagination
@@ -398,7 +398,7 @@ const UserManagement = () => {
           {/* Left side - Add button and role filter */}
           <div className="flex flex-col sm:flex-row gap-4">
             <button
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-secondary text-white font-medium rounded-lg hover:bg-secondary-hover transition-colors duration-200 shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
               onClick={() => setIsModalOpen(true)}
             >
               <svg
@@ -421,18 +421,24 @@ const UserManagement = () => {
                 isSearchable={false}
                 className="custom-select"
                 styles={{
-                  control: (base) => ({
+                  control: (base, state) => ({
                     ...base,
                     borderRadius: "8px",
-                    minHeight: "40px",
+                    minHeight: "42px",
+                    height: "44px",
                     fontSize: "0.95rem",
-                    borderColor: "#d1d5db",
-                    boxShadow: "none",
+                    borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                    boxShadow: state.isFocused ? "0 0 0 1px #ff6600" : "none",
+                    "&:hover": { borderColor: "#ff6600" },
                   }),
                   option: (base, state) => ({
                     ...base,
                     fontSize: "0.95rem",
-                    backgroundColor: getOptionBackgroundColor(state),
+                    backgroundColor: state.isSelected
+                      ? "#ff6600"
+                      : state.isFocused
+                      ? "#fff7ed"
+                      : "#fff",
                     color: state.isSelected ? "#fff" : "#111827",
                     cursor: "pointer",
                   }),
@@ -444,6 +450,11 @@ const UserManagement = () => {
                     ...base,
                     borderRadius: "8px",
                     zIndex: 20,
+                  }),
+                  dropdownIndicator: (base, state) => ({
+                    ...base,
+                    color: state.isFocused ? "#ff6600" : "#9ca3af",
+                    "&:hover": { color: "#ff6600" },
                   }),
                 }}
               />
@@ -472,31 +483,183 @@ const UserManagement = () => {
               placeholder="Tìm kiếm người dùng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors duration-200"
+              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400 transition-colors duration-200"
             />
           </div>
         </div>
       </div>
 
-      {/* User Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Mobile list (cards) */}
+      <div className="sm:hidden space-y-3">
+        {paginatedUsers.map((user) => (
+          <div
+            key={user.userId}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-4"
+          >
+            {editingUserId === user.userId ? (
+              // Edit mode for mobile
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Họ và tên
+                  </label>
+                  <input
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-secondary text-sm"
+                    value={editDraft.fullName}
+                    onChange={(e) =>
+                      setEditDraft((d) => ({ ...d, fullName: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-secondary text-sm"
+                    value={editDraft.username}
+                    onChange={(e) =>
+                      setEditDraft((d) => ({ ...d, username: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Vai trò
+                  </label>
+                  <Select
+                    value={editDraft.roleIds.map((id) => ({
+                      value: id,
+                      label: roleMapping[id],
+                    }))}
+                    onChange={(opts) =>
+                      setEditDraft((d) => ({
+                        ...d,
+                        roleIds: (opts || []).map((o) => o.value),
+                      }))
+                    }
+                    options={[1, 2, 3].map((id) => ({
+                      value: id,
+                      label: roleMapping[id],
+                    }))}
+                    isMulti
+                    isSearchable={false}
+                    className="custom-select"
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                    menuPlacement="auto"
+                    menuShouldScrollIntoView={false}
+                    styles={{
+                      menu: (b) => ({ ...b, zIndex: 3000 }),
+                      menuPortal: (b) => ({ ...b, zIndex: 3000 }),
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    className="flex-1 px-3 py-2 bg-success text-white rounded-lg text-sm font-medium"
+                    onClick={() => saveEdit(user)}
+                  >
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 px-3 py-2 bg-gray-500 text-white rounded-lg text-sm font-medium"
+                    onClick={cancelEdit}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // View mode for mobile
+              <div className="flex items-start gap-3">
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-base font-semibold text-gray-900 truncate">
+                      {user.name}
+                    </h3>
+                    <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-gray-700">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${
+                          user.status === 1 ? "bg-green-500" : "bg-red-500"
+                        }`}
+                      />
+                      {getStatusLabel(user.status)}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 break-words">
+                    <div className="truncate">{user.email}</div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {getRoleDisplayList(user.roleIds).map((r, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-800 text-sm hover:bg-gray-50"
+                      onClick={() => startEdit(user)}
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 rounded-lg border border-error-300 text-error-600 text-sm hover:bg-error-50/40"
+                      onClick={() => handleDeleteUser(user.userId)}
+                    >
+                      Xóa
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 ${
+                        user.status === 2
+                          ? "border-warning-300 text-warning-600"
+                          : "border-gray-300 text-gray-700"
+                      }`}
+                      onClick={() => handleToggleLock(user)}
+                    >
+                      {user.status === 2 ? "Mở khóa" : "Khóa"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop/tablet table */}
+      <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">
                   Họ và tên
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">
                   Vai trò
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] hidden sm:table-cell">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                   Email
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px] hidden sm:table-cell">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                   Trạng thái
                 </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">
                   Hành động
                 </th>
               </tr>
@@ -513,7 +676,7 @@ const UserManagement = () => {
                         <img
                           src={user.avatar}
                           alt={user.name}
-                          className="hidden sm:block h-8 w-8 sm:h-10 sm:w-10 rounded-full mr-2 sm:mr-3"
+                          className="h-10 w-10 rounded-full mr-3 hidden md:block"
                         />
                       )}
                       {editingUserId === user.userId ? (
@@ -565,15 +728,15 @@ const UserManagement = () => {
                       />
                     ) : (
                       <div className="text-sm text-gray-900">
-                        {getRoleDisplayList(user.roleIds).map((role, index) => (
-                          <div key={index} className="leading-tight">
+                        {getRoleDisplayList(user.roleIds).map((role, i) => (
+                          <div key={i} className="leading-tight">
                             {role}
                           </div>
                         ))}
                       </div>
                     )}
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     {editingUserId === user.userId ? (
                       <input
                         className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors duration-200 text-sm"
@@ -589,12 +752,12 @@ const UserManagement = () => {
                       <div className="text-sm text-gray-900">{user.email}</div>
                     )}
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium border-none ${
+                      className={`inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium ${
                         user.status === 1
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : "bg-red-50 text-red-700 border-red-200"
+                          ? "bg-green-50 text-green-700"
+                          : "bg-red-50 text-red-700"
                       }`}
                     >
                       {getStatusLabel(user.status)}
@@ -623,40 +786,40 @@ const UserManagement = () => {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 sm:gap-2">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="p-1.5 sm:p-2 text-info-500 hover:bg-info-50 rounded-lg transition-colors duration-200"
+                          className="p-2 text-info-500 hover:bg-info-50 rounded-lg"
+                          onClick={() => startEdit(user)}
                           title="Chỉnh sửa"
                           aria-label="Chỉnh sửa"
-                          onClick={() => startEdit(user)}
                         >
-                          <i className="bi bi-pen text-base sm:text-lg"></i>
+                          <i className="bi bi-pen text-lg"></i>
                         </button>
                         <button
                           type="button"
-                          className="p-1.5 sm:p-2 text-error-500 hover:bg-error-50 rounded-lg transition-colors duration-200"
-                          title="Xóa"
-                          aria-label="Xóa người dùng"
+                          className="p-2 text-error-500 hover:bg-error-50 rounded-lg"
                           onClick={() => handleDeleteUser(user.userId)}
+                          title="Xóa"
+                          aria-label="Xóa"
                         >
-                          <i className="bi bi-trash text-base sm:text-lg"></i>
+                          <i className="bi bi-trash text-lg"></i>
                         </button>
                         <button
                           type="button"
-                          className={`p-1.5 sm:p-2 rounded-lg transition-colors duration-200 ${
+                          className={`p-2 rounded-lg ${
                             user.status === 2
                               ? "text-warning-500 hover:bg-warning-50"
                               : "text-gray-500 hover:bg-gray-50"
                           }`}
+                          onClick={() => handleToggleLock(user)}
                           title={user.status === 2 ? "Mở khóa" : "Khóa"}
                           aria-label={user.status === 2 ? "Mở khóa" : "Khóa"}
-                          onClick={() => handleToggleLock(user)}
                         >
                           {statusLoadingId === user.userId ? (
-                            <i className="bi bi-arrow-repeat spin text-base sm:text-lg"></i>
+                            <i className="bi bi-arrow-repeat spin text-lg"></i>
                           ) : (
-                            <i className="bi bi-lock text-base sm:text-lg"></i>
+                            <i className="bi bi-lock text-lg"></i>
                           )}
                         </button>
                       </div>
@@ -672,49 +835,126 @@ const UserManagement = () => {
       {/* Footer */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mt-6 mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="text-sm text-gray-700">
-            Hiển thị{" "}
-            {paginatedUsers.length > 0 ? currentPage * pageSize + 1 : 0} đến{" "}
-            {currentPage * pageSize + paginatedUsers.length} trên{" "}
-            {totalElements} bản ghi — Trang {currentPage + 1}/
-            {Math.ceil(totalElements / pageSize)}
+          {/* Page size selector - always visible */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-start">
+            <span className="text-sm text-gray-600">Hiển thị</span>
+            <div className="min-w-[96px]">
+              <Select
+                value={{ value: pageSize, label: String(pageSize) }}
+                onChange={async (opt) => {
+                  const newSize = parseInt(opt?.value ?? 6, 10);
+                  setPageSize(newSize);
+                  setCurrentPage(0);
+                  await fetchUsers(0, { size: newSize });
+                }}
+                options={[6, 10, 20, 50].map((n) => ({
+                  value: n,
+                  label: String(n),
+                }))}
+                isSearchable={false}
+                className="custom-select"
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: 36,
+                    borderRadius: 8,
+                    borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                    boxShadow: state.isFocused ? "0 0 0 1px #ff6600" : "none",
+                    "&:hover": { borderColor: "#ff6600" },
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    fontSize: "0.95rem",
+                    backgroundColor: state.isSelected
+                      ? "#ff6600"
+                      : state.isFocused
+                      ? "#fff7ed"
+                      : "#fff",
+                    color: state.isSelected ? "#fff" : "#111827",
+                    cursor: "pointer",
+                  }),
+                  dropdownIndicator: (base, state) => ({
+                    ...base,
+                    color: state.isFocused ? "#ff6600" : "#9ca3af",
+                    "&:hover": { color: "#ff6600" },
+                  }),
+                  menu: (base) => ({ ...base, zIndex: 20, borderRadius: 8 }),
+                }}
+              />
+            </div>
+            <span className="text-sm text-gray-600">bản ghi/trang</span>
           </div>
 
-          {/* Pagination - Hiển thị khi có nhiều hơn 1 trang */}
-          {Math.ceil(totalElements / pageSize) > 1 ? (
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button
-                className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                disabled={currentPage === 0}
-                onClick={() => {
-                  handlePageChange(currentPage - 1);
-                }}
-              >
-                <i className="bi bi-chevron-left text-sm sm:text-base"></i>
-              </button>
-              <button className="px-2 sm:px-3 py-1.5 sm:py-2 text-sm font-medium text-gray-900 bg-secondary text-white rounded-lg">
-                {currentPage + 1}
-              </button>
-              <span className="px-1 sm:px-2 text-sm text-gray-500">
-                / {Math.ceil(totalElements / pageSize)}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3">
+            {/* Pagination - only show when multiple pages */}
+            {Math.ceil(totalElements / pageSize) > 1 ? (
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const totalPageCount = Math.max(
+                    1,
+                    totalPages || Math.ceil(totalElements / pageSize)
+                  );
+                  const current = currentPage + 1;
+                  const start = Math.max(1, current - 2);
+                  const end = Math.min(totalPageCount, current + 2);
+                  const pages = [];
+                  for (let p = start; p <= end; p++) pages.push(p);
+                  return (
+                    <div className="inline-flex items-center bg-white border border-gray-200 rounded-[14px] overflow-hidden shadow-sm self-center sm:self-auto">
+                      <button
+                        className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={current === 1}
+                        onClick={() => handlePageChange(0)}
+                      >
+                        Đầu
+                      </button>
+                      <button
+                        className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={current === 1}
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        aria-label="Trang trước"
+                      >
+                        <i className="bi bi-chevron-left"></i>
+                      </button>
+                      {pages.map((p) => (
+                        <button
+                          key={p}
+                          className={`${
+                            p === current
+                              ? "bg-primary-500 text-white"
+                              : "bg-white text-gray-800 hover:bg-primary-50"
+                          } px-3 py-2 text-sm border-x border-gray-200`}
+                          onClick={() => handlePageChange(p - 1)}
+                          aria-current={p === current ? "page" : undefined}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={current === totalPageCount}
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        aria-label="Trang sau"
+                      >
+                        <i className="bi bi-chevron-right"></i>
+                      </button>
+                      <button
+                        className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={current === totalPageCount}
+                        onClick={() => handlePageChange(totalPageCount - 1)}
+                      >
+                        Cuối
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <span className="text-sm text-gray-500">
+                Không có phân trang (chỉ có {filteredUsers.length} bản ghi)
               </span>
-              <button
-                className="p-1.5 sm:p-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                disabled={
-                  currentPage + 1 >= Math.ceil(totalElements / pageSize)
-                }
-                onClick={() => {
-                  handlePageChange(currentPage + 1);
-                }}
-              >
-                <i className="bi bi-chevron-right text-sm sm:text-base"></i>
-              </button>
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500">
-              Không có phân trang (chỉ có {filteredUsers.length} bản ghi)
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -737,24 +977,6 @@ const UserManagement = () => {
           setConfirmState({ open: false, userId: null, loading: false })
         }
         loading={confirmState.loading}
-      />
-
-      {/* Toast Container */}
-      <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        limit={3}
-        closeButton={true}
-        theme="light"
-        style={{ zIndex: 9999 }}
-        toastStyle={{ zIndex: 9999 }}
       />
     </div>
   );

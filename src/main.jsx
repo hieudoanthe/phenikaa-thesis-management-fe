@@ -2,7 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ToastContainer } from "react-toastify";
 import App from "./App.jsx";
-import Dashboard from "./pages/admin/Dashboard.jsx";
 import UserManagement from "./pages/admin/UserManagement.jsx";
 import LecturerDashboard from "./pages/lecturer/Dashboard.jsx";
 import ThesisManagement from "./pages/lecturer/ThesisManagement.jsx";
@@ -157,7 +156,7 @@ createRoot(document.getElementById("root")).render(
                   </AdminRoute>
                 }
               >
-                <Route path="dashboard" element={<Dashboard />} />
+                <Route index element={<StatisticsDashboard />} />
 
                 <Route
                   path="academic-year"
@@ -214,19 +213,27 @@ createRoot(document.getElementById("root")).render(
 
           {/* Toast Container global */}
           <ToastContainer
-            position="bottom-right"
+            position="top-right"
             autoClose={5000}
             hideProgressBar={false}
-            newestOnTop={false}
+            newestOnTop={true}
             closeOnClick
             rtl={false}
             pauseOnFocusLoss
             draggable
             pauseOnHover
-            theme="light"
+            theme="colored"
             limit={3}
-            style={{ zIndex: 99999 }}
-            toastStyle={{ zIndex: 99999 }}
+            style={{
+              zIndex: 99999,
+              top: "20px",
+              right: "20px",
+            }}
+            toastStyle={{
+              zIndex: 99999,
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
           />
         </AuthProvider>
       </SessionManager>

@@ -238,7 +238,7 @@ const AdminLayout = () => {
         }`}
       >
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 sticky top-0 z-30 flex-shrink-0">
+        <header className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center flex-1 min-w-0">
               {/* Hamburger Menu Button - Chỉ hiện trên mobile */}
@@ -268,7 +268,7 @@ const AdminLayout = () => {
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 m-0 leading-tight truncate">
                   {currentPage.title}
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-600 m-0 leading-relaxed mt-0.5 sm:mt-1 truncate">
+                <p className="hidden sm:block text-xs sm:text-sm text-gray-600 m-0 leading-relaxed mt-0.5 sm:mt-1 truncate">
                   {currentPage.subtitle}
                 </p>
               </div>
@@ -284,14 +284,15 @@ const AdminLayout = () => {
                   aria-label="Thông báo"
                 >
                   <svg
-                    width="18"
-                    height="18"
+                    width="20"
+                    height="20"
                     className="sm:w-5 sm:h-5 md:w-5 md:h-5 text-gray-600"
                     viewBox="0 0 24 24"
                     fill="currentColor"
                   >
                     <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
                   </svg>
+                  {/* Ẩn badge nếu không có unread (demo dùng số cứng 3 -> giữ điều kiện true) */}
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1 sm:px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
                     3
                   </span>
@@ -299,41 +300,47 @@ const AdminLayout = () => {
 
                 {/* Notification Dropdown Menu */}
                 {isNotificationOpen && (
-                  <div className="absolute top-full right-0 w-80 sm:w-96 bg-white rounded-xl shadow-lg border border-gray-200 z-50 mt-2 animate-fade-in-up">
-                    <div className="p-3 sm:p-4 border-b border-gray-100 flex justify-between items-center">
+                  <div className="fixed top-20 left-4 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 ring-1 ring-black/5 z-50 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:w-96 sm:mt-3 animate-fade-in-up">
+                    <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                       <h3 className="text-sm sm:text-base font-semibold text-gray-900 m-0">
                         Thông báo
                       </h3>
-                      <button className="text-info text-xs sm:text-sm cursor-pointer px-2 py-1 rounded transition-colors duration-200 hover:bg-gray-100">
+                      <button className="text-info text-xs sm:text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100">
                         Đánh dấu tất cả đã đọc
                       </button>
                     </div>
-                    <div className="max-h-[300px] overflow-y-auto">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-3 sm:p-4 border-b border-gray-100 flex items-start gap-2 sm:gap-3 transition-colors duration-200 hover:bg-gray-50 ${
-                            !notification.isRead ? "bg-yellow-50" : ""
-                          }`}
-                        >
-                          <div className="flex-1">
-                            <h4 className="text-xs sm:text-sm font-semibold text-gray-900 m-0 mb-1">
-                              {notification.title}
-                            </h4>
-                            <p className="text-xs sm:text-sm text-gray-600 m-0 mb-2 leading-relaxed">
-                              {notification.message}
-                            </p>
-                            <span className="text-[10px] sm:text-xs text-gray-500">
-                              {notification.time}
-                            </span>
-                          </div>
-                          {!notification.isRead && (
-                            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
-                          )}
+                    <div className="max-h-[60vh] sm:max-h-[240px] overflow-y-auto thin-scrollbar divide-y divide-gray-100">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-500">
+                          Không có thông báo nào
                         </div>
-                      ))}
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`px-4 py-3 flex items-start gap-3 transition-colors duration-200 hover:bg-gray-50 ${
+                              !notification.isRead ? "bg-yellow-50/40" : ""
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 m-0 mb-0.5 truncate">
+                                {notification.title}
+                              </h4>
+                              <p className="text-xs sm:text-sm text-gray-600 m-0 mb-1 leading-relaxed break-words">
+                                {notification.message}
+                              </p>
+                              <span className="text-[10px] sm:text-xs text-gray-500">
+                                {notification.time}
+                              </span>
+                            </div>
+                            {!notification.isRead && (
+                              <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-info rounded-full flex-shrink-0 mt-1"></div>
+                            )}
+                          </div>
+                        ))
+                      )}
                     </div>
-                    <div className="p-3 sm:p-4 border-t border-gray-100 text-center">
+                    <div className="px-4 py-3 border-t border-gray-100 text-center">
                       <button className="text-info text-xs sm:text-sm cursor-pointer px-3 sm:px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
                         Xem tất cả thông báo
                       </button>
@@ -350,7 +357,7 @@ const AdminLayout = () => {
                   onClick={handleToggleUserDropdown}
                   aria-label="Menu người dùng"
                 >
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                  <div className="w-10 h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     AD
                   </div>
                   <div className="hidden sm:block">

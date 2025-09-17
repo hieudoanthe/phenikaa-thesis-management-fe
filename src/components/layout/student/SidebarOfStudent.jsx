@@ -208,18 +208,12 @@ const SidebarOfStudent = ({
           }`}
         >
           <img
-            src="/logo.png"
-            alt="Logo"
+            src="/phenikaa.png"
+            alt="Phenikaa Logo"
             className={`${
               isCollapsed ? "w-12 h-12" : "w-16 h-16"
             } object-contain`}
           />
-          {!isCollapsed && (
-            <div className="text-center">
-              <div className="text-sm font-semibold text-white">Phenikaa</div>
-              <div className="text-xs text-white/70">University</div>
-            </div>
-          )}
         </div>
       </div>
     </div>

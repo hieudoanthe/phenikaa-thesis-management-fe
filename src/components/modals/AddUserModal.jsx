@@ -150,10 +150,93 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                 />
                 <label
                   htmlFor="fullName"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
                 >
-                  Họ và tên
+                  Họ và tên <span className="text-error-600">*</span>
                 </label>
+              </div>
+
+              <div className="relative">
+                <input
+                  id="username"
+                  type="text"
+                  placeholder=" "
+                  value={formData.username}
+                  onChange={(e) =>
+                    handleInputChange("username", e.target.value)
+                  }
+                  required
+                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
+                />
+                <label
+                  htmlFor="username"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                >
+                  Tên đăng nhập <span className="text-error-600">*</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-5">
+              <div className="relative">
+                <Select
+                  value={formData.roles}
+                  onChange={(selectedOptions) =>
+                    handleInputChange("roles", selectedOptions || [])
+                  }
+                  options={roleOptions}
+                  isMulti={true}
+                  closeMenuOnSelect={false}
+                  blurInputOnSelect={false}
+                  hideSelectedOptions={true}
+                  placeholder="Chọn vai trò..."
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                  menuPlacement="auto"
+                  menuShouldScrollIntoView={false}
+                  maxMenuHeight={160}
+                  isClearable
+                  className="custom-select"
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      minHeight: "48px",
+                      height: "51px",
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: state.isFocused ? "0 0 0 1px #ff6600" : "none",
+                      borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
+                      "&:hover": {
+                        borderColor: state.isFocused ? "#ff6600" : "#cbd5e0",
+                      },
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? "#ff6600"
+                        : state.isFocused
+                        ? "#fff5f0"
+                        : "#fff",
+                      color: state.isSelected ? "#fff" : "#4a5568",
+                      fontWeight: state.isSelected ? 500 : 400,
+                      "&:hover": {
+                        backgroundColor: state.isSelected
+                          ? "#ff6600"
+                          : "#fff5f0",
+                        color: state.isSelected ? "#fff" : "#4a5568",
+                      },
+                    }),
+                    menu: (base) => ({
+                      ...base,
+                      border: "2px solid #e2e8f0",
+                      borderRadius: "8px",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                      zIndex: 2000,
+                    }),
+                    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+                  }}
+                />
               </div>
 
               <div className="relative">
@@ -170,9 +253,9 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                 />
                 <label
                   htmlFor="password"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
                 >
-                  Mật khẩu
+                  Mật khẩu <span className="text-error-600">*</span>
                 </label>
                 <button
                   type="button"
@@ -212,90 +295,6 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                 </button>
               </div>
             </div>
-
-            {/* Right Column */}
-            <div className="space-y-5">
-              <div className="relative">
-                <input
-                  id="username"
-                  type="text"
-                  placeholder=" "
-                  value={formData.username}
-                  onChange={(e) =>
-                    handleInputChange("username", e.target.value)
-                  }
-                  required
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer"
-                />
-                <label
-                  htmlFor="username"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Tên đăng nhập
-                </label>
-              </div>
-
-              <div className="relative">
-                <Select
-                  value={formData.roles}
-                  onChange={(selectedOptions) =>
-                    handleInputChange("roles", selectedOptions || [])
-                  }
-                  options={roleOptions}
-                  isMulti={true}
-                  closeMenuOnSelect={false}
-                  blurInputOnSelect={false}
-                  hideSelectedOptions={true}
-                  placeholder="Chọn vai trò..."
-                  menuPortalTarget={document.body}
-                  menuPosition="fixed"
-                  menuPlacement="auto"
-                  menuShouldScrollIntoView={false}
-                  maxMenuHeight={160}
-                  isClearable
-                  className="custom-select"
-                  styles={{
-                    control: (base, state) => ({
-                      ...base,
-                      minHeight: "44px",
-                      border: "2px solid #e2e8f0",
-                      borderRadius: "8px",
-                      boxShadow: state.isFocused
-                        ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
-                        : "none",
-                      borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
-                      "&:hover": {
-                        borderColor: state.isFocused ? "#ff6600" : "#cbd5e0",
-                      },
-                    }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected
-                        ? "#ff6600"
-                        : state.isFocused
-                        ? "#fff5f0"
-                        : "#fff",
-                      color: state.isSelected ? "#fff" : "#4a5568",
-                      fontWeight: state.isSelected ? 500 : 400,
-                      "&:hover": {
-                        backgroundColor: state.isSelected
-                          ? "#ff6600"
-                          : "#fff5f0",
-                        color: state.isSelected ? "#fff" : "#4a5568",
-                      },
-                    }),
-                    menu: (base) => ({
-                      ...base,
-                      border: "2px solid #e2e8f0",
-                      borderRadius: "8px",
-                      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-                      zIndex: 2000,
-                    }),
-                    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
-                  }}
-                />
-              </div>
-            </div>
           </div>
 
           {/* Buttons */}
@@ -310,10 +309,10 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
             <button
               type="submit"
               disabled={submitting}
-              className={`px-6 py-2.5 text-base font-medium text-white bg-secondary rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[120px] ${
+              className={`px-6 py-2.5 text-base font-medium text-white bg-primary-500 rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[120px] ${
                 submitting
                   ? "opacity-70 cursor-not-allowed"
-                  : "hover:bg-secondary-hover"
+                  : "hover:bg-primary-400"
               }`}
             >
               {submitting ? (
