@@ -4,10 +4,10 @@ import { toast } from "react-toastify";
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
     if (type === "info") return toast.info(message);
-    return showToast(message);
+    return toast.success(message);
   } catch (err) {
     console.error("Không thể hiển thị toast:", err);
     (type === "success" ? console.log : console.error)(message);
@@ -1362,3 +1362,4 @@ const SubmissionManagement = () => {
 };
 
 export default SubmissionManagement;
+

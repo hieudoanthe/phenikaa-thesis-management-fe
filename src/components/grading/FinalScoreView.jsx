@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
     if (type === "info") return toast.info(message);
     return toast.success(message);
@@ -244,3 +244,4 @@ const FinalScoreView = ({ topicId }) => {
 };
 
 export default FinalScoreView;
+

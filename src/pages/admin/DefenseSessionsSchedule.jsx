@@ -7,10 +7,10 @@ import { toast } from "react-toastify";
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
-    if (type === "info") return showToast(message);
-    return showToast(message);
+    if (type === "info") return toast.info(message);
+    return toast.success(message);
   } catch (err) {
     console.error("Không thể hiển thị toast:", err);
     (type === "success" ? console.log : console.error)(message);
@@ -409,7 +409,18 @@ const DefenseSessionsSchedule = () => {
       }
     } catch (error) {
       console.error("Lỗi khi tạo buổi bảo vệ:", error);
-      showToast("Lỗi khi tạo buổi bảo vệ");
+
+      // Hiển thị thông báo lỗi validation từ backend
+      if (error.response && error.response.data && error.response.data.error) {
+        showToast(error.response.data.error, "error");
+      } else if (error.response && error.response.status === 400) {
+        showToast(
+          "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.",
+          "error"
+        );
+      } else {
+        showToast("Lỗi khi tạo buổi bảo vệ. Vui lòng thử lại.", "error");
+      }
     }
   };
 
@@ -1551,18 +1562,30 @@ const CreateScheduleModal = ({
               htmlFor="committee-select"
             >
               Thành viên hội đồng <span className="text-red-500">*</span>
+              <span className="block text-xs text-gray-500 mt-1">
+                (Thứ tự 1: Chủ tịch, Thứ tự 2: Thư ký, Thứ tự 3: Thành viên)
+              </span>
             </label>
             <Select
               inputId="committee-select"
               value={selectedTeachers}
-              onChange={setSelectedTeachers}
+              onChange={(selected) => {
+                if (selected && selected.length > 3) {
+                  showToast(
+                    "Chỉ được chọn tối đa 3 thành viên hội đồng",
+                    "warning"
+                  );
+                  return;
+                }
+                setSelectedTeachers(selected || []);
+              }}
               options={teacherOptions}
               className="react-select-container"
               classNamePrefix="react-select"
               placeholder={
                 loadingTeachers
                   ? "Đang tải giảng viên..."
-                  : "Chọn thành viên hội đồng"
+                  : "Chọn thành viên hội đồng (tối đa 3 người)"
               }
               isMulti
               isSearchable={true}
@@ -1594,18 +1617,30 @@ const CreateScheduleModal = ({
               htmlFor="reviewer-select"
             >
               Giảng viên phản biện <span className="text-red-500">*</span>
+              <span className="block text-xs text-gray-500 mt-1">
+                (Tối đa 1 người)
+              </span>
             </label>
             <Select
               inputId="reviewer-select"
               value={selectedReviewers}
-              onChange={setSelectedReviewers}
+              onChange={(selected) => {
+                if (selected && selected.length > 1) {
+                  showToast(
+                    "Chỉ được chọn tối đa 1 giảng viên phản biện",
+                    "warning"
+                  );
+                  return;
+                }
+                setSelectedReviewers(selected || []);
+              }}
               options={teacherOptions}
               className="react-select-container"
               classNamePrefix="react-select"
               placeholder={
                 loadingTeachers
                   ? "Đang tải giảng viên..."
-                  : "Chọn giảng viên phản biện"
+                  : "Chọn giảng viên phản biện (tối đa 1 người)"
               }
               isMulti
               isSearchable={true}

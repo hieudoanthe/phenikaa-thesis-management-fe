@@ -180,6 +180,21 @@ export const getQnAByTopicAndStudent = async (topicId, studentId) => {
 };
 
 /**
+ * Kiểm tra quyền truy cập Q&A - chỉ cho phép thư ký
+ */
+export const checkSecretaryAccess = async (topicId, secretaryId) => {
+  try {
+    const response = await apiGet(
+      `${EVAL_SERVICE_BASE}/defense-qna/access/${topicId}/secretary/${secretaryId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Error checking secretary access:", error);
+    throw error;
+  }
+};
+
+/**
  * Lấy thông tin chi tiết đề tài cho giảng viên chấm điểm
  */
 export const getTopicDetails = async (topicId) => {

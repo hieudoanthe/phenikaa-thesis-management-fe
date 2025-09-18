@@ -9,10 +9,10 @@ import { toast } from "react-toastify";
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
     if (type === "info") return toast.info(message);
-    return showToast(message);
+    return toast.success(message);
   } catch (err) {
     console.error("Không thể hiển thị toast:", err);
     (type === "success" ? console.log : console.error)(message);
@@ -99,16 +99,11 @@ const TopicRegistration = () => {
           // Nếu có ít nhất 1 đợt ACTIVE, clear lỗi
           if (periodsRes.data.length > 0) {
             setError("");
-          } else if (res.noActivePeriod) {
-            // Chỉ set lỗi khi thực sự không có đợt nào ACTIVE
-            setError(
-              res.message || "Hiện tại không có đợt đăng ký nào đang diễn ra!"
-            );
+          } else {
+            // Nếu không có đợt nào ACTIVE
+            setError("Hiện tại không có đợt đăng ký nào đang diễn ra!");
           }
         }
-        // Fallback: nếu chưa có danh sách periods, dùng currentPeriod cũ
-        if (!currentPeriod && res.currentPeriod)
-          setCurrentPeriod(res.currentPeriod);
       } catch (err) {
         setError("Đã xảy ra lỗi khi tải danh sách đề tài");
       } finally {
@@ -117,6 +112,18 @@ const TopicRegistration = () => {
     };
     fetchTopics();
   }, []);
+
+  // Cập nhật currentPeriod khi selectedPeriodId thay đổi
+  useEffect(() => {
+    if (selectedPeriodId && activePeriods.length > 0) {
+      const selectedPeriod = activePeriods.find(
+        (p) => p.periodId === selectedPeriodId
+      );
+      if (selectedPeriod) {
+        setCurrentPeriod(selectedPeriod);
+      }
+    }
+  }, [selectedPeriodId, activePeriods]);
 
   // Tải danh sách giảng viên để ánh xạ supervisorId -> fullName
   useEffect(() => {

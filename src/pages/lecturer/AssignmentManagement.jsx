@@ -7,10 +7,10 @@ import { toast } from "react-toastify";
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
     if (type === "info") return toast.info(message);
-    return showToast(message);
+    return toast.success(message);
   } catch (err) {
     console.error("Không thể hiển thị toast:", err);
     (type === "success" ? console.log : console.error)(message);
@@ -595,20 +595,11 @@ const AssignmentManagement = () => {
           ) : thesisTopics.length === 0 ? (
             // Empty state
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                <svg
-                  className="w-10 h-10 text-slate-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
               <h3 className="text-lg font-semibold text-slate-700 mb-2">
-                Chưa có đề tài nào được approve
+                Chưa có đề tài nào được xác nhận
               </h3>
               <p className="text-sm text-slate-500 text-center max-w-xs">
-                Các đề tài đã approve sẽ hiển thị ở đây để quản lý nhiệm vụ
+                Các đề tài đã xác nhận sẽ hiển thị ở đây để quản lý nhiệm vụ
               </p>
             </div>
           ) : (

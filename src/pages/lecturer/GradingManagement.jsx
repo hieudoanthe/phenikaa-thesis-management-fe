@@ -174,6 +174,12 @@ const GradingManagement = () => {
         });
       });
       setEvaluations(normalized);
+      // Auto-pick first topic for Q&A if none selected
+      if (activeTab === "qna" && !selectedQnATopic && normalized.length > 0) {
+        const first = normalized[0];
+        console.log("Auto-select Q&A topic:", first);
+        setSelectedQnATopic(first);
+      }
     } catch (error) {
       showToast("Lỗi khi tải danh sách chấm điểm", "error");
       console.error("Error loading evaluations:", error);
@@ -288,6 +294,10 @@ const GradingManagement = () => {
         item.id.toString().startsWith("task_") || // Tasks chưa được chấm điểm
         item.status === "COMPLETED" // Hiển thị cả tasks đã chấm để có thể chấm lại
       );
+    }
+    if (activeTab === "qna") {
+      // Với Q&A: không lọc theo trạng thái; để QnAManagement tự kiểm tra quyền thư ký
+      return true;
     }
     return item.status === "COMPLETED";
   });

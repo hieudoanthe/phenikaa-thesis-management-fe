@@ -3,16 +3,19 @@ import {
   addQuestion,
   updateAnswer,
   getQnAByTopic,
+  checkSecretaryAccess,
 } from "../../services/grading.service";
 import { toast } from "react-toastify";
+import { useAuth } from "../../contexts/AuthContext";
+import { getUserIdFromToken } from "../../auth/authUtils";
 
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
     if (type === "info") return toast.info(message);
-    return showToast(message);
+    return toast.success(message);
   } catch (err) {
     console.error("Không thể hiển thị toast:", err);
     (type === "success" ? console.log : console.error)(message);
@@ -20,9 +23,13 @@ const showToast = (message, type = "success") => {
 };
 
 const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
+  const { user } = useAuth();
   const [qnas, setQnas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isSecretary, setIsSecretary] = useState(false);
+  // Bắt đầu ở trạng thái đã kiểm tra = false để tránh treo khi user chưa sẵn sàng
+  const [checkingAccess, setCheckingAccess] = useState(false);
   const [newQuestion, setNewQuestion] = useState({
     questionerId: "",
     secretaryId: "",
@@ -31,10 +38,31 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
   });
 
   useEffect(() => {
-    if (topicId) {
-      loadQnAs();
+    const secId = user?.userId || getUserIdFromToken();
+    if (!topicId || !secId) {
+      setCheckingAccess(false);
+      return;
     }
-  }, [topicId]);
+    setCheckingAccess(true);
+    checkAccess(secId);
+    loadQnAs();
+  }, [topicId, user?.userId]);
+
+  const checkAccess = async (secId) => {
+    setCheckingAccess(true);
+    try {
+      const secretaryId = secId ?? user?.userId ?? getUserIdFromToken();
+      console.log("QnA | check access with:", { topicId, secretaryId });
+      const response = await checkSecretaryAccess(topicId, secretaryId);
+      console.log("QnA | access response:", response);
+      setIsSecretary(response.hasAccess);
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra quyền thư ký:", error);
+      setIsSecretary(false);
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
 
   const loadQnAs = async () => {
     setLoading(true);
@@ -54,7 +82,7 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
         topicId,
         studentId,
         questionerId: parseInt(newQuestion.questionerId),
-        secretaryId: parseInt(newQuestion.secretaryId),
+        secretaryId: user.userId, // Sử dụng user ID hiện tại
         question: newQuestion.question,
         answer: newQuestion.answer,
       };
@@ -70,17 +98,17 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
       });
       loadQnAs();
     } catch (error) {
-      showToast("Lỗi khi thêm câu hỏi");
+      showToast("Lỗi khi thêm câu hỏi", "error");
     }
   };
 
   const handleUpdateAnswer = async (qnaId, answer) => {
     try {
-      await updateAnswer(qnaId, answer);
+      await updateAnswer(qnaId, { answer, secretaryId: user.userId });
       showToast("Cập nhật câu trả lời thành công!");
       loadQnAs();
     } catch (error) {
-      showToast("Lỗi khi cập nhật câu trả lời");
+      showToast("Lỗi khi cập nhật câu trả lời", "error");
     }
   };
 
@@ -88,6 +116,43 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
     if (!timeString) return "";
     return new Date(timeString).toLocaleString("vi-VN");
   };
+
+  // Kiểm tra quyền truy cập
+  if (checkingAccess) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-gray-500">Đang kiểm tra quyền truy cập...</div>
+      </div>
+    );
+  }
+
+  if (!isSecretary) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-gray-500 mb-4">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          Không có quyền truy cập
+        </h3>
+        <p className="text-gray-500">
+          Chỉ có thư ký mới được phép sử dụng chức năng Q&A
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

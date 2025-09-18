@@ -7,10 +7,10 @@ import { toast } from "react-toastify";
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
   try {
-    if (type === "error") return showToast(message);
+    if (type === "error") return toast.error(message);
     if (type === "warning") return toast.warn(message);
     if (type === "info") return toast.info(message);
-    return showToast(message);
+    return toast.success(message);
   } catch (err) {
     console.error("Không thể hiển thị toast:", err);
     (type === "success" ? console.log : console.error)(message);
@@ -105,9 +105,9 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
   const checkRegistrationPeriod = async () => {
     setPeriodLoading(true);
     try {
-      const periodResult = await registrationPeriodService.getCurrentPeriod();
-      if (periodResult.success && periodResult.data) {
-        setCurrentPeriod(periodResult.data);
+      // Chỉ sử dụng selectedPeriod từ props, không gọi API
+      if (selectedPeriod) {
+        setCurrentPeriod(selectedPeriod);
       } else {
         setCurrentPeriod(null);
       }
@@ -232,18 +232,19 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
       expectedOutcome: form.ketQuaDuKien,
       supervisorId: form.giangVien?.id || null,
       reason: form.lyDo,
+      registrationPeriodId: selectedPeriod?.periodId || null,
     };
     try {
       await suggestTopicForStudent(data);
       setSuccess(true);
       setForm(initialForm);
       setSearchQuery(""); // Reset search input
-      showToast("Đề xuất đề tài thành công!");
+      showToast("Đề xuất đề tài thành công!", "success");
       onClose?.();
     } catch (err) {
       const errorMessage = err?.message || "Có lỗi xảy ra, vui lòng thử lại!";
       setError(errorMessage);
-      showToast(errorMessage);
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
