@@ -22,8 +22,9 @@ const PhenikaaLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuthHook();
   const [role, setRole] = useState("STUDENT");
-  const [username, setUsername] = useState("21012067@st.phenikaa-uni.edu.vn");
-  const [password, setPassword] = useState("123456");
+  // 21012067@st.phenikaa-uni.edu.vn
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
