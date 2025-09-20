@@ -137,20 +137,6 @@ const GradingManagement = () => {
       const data = await getEvaluatorTasks(lecturerId, null, "all");
       console.log("Raw API data:", data);
 
-      // Debug: Log chi tiết từng task
-      if (data && data.length > 0) {
-        console.log("Task details:");
-        data.forEach((task, index) => {
-          console.log(`Task ${index + 1}:`, {
-            id: task.id,
-            topicId: task.topicId,
-            studentId: task.studentId,
-            evaluationType: task.evaluationType,
-            studentName: task.studentName,
-            topicTitle: task.topicTitle,
-          });
-        });
-      }
       const normalized = (data || []).map((e, index) => ({
         id: e.evaluationId || `task_${e.topicId}_${e.evaluationType}_${index}`,
         topicId: e.topicId,
@@ -162,17 +148,7 @@ const GradingManagement = () => {
         defenseDate: e.defenseDate || "",
         defenseTime: e.defenseTime || "",
       }));
-      console.log("Normalized evaluations:", normalized);
 
-      // Debug: Log chi tiết từng normalized evaluation
-      normalized.forEach((evaluation, index) => {
-        console.log(`Normalized ${index + 1}:`, {
-          id: evaluation.id,
-          topicId: evaluation.topicId,
-          evaluationType: evaluation.evaluationType,
-          status: evaluation.status,
-        });
-      });
       setEvaluations(normalized);
       // Auto-pick first topic for Q&A if none selected
       if (activeTab === "qna" && !selectedQnATopic && normalized.length > 0) {
@@ -301,10 +277,6 @@ const GradingManagement = () => {
     }
     return item.status === "COMPLETED";
   });
-
-  console.log("All evaluations:", evaluations);
-  console.log("Filtered evaluations:", filteredEvaluations);
-  console.log("Active tab:", activeTab);
 
   // Sort so that evaluations of the same student (by ID) are grouped together
   const sortedEvaluations = [...filteredEvaluations].sort((a, b) => {

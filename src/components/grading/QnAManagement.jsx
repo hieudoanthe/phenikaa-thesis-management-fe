@@ -4,6 +4,7 @@ import {
   updateAnswer,
   getQnAByTopic,
   checkSecretaryAccess,
+  getCommitteeByTopic,
 } from "../../services/grading.service";
 import { toast } from "react-toastify";
 import { useAuth } from "../../contexts/AuthContext";
@@ -36,6 +37,7 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
     question: "",
     answer: "",
   });
+  const [committeeMembers, setCommitteeMembers] = useState([]);
 
   useEffect(() => {
     const secId = user?.userId || getUserIdFromToken();
@@ -52,9 +54,7 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
     setCheckingAccess(true);
     try {
       const secretaryId = secId ?? user?.userId ?? getUserIdFromToken();
-      console.log("QnA | check access with:", { topicId, secretaryId });
       const response = await checkSecretaryAccess(topicId, secretaryId);
-      console.log("QnA | access response:", response);
       setIsSecretary(response.hasAccess);
     } catch (error) {
       console.error("Lỗi khi kiểm tra quyền thư ký:", error);
@@ -74,6 +74,20 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Tải danh sách thành viên hội đồng khi mở modal thêm câu hỏi
+  const openAddModal = async () => {
+    try {
+      const list = await getCommitteeByTopic(topicId);
+      setCommitteeMembers(Array.isArray(list) ? list : []);
+    } catch (e) {
+      console.error("QnA | load committee error:", e);
+      showToast("Không thể tải danh sách hội đồng", "error");
+      setCommitteeMembers([]);
+    }
+    setNewQuestion((q) => ({ ...q, secretaryId: user.userId }));
+    setShowAddModal(true);
   };
 
   const handleAddQuestion = async () => {
@@ -159,7 +173,7 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
       {/* Header - only action button */}
       <div className="flex justify-end items-center">
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
           className="px-4 py-2 text-sm font-medium text-white rounded-md transition-colors"
           style={{ backgroundColor: "#ff6600" }}
           onMouseOver={(e) =>
@@ -292,10 +306,9 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ID Người hỏi
+                      Người hỏi (thành viên hội đồng)
                     </label>
-                    <input
-                      type="number"
+                    <select
                       value={newQuestion.questionerId}
                       onChange={(e) =>
                         setNewQuestion({
@@ -304,24 +317,27 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
                         })
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Nhập ID"
-                    />
+                    >
+                      <option value="">-- Chọn người hỏi --</option>
+                      {committeeMembers.map((m) => (
+                        <option
+                          key={m.committeeId || `${m.lecturerId}-${m.role}`}
+                          value={m.lecturerId}
+                        >
+                          {`GV ${m.lecturerId} - ${m.role}`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ID Thư ký
+                      Thư ký
                     </label>
                     <input
-                      type="number"
-                      value={newQuestion.secretaryId}
-                      onChange={(e) =>
-                        setNewQuestion({
-                          ...newQuestion,
-                          secretaryId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Nhập ID"
+                      type="text"
+                      value={`ID ${user.userId}`}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700"
                     />
                   </div>
                 </div>

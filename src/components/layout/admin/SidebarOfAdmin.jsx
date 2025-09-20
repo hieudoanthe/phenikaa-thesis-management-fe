@@ -131,7 +131,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
       {/* Sidebar Header */}
       <div
         className={`flex items-center justify-between border-b border-white/20 transition-all duration-500 ease-in-out ${
-          isCollapsed ? "p-2" : "p-4"
+          isCollapsed ? "p-3" : "p-6"
         }`}
       >
         <h1
@@ -144,7 +144,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
             transitionDelay: isCollapsed ? "0ms" : "100ms",
           }}
         >
-          THESIS MANAGER
+          PHENIKAA HUB
         </h1>
         <button
           className={`rounded-lg hover:bg-white/10 transition-all duration-500 ease-in-out ${

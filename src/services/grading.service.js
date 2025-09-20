@@ -194,6 +194,19 @@ export const checkSecretaryAccess = async (topicId, secretaryId) => {
   }
 };
 
+// Lấy danh sách thành viên hội đồng theo topic
+export const getCommitteeByTopic = async (topicId) => {
+  try {
+    const response = await apiGet(
+      `${EVAL_SERVICE_BASE}/defense-qna/committee/topic/${topicId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Error getting committee by topic:", error);
+    throw error;
+  }
+};
+
 /**
  * Lấy thông tin chi tiết đề tài cho giảng viên chấm điểm
  */
