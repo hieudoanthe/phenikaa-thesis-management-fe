@@ -2,18 +2,7 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { toast } from "react-toastify";
 
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import { showToast } from "../../utils/toastHelper";
 
 // Mapping role theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
 const roleOptions = [
@@ -332,4 +321,3 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
 };
 
 export default AddUserModal;
-

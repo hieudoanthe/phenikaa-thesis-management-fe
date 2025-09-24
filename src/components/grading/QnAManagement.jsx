@@ -92,12 +92,31 @@ const QnAManagement = ({ topicId, studentId, topicTitle, studentName }) => {
 
   const handleAddQuestion = async () => {
     try {
+      const resolvedSecretaryId = user?.userId || getUserIdFromToken();
+      const questionerIdNum = parseInt(newQuestion.questionerId, 10);
+
+      if (!questionerIdNum || Number.isNaN(questionerIdNum)) {
+        showToast("Vui lòng chọn người hỏi trong hội đồng", "warning");
+        return;
+      }
+      if (!resolvedSecretaryId) {
+        showToast(
+          "Không xác định được tài khoản thư ký. Vui lòng đăng nhập lại.",
+          "error"
+        );
+        return;
+      }
+      if (!newQuestion.question || !newQuestion.question.trim()) {
+        showToast("Vui lòng nhập nội dung câu hỏi", "warning");
+        return;
+      }
+
       const qnaData = {
         topicId,
         studentId,
-        questionerId: parseInt(newQuestion.questionerId),
-        secretaryId: user.userId, // Sử dụng user ID hiện tại
-        question: newQuestion.question,
+        questionerId: questionerIdNum,
+        secretaryId: resolvedSecretaryId, // Sử dụng user ID hiện tại hoặc từ token
+        question: newQuestion.question.trim(),
         answer: newQuestion.answer,
       };
 

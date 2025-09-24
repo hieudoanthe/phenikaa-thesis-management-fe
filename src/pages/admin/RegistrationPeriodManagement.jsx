@@ -1,21 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import registrationPeriodService from "../../services/registrationPeriod.service";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import { showToast } from "../../utils/toastHelper";
+import ImportStudentsToPeriodModal from "../../components/modals/ImportStudentsToPeriodModal";
+import ManageStudentsModal from "../../components/modals/ManageStudentsModal";
 
 import academicYearService from "../../services/academicYear.service";
+import importService from "../../services/import.service";
+import Select from "react-select";
 
 const RegistrationPeriodManagement = () => {
   const [periods, setPeriods] = useState([]);
@@ -24,7 +15,18 @@ const RegistrationPeriodManagement = () => {
   const [editingPeriod, setEditingPeriod] = useState(null);
   const [activeAcademicYear, setActiveAcademicYear] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(6);
+  const [refreshing, setRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState({
+    value: "ALL",
+    label: "Tất cả",
+  });
+
+  // Import and manage students modals
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [manageStudentsModalOpen, setManageStudentsModalOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     periodName: "",
     academicYearId: "",
@@ -75,9 +77,59 @@ const RegistrationPeriodManagement = () => {
     }
   };
 
+  const refreshPeriods = async () => {
+    try {
+      setRefreshing(true);
+      const result = await registrationPeriodService.getAllPeriods();
+      if (result.success) {
+        setPeriods(result.data || []);
+        showToast("Đã cập nhật danh sách đợt đăng ký", "success");
+      } else {
+        showToast(result.message);
+      }
+    } catch (error) {
+      showToast("Lỗi khi tải danh sách đợt đăng ký");
+      console.error("Lỗi:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation ngày
+    const now = new Date();
+    const startDate = new Date(formData.startDate);
+    const endDate = new Date(formData.endDate);
+
+    // Kiểm tra ngày bắt đầu không được nhỏ hơn ngày hiện tại
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Đặt về đầu ngày
+    if (startDate < today) {
+      showToast("Ngày bắt đầu không được nhỏ hơn ngày hiện tại", "error");
+      return;
+    }
+
+    // Kiểm tra ngày kết thúc phải lớn hơn ngày bắt đầu
+    if (endDate <= startDate) {
+      showToast("Ngày kết thúc phải lớn hơn ngày bắt đầu", "error");
+      return;
+    }
+
+    // Kiểm tra ngày kết thúc có đúng là ngày bắt đầu + 10 ngày không (cho phép sai lệch 1 ngày)
+    const expectedEndDate = new Date(startDate);
+    expectedEndDate.setDate(expectedEndDate.getDate() + 10);
+    const dayDifference =
+      Math.abs(endDate - expectedEndDate) / (1000 * 60 * 60 * 24);
+
+    if (dayDifference > 1) {
+      showToast("Ngày kết thúc phải là ngày bắt đầu + 10 ngày", "error");
+      return;
+    }
+
     try {
+      setSubmitting(true);
       console.log("Form data trước khi gửi:", formData);
       console.log("editingPeriod:", editingPeriod);
 
@@ -102,11 +154,27 @@ const RegistrationPeriodManagement = () => {
     } catch (error) {
       console.error("Lỗi trong handleSubmit:", error);
       showToast("Có lỗi xảy ra");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleStartPeriod = async (periodId) => {
     try {
+      // Kiểm tra số lượng sinh viên trước khi bắt đầu
+      const studentsResp = await importService.getStudentsByPeriod(periodId);
+      const studentCount =
+        studentsResp?.success && Array.isArray(studentsResp.data)
+          ? studentsResp.data.length
+          : 0;
+      if (studentCount === 0) {
+        showToast(
+          "Đợt đăng ký chưa có sinh viên. Vui lòng nhập sinh viên trước khi bắt đầu.",
+          "warning"
+        );
+        return;
+      }
+
       const result = await registrationPeriodService.startPeriod(periodId);
       if (result.success) {
         showToast(result.message);
@@ -131,6 +199,26 @@ const RegistrationPeriodManagement = () => {
     } catch (error) {
       showToast("Có lỗi xảy ra");
     }
+  };
+
+  // Import students functions
+  const handleImportStudents = (period) => {
+    if (period?.status === "CLOSED") {
+      showToast("Đợt đăng ký đã kết thúc, không thể nhập sinh viên", "warning");
+      return;
+    }
+    setSelectedPeriod(period);
+    setImportModalOpen(true);
+  };
+
+  const handleManageStudents = (period) => {
+    setSelectedPeriod(period);
+    setManageStudentsModalOpen(true);
+  };
+
+  const handleImportSuccess = () => {
+    // Refresh periods list if needed
+    loadPeriods();
   };
 
   const resetForm = () => {
@@ -195,14 +283,20 @@ const RegistrationPeriodManagement = () => {
   };
 
   // Pagination
-  const totalPages = Math.ceil(periods.length / itemsPerPage);
+  const filteredPeriods = useMemo(() => {
+    if (!Array.isArray(periods)) return [];
+    if (!statusFilter || statusFilter.value === "ALL") return periods;
+    return periods.filter((p) => p.status === statusFilter.value);
+  }, [periods, statusFilter]);
+
+  const totalPages = Math.ceil(filteredPeriods.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentItems = periods.slice(startIndex, endIndex);
+  const currentItems = filteredPeriods.slice(startIndex, endIndex);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center h-96 text-gray-500">
           <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
           <p>Đang tải danh sách đợt đăng ký...</p>
@@ -212,19 +306,87 @@ const RegistrationPeriodManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="bg-gray-50 p-4 sm:p-6 lg:p-8 overflow-y-auto thin-scrollbar">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900"></h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-          </svg>
-          Tạo đợt đăng ký mới
-        </button>
+        {/* Status filter + Refresh */}
+        <div className="w-full sm:w-auto flex items-center gap-3">
+          <div className="w-60 sm:w-60 lg:w-60">
+            <Select
+              value={statusFilter}
+              onChange={(opt) => {
+                setCurrentPage(1);
+                setStatusFilter(opt);
+              }}
+              options={[
+                { value: "ALL", label: "Tất cả" },
+                { value: "UPCOMING", label: "Chưa bắt đầu" },
+                { value: "ACTIVE", label: "Đang diễn ra" },
+                { value: "CLOSED", label: "Đã kết thúc" },
+              ]}
+              isSearchable={false}
+              classNamePrefix="react-select"
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  borderRadius: 8,
+                  minHeight: 40,
+                  borderColor: state.isFocused ? "#ea580c" : base.borderColor,
+                  boxShadow: state.isFocused
+                    ? "0 0 0 3px rgba(234,88,12,0.15)"
+                    : "none",
+                  "&:hover": { borderColor: "#ea580c" },
+                }),
+                dropdownIndicator: (base, state) => ({
+                  ...base,
+                  color: state.isFocused ? "#ea580c" : base.color,
+                  "&:hover": { color: "#ea580c" },
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isSelected
+                    ? "#ea580c"
+                    : state.isFocused
+                    ? "#fff7ed"
+                    : base.backgroundColor,
+                  color: state.isSelected ? "#ffffff" : base.color,
+                }),
+              }}
+            />
+          </div>
+          <button
+            onClick={refreshPeriods}
+            className="inline-flex items-center gap-2 h-10 px-4 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 border border-transparent transition-colors duration-200"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className={`${loading || refreshing ? "animate-spin" : ""}`}
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M3 21v-5h5" />
+            </svg>
+            Làm mới
+          </button>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
+            Tạo đợt đăng ký mới
+          </button>
+        </div>
       </div>
 
       {/* Thông tin năm học hiện tại */}
@@ -319,7 +481,7 @@ const RegistrationPeriodManagement = () => {
                   {period.status === "UPCOMING" && (
                     <button
                       onClick={() => handleStartPeriod(period.periodId)}
-                      className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                      className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                     >
                       Bắt đầu
                     </button>
@@ -327,11 +489,30 @@ const RegistrationPeriodManagement = () => {
                   {period.status === "ACTIVE" && (
                     <button
                       onClick={() => handleClosePeriod(period.periodId)}
-                      className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                      className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
                     >
                       Kết thúc
                     </button>
                   )}
+
+                  {/* Import and manage buttons for mobile */}
+                  <button
+                    onClick={() => handleImportStudents(period)}
+                    disabled={period.status === "CLOSED"}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${
+                      period.status === "CLOSED"
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                        : "text-orange-700 bg-orange-50 border-orange-200 hover:bg-orange-100"
+                    }`}
+                  >
+                    Nhập SV
+                  </button>
+                  <button
+                    onClick={() => handleManageStudents(period)}
+                    className="px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
+                  >
+                    Quản lý SV
+                  </button>
                 </div>
               </div>
               {period.description && (
@@ -403,11 +584,11 @@ const RegistrationPeriodManagement = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {period.status === "UPCOMING" && (
                         <button
                           onClick={() => handleStartPeriod(period.periodId)}
-                          className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                         >
                           Bắt đầu
                         </button>
@@ -415,11 +596,47 @@ const RegistrationPeriodManagement = () => {
                       {period.status === "ACTIVE" && (
                         <button
                           onClick={() => handleClosePeriod(period.periodId)}
-                          className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
                         >
                           Kết thúc
                         </button>
                       )}
+
+                      {/* Import students button */}
+                      <button
+                        onClick={() => handleImportStudents(period)}
+                        disabled={period.status === "CLOSED"}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${
+                          period.status === "CLOSED"
+                            ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed"
+                            : "text-orange-700 bg-orange-50 border-orange-200 hover:bg-orange-100"
+                        }`}
+                        title="Nhập danh sách sinh viên từ CSV"
+                      >
+                        <svg
+                          className="w-3 h-3 inline mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                          />
+                        </svg>
+                        Nhập
+                      </button>
+
+                      {/* Manage students button */}
+                      <button
+                        onClick={() => handleManageStudents(period)}
+                        className="px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
+                        title="Quản lý sinh viên"
+                      >
+                        Quản lý
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -450,7 +667,7 @@ const RegistrationPeriodManagement = () => {
               >
                 <i className="bi bi-chevron-left"></i>
               </button>
-              <span className="px-3 py-2 text-sm bg-primary-500 text-white">
+              <span className="px-3 py-2 text-sm bg-accent-500 text-white">
                 {currentPage}
               </span>
               <button
@@ -564,9 +781,29 @@ const RegistrationPeriodManagement = () => {
                       type="datetime-local"
                       placeholder=" "
                       value={formData.startDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, startDate: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const startDate = e.target.value;
+                        if (startDate) {
+                          // Tự động set ngày kết thúc = ngày bắt đầu + 10 ngày
+                          const startDateObj = new Date(startDate);
+                          const endDateObj = new Date(startDateObj);
+                          endDateObj.setDate(endDateObj.getDate() + 10);
+
+                          // Format lại thành datetime-local format
+                          const endDateStr = endDateObj
+                            .toISOString()
+                            .slice(0, 16);
+
+                          setFormData({
+                            ...formData,
+                            startDate: startDate,
+                            endDate: endDateStr,
+                          });
+                        } else {
+                          setFormData({ ...formData, startDate: startDate });
+                        }
+                      }}
+                      min={new Date().toISOString().slice(0, 10) + "T00:00"}
                       required
                       className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
                     />
@@ -586,6 +823,10 @@ const RegistrationPeriodManagement = () => {
                       value={formData.endDate}
                       onChange={(e) =>
                         setFormData({ ...formData, endDate: e.target.value })
+                      }
+                      min={
+                        formData.startDate ||
+                        new Date().toISOString().slice(0, 16)
                       }
                       required
                       className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
@@ -634,15 +875,57 @@ const RegistrationPeriodManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 text-base font-medium text-white bg-primary-500 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-primary-400 min-w-[120px]"
+                  disabled={submitting}
+                  className={`px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[140px] ${
+                    submitting
+                      ? "bg-primary-300 cursor-not-allowed"
+                      : "bg-primary-500 hover:bg-primary-400"
+                  }`}
                 >
-                  {editingPeriod ? "Cập nhật" : "Tạo đợt đăng ký"}
+                  {submitting ? (
+                    <span className="inline-flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle className="opacity-25" cx="12" cy="12" r="10" />
+                        <path className="opacity-75" d="M4 12a8 8 0 018-8" />
+                      </svg>
+                      Đang lưu...
+                    </span>
+                  ) : (
+                    <>{editingPeriod ? "Cập nhật" : "Tạo đợt đăng ký"}</>
+                  )}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Import Students Modal */}
+      <ImportStudentsToPeriodModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        periodId={selectedPeriod?.periodId}
+        periodName={selectedPeriod?.periodName}
+        academicYearId={
+          selectedPeriod?.academicYearId || activeAcademicYear?.academicYearId
+        }
+        onImportSuccess={handleImportSuccess}
+      />
+
+      {/* Manage Students Modal */}
+      <ManageStudentsModal
+        isOpen={manageStudentsModalOpen}
+        onClose={() => setManageStudentsModalOpen(false)}
+        periodId={selectedPeriod?.periodId}
+        periodName={selectedPeriod?.periodName}
+        periodStatus={selectedPeriod?.status}
+      />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { suggestTopicForStudent } from "../../services/suggest.service";
 import { userService } from "../../services";
 import { toast } from "react-toastify";
+import { getUserIdFromToken } from "../../auth/authUtils";
 
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
@@ -16,7 +17,6 @@ const showToast = (message, type = "success") => {
     (type === "success" ? console.log : console.error)(message);
   }
 };
-import registrationPeriodService from "../../services/registrationPeriod.service";
 import lecturerCapacityService from "../../services/lecturerCapacity.service";
 
 // Department mapping
@@ -91,15 +91,32 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
   // State cho đợt đăng ký
   const [currentPeriod, setCurrentPeriod] = useState(null);
   const [periodLoading, setPeriodLoading] = useState(false);
+  const [studentPeriodIds, setStudentPeriodIds] = useState([]);
+  const [periodIdsLoading, setPeriodIdsLoading] = useState(false);
 
   // Đồng bộ đợt đăng ký từ parent nếu truyền vào; fallback gọi API cũ khi thiếu
   useEffect(() => {
     if (!isOpen) return;
     if (selectedPeriod) {
       setCurrentPeriod(selectedPeriod);
-      return;
+    } else {
+      setCurrentPeriod(null);
     }
-    checkRegistrationPeriod();
+    // Tải periodIds của sinh viên
+    (async () => {
+      try {
+        setPeriodIdsLoading(true);
+        const uid = getUserIdFromToken();
+        if (!uid) return;
+        const profile = await userService.getInternalUserProfile(uid);
+        const periodIds = profile?.periodIds || [];
+        setStudentPeriodIds(Array.isArray(periodIds) ? periodIds : []);
+      } catch (e) {
+        setStudentPeriodIds([]);
+      } finally {
+        setPeriodIdsLoading(false);
+      }
+    })();
   }, [isOpen, selectedPeriod]);
 
   const checkRegistrationPeriod = async () => {
@@ -223,6 +240,50 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
     setLoading(true);
     setError("");
     setSuccess(false);
+
+    // Validate đợt đăng ký của sinh viên
+    try {
+      if (periodIdsLoading) {
+        setLoading(false);
+        showToast(
+          "Đang tải thông tin đợt đăng ký, vui lòng thử lại sau giây lát.",
+          "info"
+        );
+        return;
+      }
+      if (!currentPeriod) {
+        setLoading(false);
+        showToast("Không xác định được đợt đăng ký hiện tại.", "warning");
+        return;
+      }
+      let effectivePeriodIds = studentPeriodIds;
+      if (!effectivePeriodIds || effectivePeriodIds.length === 0) {
+        // Re-fetch ngay trước khi chặn để tránh false negative
+        const uid = getUserIdFromToken();
+        if (uid) {
+          try {
+            const profile = await userService.getInternalUserProfile(uid);
+            effectivePeriodIds = Array.isArray(profile?.periodIds)
+              ? profile.periodIds
+              : [];
+            setStudentPeriodIds(effectivePeriodIds);
+          } catch {}
+        }
+      }
+      if (!effectivePeriodIds.includes(currentPeriod.periodId)) {
+        setLoading(false);
+        showToast(
+          "Bạn không thuộc đợt đăng ký này. Vui lòng chọn đúng đợt.",
+          "warning"
+        );
+        return;
+      }
+    } catch {
+      setLoading(false);
+      showToast("Không thể xác thực đợt đăng ký.", "error");
+      return;
+    }
+
     // Chuẩn bị dữ liệu đúng với SuggestTopicDTO
     const data = {
       title: form.tieuDe,
@@ -232,7 +293,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
       expectedOutcome: form.ketQuaDuKien,
       supervisorId: form.giangVien?.id || null,
       reason: form.lyDo,
-      registrationPeriodId: selectedPeriod?.periodId || null,
+      registrationPeriodId:
+        selectedPeriod?.periodId || currentPeriod?.periodId || null,
     };
     try {
       await suggestTopicForStudent(data);
@@ -829,7 +891,7 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                     background:
                       "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
                   }}
-                  disabled={loading}
+                  disabled={loading || periodIdsLoading}
                   onClick={handleSubmit}
                 >
                   {loading ? (

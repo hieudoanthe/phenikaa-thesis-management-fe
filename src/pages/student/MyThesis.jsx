@@ -7,6 +7,7 @@ import {
 } from "../../services/suggest.service";
 import userService from "../../services/user.service";
 import { assignmentService } from "../../services";
+import EditTopicModal from "../../components/modals/EditTopicModal";
 
 /**
  * Trang theo dõi trạng thái đề tài của sinh viên
@@ -34,6 +35,10 @@ const MyThesis = () => {
   const [assignments, setAssignments] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState("");
+
+  // Edit topic modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingTopic, setEditingTopic] = useState(null);
 
   // Rút gọn tên đề tài dài theo ký tự
   const getShortTitle = (title, max = 60) => {
@@ -181,6 +186,26 @@ const MyThesis = () => {
   const handleOpenChat = (teacherId) => {
     // Chuyển hướng đến trang chat với giảng viên
     navigate(`/student/chat?teacherId=${teacherId}`);
+  };
+
+  // Hàm mở modal chỉnh sửa đề tài
+  const handleEditTopic = (topic) => {
+    setEditingTopic(topic);
+    setEditModalOpen(true);
+  };
+
+  // Hàm xử lý sau khi chỉnh sửa thành công
+  const handleEditSuccess = () => {
+    // Reload the thesis list after successful edit
+    loadThesisList();
+    setEditModalOpen(false);
+    setEditingTopic(null);
+  };
+
+  // Hàm đóng modal chỉnh sửa
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setEditingTopic(null);
   };
 
   // Hàm lấy profile của người đề xuất và người được đề xuất
@@ -820,6 +845,34 @@ const MyThesis = () => {
                             </p>
                           </div>
                         </div>
+
+                        {/* Nút chỉnh sửa cho đề tài đang chờ duyệt */}
+                        {thesis.suggestionStatus === "PENDING" && (
+                          <div className="mt-4 pt-3 border-t border-gray-200">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditTopic(thesis);
+                              }}
+                              className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                              Chỉnh sửa đề tài
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -933,6 +986,14 @@ const MyThesis = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Topic Modal */}
+      <EditTopicModal
+        isOpen={editModalOpen}
+        onClose={handleCloseEditModal}
+        topic={editingTopic}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 };

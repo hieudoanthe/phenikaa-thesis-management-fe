@@ -139,6 +139,7 @@ const TeacherProfile = () => {
         phoneNumber: tempFormData.phoneNumber,
         department: tempFormData.department,
         specialization: tempFormData.specialization,
+        degree: tempFormData.degree,
         userId: getUserIdFromToken(),
       };
 
@@ -475,6 +476,9 @@ const TeacherProfile = () => {
                   {profileData.fullName}
                 </h2>
                 <p className="text-sm text-gray-600 mb-2">
+                  Học vị: {profileData.degree || "Chưa cập nhật"}
+                </p>
+                <p className="text-sm text-gray-600 mb-2">
                   Chuyên ngành: {profileData.specialization || "Chưa cập nhật"}
                 </p>
                 <p className="text-sm text-gray-600 mb-3">
@@ -513,7 +517,7 @@ const TeacherProfile = () => {
                 {!isEditing ? (
                   <button
                     onClick={handleStartEditing}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                    className="w-full bg-primary-500 text-white py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors font-medium flex items-center justify-center gap-2"
                   >
                     <FaEdit className="w-4 h-4" />
                     Chỉnh sửa thông tin
@@ -522,7 +526,7 @@ const TeacherProfile = () => {
                   <div className="space-y-2">
                     <button
                       onClick={handleUpdateProfile}
-                      className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      className="w-full bg-primary-500 text-white py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <FaSave className="w-4 h-4" />
                       Lưu thay đổi
@@ -687,6 +691,28 @@ const TeacherProfile = () => {
                             {departmentMapping[profileData.department] ||
                               profileData.department ||
                               "Chưa cập nhật"}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Degree */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Học vị
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={tempFormData.degree || ""}
+                            onChange={(e) =>
+                              handleInputChange("degree", e.target.value)
+                            }
+                            placeholder="VD: ThS., TS., PGS.TS., ..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          />
+                        ) : (
+                          <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                            {profileData.degree || "Chưa cập nhật"}
                           </div>
                         )}
                       </div>

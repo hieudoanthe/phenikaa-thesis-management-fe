@@ -263,22 +263,23 @@ const TopicRegistration = () => {
     control: (provided, state) => ({
       ...provided,
       minHeight: "38px",
-      borderColor: state.isFocused ? "#ea580c" : "#d1d5db",
-      boxShadow: state.isFocused ? "0 0 0 2px rgba(234, 88, 12, 0.1)" : "none",
+      backgroundColor: "white",
+      borderColor: state.isFocused ? "#273C62" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(39, 60, 98, 0.1)" : "none",
       "&:hover": {
-        borderColor: state.isFocused ? "#ea580c" : "#9ca3af",
+        borderColor: state.isFocused ? "#273C62" : "#9ca3af",
       },
     }),
     option: (provided, state) => ({
       ...provided,
       backgroundColor: state.isSelected
-        ? "#ea580c"
+        ? "#273C62"
         : state.isFocused
-        ? "#fed7aa"
+        ? "#e5e7eb"
         : "white",
       color: state.isSelected ? "white" : "#374151",
       "&:hover": {
-        backgroundColor: state.isSelected ? "#ea580c" : "#fed7aa",
+        backgroundColor: state.isSelected ? "#273C62" : "#e5e7eb",
       },
     }),
     placeholder: (provided) => ({
@@ -308,8 +309,8 @@ const TopicRegistration = () => {
     <div className="max-w-full mx-auto p-3">
       {/* Chọn đợt đăng ký (nhiều đợt song song) */}
       {activePeriods.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-          <label className="block text-sm font-semibold text-green-800 mb-2">
+        <div className="bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-4">
+          <label className="block text-sm font-semibold text-white mb-2">
             Chọn đợt đăng ký
           </label>
           <Select
@@ -328,21 +329,23 @@ const TopicRegistration = () => {
 
       {/* Hiển thị thông tin đợt đăng ký hiện tại (giữ lại để tương thích UI cũ) */}
       {currentPeriod && (
-        <div className="current-period-info bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
+        <div className="current-period-info bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h3 className="text-lg font-semibold text-blue-800 mb-2">
-                Đợt đăng ký hiện tại: {currentPeriod.periodName}
-              </h3>
-              <p className="text-blue-700">
+              <div className="text-sm text-gray-300 mb-2">
+                Đợt đăng ký hiện tại
+              </div>
+              <div className="text-2xl font-bold text-white mb-2">
+                {currentPeriod.periodName}
+              </div>
+              <div className="text-sm text-gray-300">
                 Thời gian:{" "}
                 {new Date(currentPeriod.startDate).toLocaleDateString("vi-VN")}{" "}
                 - {new Date(currentPeriod.endDate).toLocaleDateString("vi-VN")}
-              </p>
-              {/* Bỏ hiển thị Trạng thái: ACTIVE */}
+              </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-white">
                 {new Date(currentPeriod.endDate).getTime() > Date.now()
                   ? "Đang diễn ra"
                   : "Đã kết thúc"}

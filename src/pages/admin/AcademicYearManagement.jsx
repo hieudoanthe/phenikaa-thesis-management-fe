@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
 import academicYearService from "../../services/academicYear.service";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import { showToast } from "../../utils/toastHelper";
 
 const AcademicYearManagement = () => {
   const [academicYears, setAcademicYears] = useState([]);
@@ -138,17 +125,17 @@ const AcademicYearManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-          <p className="mt-4 text-gray-600">Đang tải danh sách năm học...</p>
+      <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
+          <p>Đang tải danh sách năm học...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
       {/* Thẻ năm học hiện tại */}
       {currentYear && (
         <div className="bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-6">
@@ -403,7 +390,7 @@ const AcademicYearManagement = () => {
             >
               <i className="bi bi-chevron-left"></i>
             </button>
-            <span className="px-3 py-2 text-sm bg-primary-500 text-white">
+            <span className="px-3 py-2 text-sm bg-accent-500 text-white">
               {currentPage}
             </span>
             <button

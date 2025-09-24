@@ -45,7 +45,7 @@ const AdminLayout = () => {
       case "/admin/registration-period":
         return {
           title: "Quản lý đợt đăng ký",
-          subtitle: "Quản lý các đợt đăng ký đề tài luận văn",
+          subtitle: "Quản lý các đợt đăng ký đề tài khóa luận tốt nghiệp",
         };
       case "/admin/student-period":
         return {
@@ -56,7 +56,7 @@ const AdminLayout = () => {
       case "/admin/defense-schedule":
         return {
           title: "Quản lý lịch bảo vệ",
-          subtitle: "Tạo và quản lý lịch trình bảo vệ luận văn",
+          subtitle: "Tạo và quản lý lịch trình bảo vệ khóa luận tốt nghiệp",
         };
       case "/admin/defense-sessions":
         return {
@@ -207,7 +207,7 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-dvh bg-gray-50 overflow-hidden no-scrollbar">
       {/* Sidebar */}
       <div
         className={`fixed h-screen z-50 transition-all duration-500 ease-in-out ${
@@ -401,7 +401,10 @@ const AdminLayout = () => {
                       </div>
                     </div>
                     <div className="py-2">
-                      <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-gray-700 text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
+                      <button
+                        className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-gray-700 text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left"
+                        onClick={() => navigate("/admin/profile")}
+                      >
                         <svg
                           width="14"
                           height="14"
@@ -462,7 +465,7 @@ const AdminLayout = () => {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 bg-gray-50 text-secondary overflow-y-auto">
+        <main className="flex-1 bg-gray-50 text-secondary overflow-y-auto no-scrollbar">
           <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6">
             <Outlet />
           </div>

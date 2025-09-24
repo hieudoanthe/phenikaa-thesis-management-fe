@@ -1,22 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Select from "react-select";
 import { evalService } from "../../services/evalService";
 import studentAssignmentService from "../../services/studentAssignment.service";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
-import { useLocation } from "react-router-dom"; // Import useLocation
+import { showToast } from "../../utils/toastHelper";
+import { useLocation } from "react-router-dom";
 import userService from "../../services/user.service";
 
 const DefenseSessionsSchedule = () => {
@@ -41,7 +28,7 @@ const DefenseSessionsSchedule = () => {
     date: "",
     time: "09:00",
     committeeMembers: [],
-    reviewerMembers: [], // Thêm giảng viên phản biện
+    reviewerMembers: [],
     status: "PLANNING",
   });
   const [selectedSessionDetail, setSelectedSessionDetail] = useState(null);
@@ -50,32 +37,9 @@ const DefenseSessionsSchedule = () => {
   const [availableStudents, setAvailableStudents] = useState([]);
   const [assignedStudents, setAssignedStudents] = useState([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const didInitRef = useRef(false);
 
-  const location = useLocation(); // Get location object
-
-  // Dữ liệu mẫu cho demo
-  const mockSessions = [
-    {
-      id: 1,
-      day: "Mon",
-      time: "10:00 AM",
-      status: "upcoming",
-      room: "Room 301",
-      topic: "Machine Learning Applications in Healthcare",
-      committeeMembers: 3,
-      date: "2024-01-15",
-    },
-    {
-      id: 2,
-      day: "Fri",
-      time: "11:00 AM",
-      status: "completed",
-      room: "Room 401",
-      topic: "Blockchain Technology in Supply Chain",
-      committeeMembers: 3,
-      date: "2024-01-19",
-    },
-  ];
+  const location = useLocation();
 
   // Hiển thị nút quay về đầu trang khi scroll
   useEffect(() => {
@@ -122,6 +86,117 @@ const DefenseSessionsSchedule = () => {
     "6:00 PM",
   ];
 
+  // Tuần đang hiển thị (bắt đầu từ thứ 2)
+  const [currentWeekStart, setCurrentWeekStart] = useState(null);
+
+  const getMonday = (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const diffToMon = (day + 6) % 7; // 0->6
+    d.setDate(d.getDate() - diffToMon);
+    return d;
+  };
+
+  const formatVNDate = (d) =>
+    d.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+  // Tính nhãn tuần so với tuần hiện tại (để hiển thị màu)
+  const getWeekBadge = () => {
+    const todayMon = getMonday(new Date());
+    const currentMon = currentWeekStart ? new Date(currentWeekStart) : todayMon;
+    // chênh lệch số tuần (làm tròn theo Monday)
+    const diffDays = Math.floor(
+      (currentMon.getTime() - todayMon.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const diffWeeks = Math.round(diffDays / 7);
+
+    if (diffWeeks === 0) {
+      return {
+        label: "Tuần hiện tại",
+        className: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      };
+    }
+    if (diffWeeks === 1) {
+      return {
+        label: "Tuần sau",
+        className: "bg-blue-100 text-blue-700 border-blue-200",
+      };
+    }
+    if (diffWeeks === -1) {
+      return {
+        label: "Tuần trước",
+        className: "bg-amber-100 text-amber-700 border-amber-200",
+      };
+    }
+    if (diffWeeks > 1) {
+      return {
+        label: `+${diffWeeks} tuần`,
+        className: "bg-indigo-100 text-indigo-700 border-indigo-200",
+      };
+    }
+    // diffWeeks < -1
+    return {
+      label: `${diffWeeks} tuần`,
+      className: "bg-rose-100 text-rose-700 border-rose-200",
+    };
+  };
+
+  // Lấy phạm vi tuần (Monday) của lịch đang chọn
+  const getScheduleWeekRange = () => {
+    if (!selectedSchedule || !selectedSchedule.value)
+      return { min: null, max: null };
+    const start = selectedSchedule.startDate
+      ? new Date(selectedSchedule.startDate)
+      : null;
+    const end = selectedSchedule.endDate
+      ? new Date(selectedSchedule.endDate)
+      : null;
+    return {
+      min: start ? getMonday(start) : null,
+      max: end ? getMonday(end) : null,
+    };
+  };
+
+  // Đảm bảo currentWeekStart luôn nằm trong phạm vi của lịch đang chọn
+  useEffect(() => {
+    const { min, max } = getScheduleWeekRange();
+    if (!currentWeekStart) return;
+    const cur = new Date(currentWeekStart);
+    if (min && cur < min) setCurrentWeekStart(min);
+    if (max && cur > max) setCurrentWeekStart(max);
+  }, [selectedSchedule, currentWeekStart]);
+
+  // Common react-select styles with primary-500 focus/selected
+  const primarySelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderRadius: 8,
+      minHeight: 40,
+      borderColor: state.isFocused ? "#ea580c" : base.borderColor,
+      boxShadow: state.isFocused ? "0 0 0 3px rgba(234,88,12,0.15)" : "none",
+      "&:hover": { borderColor: "#ea580c" },
+    }),
+    dropdownIndicator: (base, state) => ({
+      ...base,
+      color: state.isFocused ? "#ea580c" : base.color,
+      "&:hover": { color: "#ea580c" },
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#ea580c"
+        : state.isFocused
+        ? "#fff7ed"
+        : base.backgroundColor,
+      color: state.isSelected ? "#ffffff" : base.color,
+    }),
+  };
+
   // Tạo days of week (chỉ từ thứ 2 đến thứ 6)
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   const weekDayLabels = {
@@ -148,6 +223,8 @@ const DefenseSessionsSchedule = () => {
   ];
 
   useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
     loadSchedules();
   }, []);
 
@@ -248,7 +325,10 @@ const DefenseSessionsSchedule = () => {
 
   useEffect(() => {
     if (schedules.length > 0) {
-      loadSessions();
+      // Chỉ chọn mặc định, để effect selectedSchedule tự load sessions
+      if (!selectedSchedule) {
+        setSelectedSchedule(schedules[0]);
+      }
     }
   }, [schedules]);
 
@@ -270,6 +350,7 @@ const DefenseSessionsSchedule = () => {
           label: schedule.scheduleName,
           startDate: schedule.startDate,
           endDate: schedule.endDate,
+          status: schedule.status,
         })),
       ];
       setSchedules(scheduleOptions);
@@ -288,6 +369,21 @@ const DefenseSessionsSchedule = () => {
       setLoading(true);
       const data = await evalService.getSessionsBySchedule(scheduleId);
       setSessions(data);
+      // Đặt tuần hiện tại dựa theo dữ liệu trong lịch đã chọn
+      try {
+        const dates = Array.isArray(data)
+          ? data
+              .map((s) => (s.defenseDate ? new Date(s.defenseDate) : null))
+              .filter((d) => d && !isNaN(d))
+          : [];
+        let base = null;
+        if (dates.length > 0) {
+          base = new Date(Math.min(...dates));
+        } else if (selectedSchedule && selectedSchedule.startDate) {
+          base = new Date(selectedSchedule.startDate);
+        }
+        if (base) setCurrentWeekStart(getMonday(base));
+      } catch (_) {}
     } catch (error) {
       console.error("Lỗi khi tải danh sách session:", error);
       showToast("Lỗi khi tải danh sách session");
@@ -302,6 +398,19 @@ const DefenseSessionsSchedule = () => {
       const data = await evalService.getAllDefenseSessions();
       console.log("Loaded sessions data:", data);
       setSessions(data);
+      // Khởi tạo tuần dựa trên ngày buổi bảo vệ (nếu có), nếu không lấy tuần hiện tại
+      try {
+        const dates = Array.isArray(data)
+          ? data
+              .map((s) => (s.defenseDate ? new Date(s.defenseDate) : null))
+              .filter((d) => d && !isNaN(d))
+          : [];
+        const base =
+          dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
+        setCurrentWeekStart(getMonday(base));
+      } catch (_) {
+        setCurrentWeekStart(getMonday(new Date()));
+      }
     } catch (error) {
       console.error("Lỗi khi tải danh sách session:", error);
       showToast("Lỗi khi tải danh sách session");
@@ -315,6 +424,20 @@ const DefenseSessionsSchedule = () => {
       if (!session.defenseDate) return false;
 
       const sessionDate = new Date(session.defenseDate);
+      // Giới hạn theo tuần đang chọn
+      try {
+        const onlyDate = new Date(
+          sessionDate.getFullYear(),
+          sessionDate.getMonth(),
+          sessionDate.getDate()
+        );
+        const weekStart = currentWeekStart
+          ? new Date(currentWeekStart)
+          : getMonday(new Date());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        if (!(onlyDate >= weekStart && onlyDate <= weekEnd)) return false;
+      } catch (_) {}
       const dayOfWeek = sessionDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
       const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const sessionDay = dayNames[dayOfWeek];
@@ -424,9 +547,129 @@ const DefenseSessionsSchedule = () => {
     }
   };
 
-  const handleExport = () => {
-    // TODO: Export dữ liệu
-    showToast("Chức năng export sẽ được phát triển!");
+  const handleExport = async () => {
+    try {
+      const data = await evalService.exportAllDefenseSessions();
+      const safe = Array.isArray(data) ? data : [];
+
+      // Thu thập sinh viên: sessionId, studentName, topicTitle
+      const studentsRows = [];
+      for (const s of safe) {
+        try {
+          const assigned = await studentAssignmentService.getAssignedStudents(
+            s.sessionId
+          );
+          if (Array.isArray(assigned)) {
+            for (const st of assigned) {
+              studentsRows.push({
+                sessionId: s.sessionId,
+                studentName: st.studentName || "",
+                topicTitle: st.topicTitle || "",
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Thử dùng XLSX 2 sheet
+      try {
+        // Use CDN ESM to avoid bundler resolution issues
+        const XLSXMod = await import(
+          "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm"
+        );
+        const XLSX = XLSXMod.default || XLSXMod;
+        const wb = XLSX.utils.book_new();
+        const sessionSheetData = safe.map((s) => ({
+          SessionId: s.sessionId,
+          "Tên buổi bảo vệ": s.sessionName || "",
+          Trường: s.universityName || "",
+          Ngày: s.defenseDate || "",
+          Giờ: s.startTimeFormatted || "",
+          Phòng: s.location || "",
+          "Trạng thái": s.status || "",
+          "Số SV đã gán": s.assignedCount ?? "",
+          "Số SV tối đa": s.maxStudents ?? "",
+          "Hội đồng (id:role)": Array.isArray(s.committee)
+            ? s.committee
+                .map((c) => `${c.lecturerId}:${(c.role || "").toString()}`)
+                .join(" | ")
+            : "",
+        }));
+        const ws1 = XLSX.utils.json_to_sheet(sessionSheetData);
+        XLSX.utils.book_append_sheet(wb, ws1, "Sessions");
+
+        const ws2 = XLSX.utils.json_to_sheet(studentsRows);
+        XLSX.utils.book_append_sheet(wb, ws2, "Students");
+
+        const ts = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const name = `defense_sessions_${ts.getFullYear()}${pad(
+          ts.getMonth() + 1
+        )}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(
+          ts.getMinutes()
+        )}${pad(ts.getSeconds())}.xlsx`;
+        XLSX.writeFile(wb, name);
+        showToast("Đã xuất XLSX (2 sheet)", "success");
+        return;
+      } catch (e) {
+        console.warn("XLSX not available, fallback to CSV", e);
+      }
+
+      // Fallback CSV một sheet
+      const headers = [
+        "SessionId",
+        "Tên buổi bảo vệ",
+        "Trường",
+        "Ngày",
+        "Giờ",
+        "Phòng",
+        "Trạng thái",
+        "Số SV đã gán",
+        "Số SV tối đa",
+        "Hội đồng (lecturerId:role)",
+      ];
+      const escapeCsv = (v) => {
+        if (v === null || v === undefined) return "";
+        const s = String(v).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? `"${s}"` : s;
+      };
+      const rows = safe
+        .map((s) => [
+          s.sessionId,
+          s.sessionName || "",
+          s.universityName || "",
+          s.defenseDate || "",
+          s.startTimeFormatted || "",
+          s.location || "",
+          s.status || "",
+          s.assignedCount ?? "",
+          s.maxStudents ?? "",
+        ])
+        .map((r) => r.map(escapeCsv).join(","));
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const ts = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      const name = `defense_sessions_${ts.getFullYear()}${pad(
+        ts.getMonth() + 1
+      )}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(
+        ts.getSeconds()
+      )}.csv`;
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Đã xuất CSV (fallback)", "success");
+    } catch (e) {
+      console.error("Export error:", e);
+      showToast("Lỗi khi xuất dữ liệu", "error");
+    }
   };
 
   const handleSessionClick = (session) => {
@@ -608,12 +851,12 @@ const DefenseSessionsSchedule = () => {
     }
   };
 
-  if (loading) {
+  if (loading && sessions.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-          <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+      <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
+          <p>Đang tải dữ liệu...</p>
         </div>
       </div>
     );
@@ -627,23 +870,18 @@ const DefenseSessionsSchedule = () => {
           .includes(searchQuery.toLowerCase()) ||
         (s.location || "").toLowerCase().includes(searchQuery.toLowerCase())
       : true;
-    const matchesStatus =
-      selectedStatus && selectedStatus.value && selectedStatus.value !== "all"
-        ? s.status === selectedStatus.value
-        : true;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="bg-gray-50 p-6">
       <div className="w-full">
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
-            {/* Schedule Selection */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Left: Schedule select + Add button */}
+            <div className="flex flex-wrap items-center gap-4">
               <div className="min-w-[200px]">
-                {/* Removed visible label to align select with button */}
                 <Select
                   value={selectedSchedule}
                   onChange={setSelectedSchedule}
@@ -652,13 +890,16 @@ const DefenseSessionsSchedule = () => {
                   classNamePrefix="react-select"
                   placeholder="Chọn lịch bảo vệ"
                   isSearchable={false}
+                  styles={primarySelectStyles}
                 />
               </div>
 
               <button
                 className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-white ${
                   selectedSchedule && selectedSchedule.value
-                    ? "bg-primary-500 hover:bg-primary-400"
+                    ? selectedSchedule.status === "COMPLETED"
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-primary-500 hover:bg-primary-400"
                     : "bg-gray-300 cursor-not-allowed"
                 }`}
                 onClick={() => {
@@ -666,9 +907,20 @@ const DefenseSessionsSchedule = () => {
                     showToast("Vui lòng chọn lịch bảo vệ trước", "warning");
                     return;
                   }
+                  if (selectedSchedule.status === "COMPLETED") {
+                    showToast(
+                      "Lịch bảo vệ đã kết thúc, không thể thêm buổi bảo vệ",
+                      "warning"
+                    );
+                    return;
+                  }
                   setIsModalOpen(true);
                 }}
-                disabled={!selectedSchedule || !selectedSchedule.value}
+                disabled={
+                  !selectedSchedule ||
+                  !selectedSchedule.value ||
+                  selectedSchedule.status === "COMPLETED"
+                }
               >
                 <svg
                   className="w-5 h-5"
@@ -686,37 +938,9 @@ const DefenseSessionsSchedule = () => {
                 Thêm buổi bảo vệ
               </button>
             </div>
-          </div>
 
-          {/* Filters and Actions */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="min-w-[150px]">
-                <Select
-                  value={selectedPeriod}
-                  onChange={setSelectedPeriod}
-                  options={periodOptions}
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                  placeholder="Chọn kỳ"
-                  isSearchable={false}
-                />
-              </div>
-
-              <div className="min-w-[150px]">
-                <Select
-                  value={selectedStatus}
-                  onChange={setSelectedStatus}
-                  options={statusOptions}
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                  placeholder="Chọn trạng thái"
-                  isSearchable={false}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
+            {/* Right: Search + view toggle + export */}
+            <div className="flex flex-wrap items-center gap-3">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
@@ -804,13 +1028,71 @@ const DefenseSessionsSchedule = () => {
       {/* Content: Grid or List */}
       {viewMode === "grid" ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Lịch Bảo Vệ Theo Tuần
-            </h2>
+          <div className="mb-4 flex items-center justify-between gap-4">
             <p className="text-gray-600">
               Xem lịch bảo vệ theo từng ngày và khung giờ
             </p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 mr-2">
+                {(() => {
+                  const start = currentWeekStart
+                    ? new Date(currentWeekStart)
+                    : getMonday(new Date());
+                  const end = new Date(start);
+                  end.setDate(end.getDate() + 6);
+                  return `${formatVNDate(start)} - ${formatVNDate(end)}`;
+                })()}
+              </span>
+              {(() => {
+                const badge = getWeekBadge();
+                return (
+                  <span
+                    className={`text-xs px-2 py-1 rounded-md border ${badge.className}`}
+                  >
+                    {badge.label}
+                  </span>
+                );
+              })()}
+              <button
+                type="button"
+                className="px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  setCurrentWeekStart((prev) => {
+                    const base = prev ? new Date(prev) : getMonday(new Date());
+                    base.setDate(base.getDate() - 7);
+                    if (selectedSchedule && selectedSchedule.startDate) {
+                      const minStart = getMonday(
+                        new Date(selectedSchedule.startDate)
+                      );
+                      if (base < minStart) return minStart;
+                    }
+                    return base;
+                  });
+                }}
+              >
+                ←
+              </button>
+              {/* Removed "Tuần này" button as requested */}
+              <button
+                type="button"
+                className="px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  setCurrentWeekStart((prev) => {
+                    const base = prev ? new Date(prev) : getMonday(new Date());
+                    base.setDate(base.getDate() + 7);
+                    if (selectedSchedule && selectedSchedule.endDate) {
+                      const maxEndMonday = getMonday(
+                        new Date(selectedSchedule.endDate)
+                      );
+                      if (base > maxEndMonday) return maxEndMonday;
+                    }
+                    return base;
+                  });
+                }}
+              >
+                →
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-6 gap-0 overflow-x-auto">
@@ -1007,97 +1289,7 @@ const DefenseSessionsSchedule = () => {
         </div>
       )}
 
-      {/* Summary Footer */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Thống Kê Tổng Quan
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="w-8 h-8 text-blue-600"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-blue-900">
-                  {sessions.length}
-                </div>
-                <div className="text-sm text-blue-700">Tổng số buổi bảo vệ</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="w-8 h-8 text-yellow-600"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-yellow-900">
-                  {
-                    sessions.filter(
-                      (s) => s.status === "PLANNING" || s.status === "SCHEDULED"
-                    ).length
-                  }
-                </div>
-                <div className="text-sm text-yellow-700">Sắp diễn ra</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="w-8 h-8 text-orange-600"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-orange-900">
-                  {sessions.filter((s) => s.status === "IN_PROGRESS").length}
-                </div>
-                <div className="text-sm text-orange-700">Đang diễn ra</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="w-8 h-8 text-green-600"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <div className="text-2xl font-bold text-green-900">
-                  {sessions.filter((s) => s.status === "COMPLETED").length}
-                </div>
-                <div className="text-sm text-green-700">Đã hoàn thành</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Summary Footer removed per request */}
 
       {showBackToTop && (
         <button

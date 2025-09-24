@@ -12,6 +12,7 @@ import notificationService from "../../../services/notification.service";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StudentAiChatWidget from "../../common/StudentAiChatWidget.jsx";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const StudentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -38,6 +39,7 @@ const StudentLayout = () => {
   const heartbeatTimerRef = useRef(null);
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
   const [timeTick, setTimeTick] = useState(0);
+  const { user } = useAuth();
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
@@ -563,7 +565,7 @@ const StudentLayout = () => {
 
   return (
     <>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-dvh bg-gray-50 no-scrollbar overflow-hidden">
         {/* Sidebar */}
         <div
           className={`fixed h-screen z-50 transition-all duration-500 ease-in-out ${
@@ -743,7 +745,7 @@ const StudentLayout = () => {
                         {profileData.fullName || "Sinh viên"}
                       </div>
                       <div className="text-xs text-gray-600 leading-tight">
-                        {profileData.major || "Sinh viên"}
+                        {"Sinh viên"}
                       </div>
                     </div>
                     <div className="text-gray-600 transition-transform duration-200">
@@ -785,7 +787,9 @@ const StudentLayout = () => {
                             {profileData.major || "Sinh viên"}
                           </p>
                           <span className="text-xs text-gray-500">
-                            {profileData.email || "Chưa cập nhật email"}
+                            {profileData.email ||
+                              user?.username ||
+                              "Chưa cập nhật email"}
                           </span>
                         </div>
                       </div>
@@ -875,7 +879,7 @@ const StudentLayout = () => {
           </header>
 
           {/* Main content */}
-          <main className="flex-1 bg-gray-50 text-secondary overflow-auto">
+          <main className="flex-1 bg-gray-50 text-secondary overflow-auto no-scrollbar">
             <div
               className={`${
                 location.pathname === "/student/my-thesis"

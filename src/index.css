@@ -24,12 +24,30 @@
   height: 0;
 }
 
+/* Hide scrollbar completely */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
+}
+
 /* Custom base styles */
 @layer base {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+    overflow: hidden;
+  }
   body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
   }
 }
 

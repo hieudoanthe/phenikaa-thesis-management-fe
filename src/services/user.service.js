@@ -29,7 +29,7 @@ class UserService {
     }
   }
 
-  async getUsers({ page = 0, size = 1000 } = {}) {
+  async getUsers({ page = 0, size = 6 } = {}) {
     try {
       const response = await apiGet(API_ENDPOINTS.GET_USERS_PAGED, {
         params: { page, size },
@@ -189,6 +189,20 @@ class UserService {
       return response;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách giảng viên:", error);
+      throw error;
+    }
+  }
+
+  async getInternalUserProfile(userId) {
+    try {
+      const url = API_ENDPOINTS.USER_INTERNAL_GET_PROFILE_BY_ID.replace(
+        "{userId}",
+        userId
+      );
+      const raw = await apiGet(url);
+      return raw?.data ?? raw;
+    } catch (error) {
+      console.error("UserService: Lỗi khi lấy internal user profile:", error);
       throw error;
     }
   }

@@ -12,6 +12,7 @@ import { WS_ENDPOINTS, APP_CONFIG } from "../../../config/api";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import userService from "../../../services/user.service";
+import useAuth from "../../../hooks/useAuth";
 
 const LecturerLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -55,6 +56,7 @@ const LecturerLayout = () => {
   }
 
   const { profileData, fetchProfileData } = contextData;
+  const { user } = useAuth();
 
   const notificationRef = useRef(null);
   const userDropdownRef = useRef(null);
@@ -753,7 +755,7 @@ const LecturerLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-dvh bg-gray-50 overflow-hidden no-scrollbar">
       {/* Sidebar */}
       <div
         className={`fixed h-screen z-50 transition-all duration-500 ease-in-out ${
@@ -1013,10 +1015,12 @@ const LecturerLayout = () => {
                           {profileData.fullName || "Giảng viên"}
                         </h4>
                         <p className="text-sm text-gray-600 m-0 mb-1">
-                          {profileData.academicRank || "Giảng viên"}
+                          {profileData.specialization || "Giảng viên"}
                         </p>
                         <span className="text-xs text-gray-500">
-                          {profileData.email || "Chưa cập nhật email"}
+                          {profileData.email ||
+                            user?.username ||
+                            "Chưa cập nhật email"}
                         </span>
                       </div>
                     </div>
@@ -1088,7 +1092,7 @@ const LecturerLayout = () => {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 bg-gray-50 text-secondary overflow-auto">
+        <main className="flex-1 bg-gray-50 text-secondary overflow-auto no-scrollbar">
           <div className="px-6 py-6">
             <Outlet />
           </div>

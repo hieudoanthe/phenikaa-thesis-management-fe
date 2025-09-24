@@ -1,4 +1,4 @@
-import { apiPost, apiGet } from "./mainHttpClient";
+import { apiPost, apiGet, apiPut } from "./mainHttpClient";
 import { API_ENDPOINTS } from "../config/api";
 
 // Gửi đề xuất đề tài cho sinh viên
@@ -48,6 +48,20 @@ export const getAllTeachers = async () => {
     return response;
   } catch (error) {
     console.error("Lỗi khi lấy danh sách giảng viên:", error);
+    throw error;
+  }
+};
+
+// Cập nhật đề xuất đề tài của sinh viên
+export const updateStudentSuggestedTopic = async (suggestedId, topicData) => {
+  try {
+    const response = await apiPut(
+      `${API_ENDPOINTS.UPDATE_STUDENT_SUGGEST_TOPIC}/${suggestedId}`,
+      topicData
+    );
+    return response;
+  } catch (error) {
+    console.error("Lỗi khi cập nhật đề xuất đề tài:", error);
     throw error;
   }
 };

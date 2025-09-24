@@ -1,20 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { evalService } from "../../services/evalService";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import { showToast } from "../../utils/toastHelper";
 import academicYearService from "../../services/academicYear.service";
+import registrationPeriodService from "../../services/registrationPeriod.service";
 import Select from "react-select";
 
 const DefenseScheduleManagement = () => {
@@ -24,6 +12,7 @@ const DefenseScheduleManagement = () => {
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const rootRef = useRef(null);
+  const didInitRef = useRef(false);
   const [formData, setFormData] = useState({
     scheduleName: "",
     academicYearId: "",
@@ -31,12 +20,45 @@ const DefenseScheduleManagement = () => {
     endDate: "",
     location: "",
     description: "",
-    createdBy: 1, // TODO: Lấy từ user context
+    createdBy: 1,
   });
+  const [registrationPeriods, setRegistrationPeriods] = useState([]);
+  const latestRegistrationEndDate = useMemo(() => {
+    if (!Array.isArray(registrationPeriods) || registrationPeriods.length === 0)
+      return null;
+    let max = null;
+    for (const p of registrationPeriods) {
+      const endStr = p?.endDate || p?.end_date;
+      if (!endStr) continue;
+      const d = new Date(endStr);
+      if (!isNaN(d)) {
+        if (!max || d > max) max = d;
+      }
+    }
+    return max;
+  }, [registrationPeriods]);
 
   useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
     loadSchedules();
+    loadRegistrationPeriods();
   }, []);
+
+  const loadRegistrationPeriods = async () => {
+    try {
+      const result = await registrationPeriodService.getAllPeriods();
+      if (result?.success && Array.isArray(result.data)) {
+        setRegistrationPeriods(result.data);
+      } else if (Array.isArray(result)) {
+        setRegistrationPeriods(result);
+      } else {
+        setRegistrationPeriods([]);
+      }
+    } catch (e) {
+      setRegistrationPeriods([]);
+    }
+  };
 
   const loadSchedules = async () => {
     try {
@@ -81,6 +103,23 @@ const DefenseScheduleManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Validate: startDate phải sau ngày kết thúc muộn nhất của các đợt đăng ký
+    try {
+      const latestEnd = latestRegistrationEndDate;
+      if (latestEnd) {
+        const start = formData.startDate ? new Date(formData.startDate) : null;
+        if (!start || start <= latestEnd) {
+          const d = new Date(latestEnd.getTime() + 24 * 60 * 60 * 1000);
+          showToast(
+            `Ngày bắt đầu lịch bảo vệ phải sau ${latestEnd.toLocaleDateString(
+              "vi-VN"
+            )} (chọn từ ${d.toLocaleDateString("vi-VN")})`,
+            "error"
+          );
+          return;
+        }
+      }
+    } catch (_) {}
 
     try {
       if (editingSchedule) {
@@ -100,6 +139,21 @@ const DefenseScheduleManagement = () => {
       showToast("Lỗi khi lưu lịch bảo vệ");
       console.error("Lỗi:", error);
     }
+  };
+
+  const getLatestRegistrationEndDate = () => {
+    if (!Array.isArray(registrationPeriods) || registrationPeriods.length === 0)
+      return null;
+    let max = null;
+    for (const p of registrationPeriods) {
+      const endStr = p?.endDate || p?.end_date;
+      if (!endStr) continue;
+      const d = new Date(endStr);
+      if (!isNaN(d)) {
+        if (!max || d > max) max = d;
+      }
+    }
+    return max;
   };
 
   const handleDeleteSchedule = async (scheduleId) => {
@@ -191,17 +245,17 @@ const DefenseScheduleManagement = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-          <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+      <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
+          <p>Đang tải dữ liệu...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={rootRef} className="min-h-screen bg-gray-50 py-8">
+    <div ref={rootRef} className="bg-gray-50 py-8">
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
         {/* Actions */}
         <div className="mb-6 flex justify-between items-center">
@@ -410,6 +464,7 @@ const DefenseScheduleManagement = () => {
           formData={formData}
           setFormData={setFormData}
           editingSchedule={editingSchedule}
+          latestRegistrationEndDate={latestRegistrationEndDate}
         />
       )}
     </div>
@@ -424,6 +479,7 @@ const ScheduleModal = ({
   formData,
   setFormData,
   editingSchedule,
+  latestRegistrationEndDate,
 }) => {
   if (!isOpen) return null;
 
@@ -549,7 +605,16 @@ const ScheduleModal = ({
               <input
                 type="date"
                 required
-                min={todayStr}
+                min={(function () {
+                  const latest = latestRegistrationEndDate;
+                  if (!latest) return todayStr;
+                  const d = new Date(
+                    latest.getFullYear(),
+                    latest.getMonth(),
+                    latest.getDate() + 1
+                  );
+                  return d.toISOString().split("T")[0];
+                })()}
                 value={formData.startDate}
                 onChange={(e) => {
                   const newStart = e.target.value;
@@ -558,14 +623,14 @@ const ScheduleModal = ({
                     return;
                   }
                   const start = new Date(newStart);
-                  const now = new Date();
-                  const today = new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate()
-                  );
-                  if (start < today) {
-                    alert("Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại");
+                  const latest = latestRegistrationEndDate;
+                  if (latest && start <= latest) {
+                    const d = new Date(latest.getTime() + 24 * 60 * 60 * 1000);
+                    alert(
+                      `Ngày bắt đầu phải sau ${latest.toLocaleDateString(
+                        "vi-VN"
+                      )} (chọn từ ${d.toLocaleDateString("vi-VN")})`
+                    );
                     return;
                   }
                   const autoEnd = new Date(start);

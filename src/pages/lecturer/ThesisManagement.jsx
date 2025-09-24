@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import topicService from "../../services/topic.service";
 import userService from "../../services/user.service";
 import AddTopicModal from "../../components/modals/AddTopicModal.jsx";
+import { getUserIdFromToken } from "../../auth/authUtils";
 
 const ThesisManagement = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -275,6 +276,9 @@ const ThesisManagement = () => {
     setError(null);
 
     try {
+      // Lấy userId từ JWT để filter đúng theo giảng viên
+      const currentUserId = getUserIdFromToken();
+
       // Tạo filter params
       const filterParams = {
         page: page,
@@ -305,7 +309,7 @@ const ThesisManagement = () => {
           ? new Date(dateRange.to).toISOString()
           : undefined,
         userRole: "TEACHER",
-        userId: null, // Sẽ được lấy từ JWT token
+        userId: currentUserId ? parseInt(currentUserId, 10) : undefined,
       };
 
       // Loại bỏ các giá trị undefined

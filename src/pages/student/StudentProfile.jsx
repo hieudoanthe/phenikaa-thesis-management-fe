@@ -159,15 +159,6 @@ const StudentProfile = () => {
   // Xử lý cập nhật profile
   const handleUpdateProfile = async () => {
     try {
-      // Validation email
-      if (
-        tempFormData.email &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tempFormData.email)
-      ) {
-        setStatusMessage("Email không đúng định dạng");
-        return;
-      }
-
       setStatusMessage("Đang cập nhật...");
 
       // Tạo FormData để gửi multipart request
@@ -178,7 +169,6 @@ const StudentProfile = () => {
         phoneNumber: tempFormData.phoneNumber,
         major: tempFormData.major,
         className: tempFormData.className,
-        email: tempFormData.email || "",
         userId: getUserIdFromToken(),
       };
 
@@ -435,7 +425,7 @@ const StudentProfile = () => {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Email:</span>
                   <span className="text-gray-900 font-medium">
-                    {formData.email || "Chưa cập nhật"}
+                    {user?.username || formData.email || "Chưa cập nhật"}
                   </span>
                 </div>
               </div>
@@ -445,7 +435,7 @@ const StudentProfile = () => {
                 {!isEditing ? (
                   <button
                     onClick={handleStartEditing}
-                    className="w-full bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2"
+                    className="w-full bg-primary-500 text-white py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors font-medium flex items-center justify-center gap-2"
                   >
                     <FaEdit className="w-4 h-4" />
                     Chỉnh sửa hồ sơ
@@ -454,7 +444,7 @@ const StudentProfile = () => {
                   <div className="space-y-2">
                     <button
                       onClick={handleUpdateProfile}
-                      className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+                      className="w-full bg-primary-500 text-white py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <FaSave className="w-4 h-4" />
                       Lưu thay đổi
@@ -656,26 +646,14 @@ const StudentProfile = () => {
                         )}
                       </div>
 
-                      {/* Email */}
+                      {/* Email - read-only from username */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Email
                         </label>
-                        {isEditing ? (
-                          <input
-                            type="email"
-                            value={tempFormData.email}
-                            onChange={(e) =>
-                              handleInputChange("email", e.target.value)
-                            }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            placeholder="Nhập email"
-                          />
-                        ) : (
-                          <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                            {formData.email || "Chưa cập nhật"}
-                          </div>
-                        )}
+                        <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                          {user?.username || formData.email || "Chưa cập nhật"}
+                        </div>
                       </div>
                     </div>
 
@@ -699,63 +677,38 @@ const StudentProfile = () => {
                       </span>
                     </div>
 
-                    {/* Additional Info Section */}
+                    {/* Thesis Final Score Section */}
                     <div className="border-t border-gray-200 pt-6">
                       <h4 className="text-md font-medium text-gray-900 mb-3">
-                        Thông tin bổ sung
+                        Kết quả học tập
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-gray-50 rounded-lg p-4">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-semibold text-sm">
+                            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                              <span className="text-primary-600 font-semibold text-sm">
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   width="16"
                                   height="16"
                                   fill="currentColor"
-                                  class="bi bi-mortarboard-fill"
                                   viewBox="0 0 16 16"
                                 >
-                                  <path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917z" />
-                                  <path d="M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466z" />
+                                  <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6" />
                                 </svg>
                               </span>
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-900">
-                                Điểm GPA
+                                Điểm tổng kết ĐATN
                               </p>
-                              <p className="text-lg font-bold text-blue-600">
-                                {(formData.gpa || 0).toFixed(2)}/4.0
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                              <span className="text-green-600 font-semibold text-sm">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  class="bi bi-award-fill"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="m8 0 1.669.864 1.858.282.842 1.68 1.337 1.32L13.4 6l.306 1.854-1.337 1.32-.842 1.68-1.858.282L8 12l-1.669-.864-1.858-.282-.842-1.68-1.337-1.32L2.6 6l-.306-1.854 1.337-1.32.842-1.68L6.331.864z" />
-                                  <path d="M4 11.794V16l4-1 4 1v-4.206l-2.018.306L8 13.126 6.018 12.1z" />
-                                </svg>
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                Tín chỉ đã tích
-                              </p>
-                              <p className="text-lg font-bold text-green-600">
-                                {formData.creditsCompleted || 0}/
-                                {formData.totalCredits || 0}
+                              <p className="text-lg font-bold text-primary-600">
+                                {(
+                                  formData.finalThesisScore ??
+                                  formData.thesisScore ??
+                                  formData.finalScore ??
+                                  0
+                                ).toFixed(2)}
                               </p>
                             </div>
                           </div>

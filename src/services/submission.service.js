@@ -15,7 +15,7 @@ export const getStudentConfirmedTopics = async (studentId) => {
   try {
     // Sử dụng API getStudentSuggestedTopics và lọc chỉ những đề tài đã được duyệt
     const response = await apiGet(
-      `${THESIS_SERVICE_BASE}/student/get-suggest-topic-${studentId}/paged?page=0&size=100`
+      `${THESIS_SERVICE_BASE}/student/get-suggest-topic-${studentId}/paged?page=0&size=8`
     );
 
     // Lọc chỉ những đề tài có trạng thái APPROVED

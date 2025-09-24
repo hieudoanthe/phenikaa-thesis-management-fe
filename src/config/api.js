@@ -6,11 +6,14 @@ export const APP_CONFIG = {
 };
 
 // Base URLs from environment
-const HTTP_BASE_URL = import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080";
+const HTTP_BASE_URL =
+  import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080";
 const WS_BASE_URL_ENV = import.meta.env.VITE_WS_BASE_URL || null;
 
 // Derive WS base from HTTP base if not explicitly provided
-const WS_BASE_URL = WS_BASE_URL_ENV || HTTP_BASE_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+const WS_BASE_URL =
+  WS_BASE_URL_ENV ||
+  HTTP_BASE_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
 
 // Academic Year API Configuration
 export const ACADEMIC_YEAR_API_CONFIG = {
@@ -33,12 +36,22 @@ export const API_ENDPOINTS = {
    * Admin Permission
    */
   // User Management
-  SAVE_USER: "/api/admin/save-user",
-  GET_USERS: "/api/admin/get-users",
-  GET_USERS_PAGED: "/api/admin/get-users-paged",
-  DELETE_USER: "/api/admin/delete-user",
-  UPDATE_USER: "/api/admin/update-user",
-  CHANGE_STATUS_USER: "/api/admin/change-status-user",
+  SAVE_USER: "/api/user-service/admin/save-user",
+  GET_USERS: "/api/user-service/admin/get-users",
+  GET_USERS_PAGED: "/api/user-service/admin/get-users-paged",
+  DELETE_USER: "/api/user-service/admin/delete-user",
+  UPDATE_USER: "/api/user-service/admin/update-user",
+  CHANGE_STATUS_USER: "/api/user-service/admin/change-status-user",
+
+  // Student Import Management
+  IMPORT_STUDENTS_CSV: "/api/user-service/admin/import-students",
+  GET_IMPORTED_STUDENTS_BY_PERIOD:
+    "/api/user-service/admin/students/by-period/{periodId}",
+  REMOVE_STUDENT_FROM_PERIOD:
+    "/api/user-service/admin/students/{studentId}/period/{periodId}",
+
+  // Import teachers
+  IMPORT_TEACHERS_CSV: "/api/user-service/admin/import-teachers",
 
   /**
    * Teacher Permission
@@ -87,6 +100,8 @@ export const API_ENDPOINTS = {
   STUDENT_SUGGEST_TOPIC: "/api/thesis-service/student/suggest-topic",
   GET_STUDENT_TOPIC:
     "/api/thesis-service/student/get-suggest-topic-{studentId}/paged",
+  UPDATE_STUDENT_SUGGEST_TOPIC:
+    "/api/thesis-service/student/update-suggest-topic",
 
   // Student Profile
   GET_STUDENT_PROFILE: "/api/profile-service/student/get-profile/{userId}",
@@ -103,7 +118,7 @@ export const API_ENDPOINTS = {
   UPDATE_TEACHER_PROFILE: "/api/profile-service/teacher/update-profile-teacher",
 
   // Assign Service
-  GET_ASSIGNMENTS_BY_TOPIC: "/api/assign-service/topic/{topicId}",
+  GET_ASSIGNMENTS_BY_TOPIC_API: "/api/assign-service/topic/{topicId}",
   CREATE_ASSIGNMENT: "/api/assign-service",
   UPDATE_ASSIGNMENT: "/api/assign-service/{assignmentId}",
   CREATE_TASK: "/api/assign-service/{assignmentId}/tasks",
@@ -152,6 +167,8 @@ export const API_ENDPOINTS = {
   // Defense Sessions
   GET_DEFENSE_SESSIONS: "/api/eval-service/admin/sessions",
   GET_DEFENSE_SESSION_BY_ID: "/api/eval-service/admin/sessions/{sessionId}",
+  EXPORT_DEFENSE_SESSION: "/api/eval-service/admin/sessions/{sessionId}/export",
+  EXPORT_ALL_DEFENSE_SESSIONS: "/api/eval-service/admin/sessions/export/all",
   CREATE_DEFENSE_SESSION: "/api/eval-service/admin/sessions",
   UPDATE_DEFENSE_SESSION: "/api/eval-service/admin/sessions/{sessionId}",
   DELETE_DEFENSE_SESSION: "/api/eval-service/admin/sessions/{sessionId}",
@@ -180,6 +197,10 @@ export const API_ENDPOINTS = {
     "/api/eval-service/admin/sessions/{sessionId}/students",
   GET_AVAILABLE_SESSIONS: "/api/eval-service/admin/sessions/available",
 
+  // Auto Assign
+  AUTO_ASSIGN_PREVIEW: "/api/eval-service/admin/auto-assign/preview",
+  AUTO_ASSIGN_CONFIRM: "/api/eval-service/admin/auto-assign/confirm",
+
   /**
    * Communication Service (Chat)
    */
@@ -189,6 +210,96 @@ export const API_ENDPOINTS = {
   GET_CONVERSATION_HISTORY: "/chat/conversation/{userId1}/{userId2}",
   GET_USER_CONVERSATIONS: "/chat/conversations/{userId}",
   GET_RECENT_MESSAGES: "/chat/recent-messages/{userId}",
+
+  /**
+   * Statistics APIs - Internal Services
+   */
+  // User Service Statistics
+  GET_ALL_USERS: "/internal/users/get-all-users",
+  GET_USERS_BY_ROLE: "/internal/users/get-users-by-role",
+  GET_USER_COUNT: "/internal/users/get-user-count",
+  GET_USER_COUNT_BY_ROLE: "/internal/users/get-user-count-by-role",
+  GET_USER_COUNT_BY_STATUS: "/internal/users/get-user-count-by-status",
+  GET_ACTIVE_USERS_TODAY: "/internal/users/get-active-users-today",
+  // Internal user profile by id (includes period info)
+  USER_INTERNAL_GET_PROFILE_BY_ID: "/internal/users/get-profile/{userId}",
+
+  // Academic Config Service Statistics
+  GET_ACADEMIC_YEARS_STATS: "/internal/academic/get-academic-years",
+  GET_ACTIVE_ACADEMIC_YEAR_STATS: "/internal/academic/get-active-academic-year",
+  GET_ACADEMIC_YEAR_COUNT: "/internal/academic/get-academic-year-count",
+  GET_ACADEMIC_YEAR_BY_ID: "/internal/academic/get-academic-year-by-id",
+
+  // Thesis Service Statistics
+  GET_TOPIC_COUNT: "/internal/thesis/get-topic-count",
+  GET_TOPIC_COUNT_BY_STATUS: "/internal/thesis/get-topic-count-by-status",
+  GET_TOPIC_COUNT_BY_DIFFICULTY:
+    "/internal/thesis/get-topic-count-by-difficulty",
+  GET_TOPIC_COUNT_BY_ACADEMIC_YEAR:
+    "/internal/thesis/get-topic-count-by-academic-year",
+  GET_TOPIC_COUNT_BY_SUPERVISOR:
+    "/internal/thesis/get-topic-count-by-supervisor",
+  GET_REGISTRATION_COUNT: "/internal/thesis/get-registration-count",
+  GET_REGISTRATION_COUNT_BY_STATUS:
+    "/internal/thesis/get-registration-count-by-status",
+  GET_REGISTRATION_COUNT_BY_ACADEMIC_YEAR:
+    "/internal/thesis/get-registration-count-by-academic-year",
+  GET_TOPICS_BY_SUPERVISOR_STATS: "/internal/thesis/get-topics-by-supervisor",
+  GET_TOPICS_STATS_BY_SUPERVISOR:
+    "/internal/thesis/get-topics-stats-by-supervisor",
+  GET_REGISTRATIONS_BY_TOPIC: "/internal/thesis/get-registrations-by-topic",
+  GET_TOPICS_OVER_TIME: "/internal/thesis/get-topics-over-time",
+  GET_REGISTRATIONS_OVER_TIME: "/internal/thesis/get-registrations-over-time",
+  GET_REGISTRATIONS_TODAY: "/internal/thesis/get-registrations-today",
+  GET_TODAY_REGISTRATIONS: "/internal/thesis/get-today-registrations",
+
+  // Submission Service Statistics
+  GET_SUBMISSION_COUNT: "/internal/submissions/get-submission-count",
+  GET_SUBMISSION_COUNT_BY_STATUS:
+    "/internal/submissions/get-submission-count-by-status",
+  GET_SUBMISSION_COUNT_BY_TOPIC:
+    "/internal/submissions/get-submission-count-by-topic",
+  GET_SUBMISSION_COUNT_BY_USER:
+    "/internal/submissions/get-submission-count-by-user",
+  GET_SUBMISSIONS_OVER_TIME: "/internal/submissions/get-submissions-over-time",
+  GET_SUBMISSIONS_BY_TOPIC: "/internal/submissions/get-submissions-by-topic",
+  GET_SUBMISSIONS_BY_USER: "/internal/submissions/get-submissions-by-user",
+  GET_DEADLINE_STATS: "/internal/submissions/get-deadline-stats",
+  GET_SUBMISSIONS_TODAY: "/internal/submissions/get-submissions-today",
+  GET_TODAY_SUBMISSIONS: "/internal/submissions/get-today-submissions",
+
+  // Assignment Service Statistics
+  GET_ASSIGNMENT_COUNT: "/internal/assignments/get-assignment-count",
+  GET_ASSIGNMENT_COUNT_BY_STATUS:
+    "/internal/assignments/get-assignment-count-by-status",
+  GET_ASSIGNMENT_COUNT_BY_USER:
+    "/internal/assignments/get-assignment-count-by-user",
+  GET_ASSIGNMENT_COUNT_BY_TOPIC:
+    "/internal/assignments/get-assignment-count-by-topic",
+  GET_ASSIGNMENTS_BY_USER: "/internal/assignments/get-assignments-by-user",
+  GET_ASSIGNMENTS_BY_TOPIC: "/internal/assignments/get-assignments-by-topic",
+  GET_TASK_COUNT: "/internal/assignments/get-task-count",
+  GET_TASK_COUNT_BY_STATUS: "/internal/assignments/get-task-count-by-status",
+  GET_TASK_COUNT_BY_ASSIGNMENT:
+    "/internal/assignments/get-task-count-by-assignment",
+  GET_TASKS_BY_ASSIGNMENT: "/internal/assignments/get-tasks-by-assignment",
+
+  // Profile Service Statistics
+  GET_PROFILE_COUNT: "/internal/profiles/get-profile-count",
+  GET_STUDENT_PROFILE_COUNT: "/internal/profiles/get-student-profile-count",
+  GET_LECTURER_PROFILE_COUNT: "/internal/profiles/get-lecturer-profile-count",
+  GET_PROFILES_BY_MAJOR: "/internal/profiles/get-profiles-by-major",
+  GET_PROFILES_BY_YEAR: "/internal/profiles/get-profiles-by-year",
+  GET_STUDENT_PROFILES_BY_SUPERVISOR:
+    "/internal/profiles/get-student-profiles-by-supervisor",
+  GET_PROFILE_BY_USER_ID: "/internal/profiles/get-profile-by-user-id",
+
+  // Evaluation Service Statistics (Public APIs)
+  GET_OVERVIEW_STATISTICS: "/api/eval-service/admin/statistics/overview",
+  GET_DEFENSE_STATISTICS: "/api/eval-service/admin/statistics/defenses",
+  GET_EVALUATION_STATISTICS: "/api/eval-service/admin/statistics/evaluations",
+  GET_SCORE_STATISTICS: "/api/eval-service/admin/statistics/scores",
+  GET_MONTHLY_STATISTICS: "/api/eval-service/admin/statistics/monthly",
 };
 
 // WebSocket Endpoints

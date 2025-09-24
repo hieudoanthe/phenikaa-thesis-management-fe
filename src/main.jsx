@@ -41,6 +41,7 @@ import DefenseScheduleManagement from "./pages/admin/DefenseScheduleManagement.j
 import RegistrationPeriodManagement from "./pages/admin/RegistrationPeriodManagement.jsx";
 import StudentPeriodManagement from "./pages/admin/StudentPeriodManagement.jsx";
 import StatisticsDashboard from "./pages/admin/StatisticsDashboard.jsx";
+import AdminProfile from "./pages/admin/AdminProfile.jsx";
 // Import CSS
 import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -207,6 +208,7 @@ createRoot(document.getElementById("root")).render(
                     />
                   }
                 />
+                <Route path="profile" element={<AdminProfile />} />
               </Route>
             </Routes>
           </BrowserRouter>

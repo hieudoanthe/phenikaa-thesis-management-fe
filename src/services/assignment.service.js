@@ -9,7 +9,7 @@ class AssignmentService {
    */
   async getAssignmentsByTopic(topicId) {
     try {
-      const endpoint = API_ENDPOINTS.GET_ASSIGNMENTS_BY_TOPIC.replace(
+      const endpoint = API_ENDPOINTS.GET_ASSIGNMENTS_BY_TOPIC_API.replace(
         "{topicId}",
         String(topicId)
       );

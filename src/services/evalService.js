@@ -138,6 +138,38 @@ class EvalService {
   }
 
   /**
+   * Export dữ liệu buổi bảo vệ (JSON)
+   */
+  async exportDefenseSession(sessionId) {
+    try {
+      const url = API_ENDPOINTS.EXPORT_DEFENSE_SESSION.replace(
+        "{sessionId}",
+        sessionId
+      );
+      const response = await mainHttpClient.get(url);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi export buổi bảo vệ:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Export tất cả buổi bảo vệ (JSON)
+   */
+  async exportAllDefenseSessions() {
+    try {
+      const response = await mainHttpClient.get(
+        API_ENDPOINTS.EXPORT_ALL_DEFENSE_SESSIONS
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi export tất cả buổi bảo vệ:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Lấy buổi bảo vệ theo ID
    */
   async getDefenseSessionById(sessionId) {
@@ -286,6 +318,38 @@ class EvalService {
       return response.data;
     } catch (error) {
       console.error("Lỗi khi phân chia sinh viên:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Tự động sắp xếp sinh viên theo chuyên ngành hội đồng
+   */
+  async autoAssignStudents(payload) {
+    try {
+      const response = await mainHttpClient.post(
+        API_ENDPOINTS.AUTO_ASSIGN_PREVIEW,
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tự động sắp xếp sinh viên:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xác nhận phân chia sinh viên (gán thật)
+   */
+  async confirmAutoAssign(payload) {
+    try {
+      const response = await mainHttpClient.post(
+        API_ENDPOINTS.AUTO_ASSIGN_CONFIRM,
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xác nhận phân chia:", error);
       throw error;
     }
   }

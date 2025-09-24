@@ -2,20 +2,8 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import AddUserModal from "../../components/modals/AddUserModal.jsx";
 import ConfirmModal from "../../components/modals/ConfirmModal.jsx";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import ImportTeachersModal from "../../components/modals/ImportTeachersModal.jsx";
+import { showToast } from "../../utils/toastHelper";
 import { userService } from "../../services";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -50,6 +38,8 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportTeachersModalOpen, setIsImportTeachersModalOpen] =
+    useState(false);
   const [users, setUsers] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -97,6 +87,9 @@ const UserManagement = () => {
         roleIds: user.roleIds,
         status: user.status,
         avatar: user.avt || user.avatar || DEFAULT_AVATAR,
+        periodDescription: user.periodDescription || "Chưa đăng ký đợt nào",
+        periodIds: user.periodIds || [],
+        totalRegistrations: user.totalRegistrations || 1,
       }));
 
       setUsers(transformedUsers);
@@ -160,7 +153,7 @@ const UserManagement = () => {
 
   // Hàm helper để lấy role display dạng list (mỗi role một dòng)
   const getRoleDisplayList = (roleIds) => {
-    if (!roleIds || roleIds.length === 0) return "Chưa phân quyền";
+    if (!roleIds || !Array.isArray(roleIds) || roleIds.length === 0) return [];
 
     const roleNames = roleIds
       .map((roleId) => roleMapping[roleId])
@@ -366,9 +359,9 @@ const UserManagement = () => {
   if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-          <p className="mt-4 text-gray-600">Đang tải danh sách người dùng...</p>
+        <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
+          <p>Đang tải dữ liệu...</p>
         </div>
       </div>
     );
@@ -397,21 +390,31 @@ const UserManagement = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Left side - Add button and role filter */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="currentColor"
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
+                onClick={() => setIsModalOpen(true)}
               >
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-              </svg>
-              <span className="hidden sm:inline">Thêm người dùng</span>
-              <span className="sm:hidden">Thêm</span>
-            </button>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                </svg>
+                <span className="hidden sm:inline">Thêm người dùng</span>
+                <span className="sm:hidden">Thêm</span>
+              </button>
+
+              <button
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+                onClick={() => setIsImportTeachersModalOpen(true)}
+              >
+                <span className="hidden sm:inline">Thêm giảng viên</span>
+                <span className="sm:hidden">Giảng viên</span>
+              </button>
+            </div>
 
             <div className="w-full sm:w-40">
               <Select
@@ -596,15 +599,33 @@ const UserManagement = () => {
                   </div>
                   <div className="mt-1 text-sm text-gray-600 break-words">
                     <div className="truncate">{user.email}</div>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {getRoleDisplayList(user.roleIds).map((r, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs"
-                        >
-                          {r}
+                    <div className="mt-1 text-xs font-medium">
+                      {!user.roleIds.includes(2) &&
+                      !user.roleIds.includes(3) ? (
+                        <span className="text-blue-600">
+                          {user.periodDescription}
+                          {user.totalRegistrations > 1 &&
+                            ` (${user.totalRegistrations} lần)`}
                         </span>
-                      ))}
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {getRoleDisplayList(user.roleIds).length > 0 ? (
+                        getRoleDisplayList(user.roleIds).map((r, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs"
+                          >
+                            {r}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs">
+                          Chưa phân quyền
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="mt-3 flex items-center gap-2">
@@ -655,6 +676,9 @@ const UserManagement = () => {
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
                   Email
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                  Đợt đăng ký
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
                   Trạng thái
@@ -728,11 +752,15 @@ const UserManagement = () => {
                       />
                     ) : (
                       <div className="text-sm text-gray-900">
-                        {getRoleDisplayList(user.roleIds).map((role, i) => (
-                          <div key={i} className="leading-tight">
-                            {role}
-                          </div>
-                        ))}
+                        {getRoleDisplayList(user.roleIds).length > 0 ? (
+                          getRoleDisplayList(user.roleIds).map((role, i) => (
+                            <div key={i} className="leading-tight">
+                              {role}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-gray-500">Chưa phân quyền</div>
+                        )}
                       </div>
                     )}
                   </td>
@@ -750,6 +778,22 @@ const UserManagement = () => {
                       />
                     ) : (
                       <div className="text-sm text-gray-900">{user.email}</div>
+                    )}
+                  </td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                    {!user.roleIds.includes(2) && !user.roleIds.includes(3) ? (
+                      <div className="text-sm text-gray-900">
+                        <div className="font-medium">
+                          {user.periodDescription}
+                        </div>
+                        {user.totalRegistrations > 1 && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            ({user.totalRegistrations} lần đăng ký)
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-400">-</div>
                     )}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -921,8 +965,8 @@ const UserManagement = () => {
                           key={p}
                           className={`${
                             p === current
-                              ? "bg-primary-500 text-white"
-                              : "bg-white text-gray-800 hover:bg-primary-50"
+                              ? "bg-accent-500 text-white"
+                              : "bg-white text-gray-800 hover:bg-accent-50"
                           } px-3 py-2 text-sm border-x border-gray-200`}
                           onClick={() => handlePageChange(p - 1)}
                           aria-current={p === current ? "page" : undefined}
@@ -963,6 +1007,16 @@ const UserManagement = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddUser={handleAddUser}
+      />
+
+      {/* Import Teachers Modal */}
+      <ImportTeachersModal
+        isOpen={isImportTeachersModalOpen}
+        onClose={() => setIsImportTeachersModalOpen(false)}
+        onImportSuccess={() => {
+          fetchUsers();
+          setIsImportTeachersModalOpen(false);
+        }}
       />
 
       {/* Confirm Delete Modal */}
