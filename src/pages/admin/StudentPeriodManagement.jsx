@@ -19,17 +19,32 @@ const departmentMapping = {
   PM: "Phần mềm",
 };
 
+// Status mapping
+const statusMapping = {
+  ACTIVE: "Hoạt động",
+  INACTIVE: "Không hoạt động",
+  CLOSED: "Đã đóng",
+  UPCOMING: "Sắp diễn ra",
+  PENDING: "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Từ chối",
+};
+
 const StudentPeriodManagement = () => {
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [periods, setPeriods] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingProfiles, setLoadingProfiles] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [viewType, setViewType] = useState("all"); // "all", "registered", "suggested"
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = 6;
+  const pageSize = 5;
+
+  // Cache để tăng tốc độ
+  const [studentsCache, setStudentsCache] = useState(new Map());
+  const [lastLoadedPeriod, setLastLoadedPeriod] = useState(null);
 
   // State cho việc gán sinh viên vào buổi bảo vệ
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
@@ -39,33 +54,54 @@ const StudentPeriodManagement = () => {
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [assigningStudent, setAssigningStudent] = useState(false);
   const [assignedStudents, setAssignedStudents] = useState(new Map());
-  const suppressNextGlobalLoadingRef = React.useRef(false);
-  const lastRenderedStudentsRef = React.useRef([]);
   const [autoAssigning, setAutoAssigning] = useState(false);
+  // Helper: extract student code from username/email like "21010652@st.phenikaa-uni.edu.vn"
+  const extractStudentCode = (profile, fallbackId) => {
+    const candidates = [
+      profile?.username,
+      profile?.userName,
+      profile?.email,
+      profile?.studentCode,
+    ];
+    for (const c of candidates) {
+      if (typeof c === "string" && c.length > 0) {
+        const code = c.includes("@") ? c.split("@")[0] : c;
+        if (code) return code;
+      }
+    }
+    return fallbackId != null ? String(fallbackId) : "";
+  };
 
   // Preview auto arrange
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewData, setPreviewData] = useState([]); // [{sessionId, sessionName, isVirtual, students:[{studentId, name, topicTitle, major, reviewer}]}]
+  const [previewSelectBySession, setPreviewSelectBySession] = useState({}); // sessionId -> studentId
+  const [confirmingAssign, setConfirmingAssign] = useState(false);
 
-  // State cho việc quản lý giảng viên
-  const [teachersMap, setTeachersMap] = useState(new Map());
-  const [loadingTeachers, setLoadingTeachers] = useState(false);
+  // State cho việc xem thông tin giảng viên
+  const [showTeacherInfoModal, setShowTeacherInfoModal] = useState(false);
+  const [selectedTeacherInfo, setSelectedTeacherInfo] = useState(null);
+  const [loadingTeacherInfo, setLoadingTeacherInfo] = useState(false);
+
+  // State cho việc xem thông tin sinh viên
+  const [showStudentInfoModal, setShowStudentInfoModal] = useState(false);
+  const [selectedStudentInfo, setSelectedStudentInfo] = useState(null);
+  const [loadingStudentInfo, setLoadingStudentInfo] = useState(false);
 
   const navigate = useNavigate();
 
-  // Load danh sách đợt đăng ký và giảng viên
+  // Load danh sách đợt đăng ký
   useEffect(() => {
     loadPeriods();
-    loadTeachers();
   }, []);
 
-  // Load sinh viên khi chọn đợt
+  // Load sinh viên khi viewType thay đổi (không cần load khi selectedPeriod thay đổi vì đã xử lý trong handlePeriodChange)
   useEffect(() => {
-    if (selectedPeriod) {
+    if (selectedPeriod?.value) {
       loadStudentsByPeriod(selectedPeriod.value);
     }
-  }, [selectedPeriod, viewType]);
+  }, [viewType]);
 
   // Reset trang khi bộ lọc/thông tin thay đổi
   useEffect(() => {
@@ -74,34 +110,55 @@ const StudentPeriodManagement = () => {
 
   // (moved paginatedStudents below after filteredStudents is defined)
 
-  // Kiểm tra assignment status khi students thay đổi
+  // Kiểm tra assignment status khi students thay đổi (trong background)
   useEffect(() => {
     const checkAllStudentAssignments = async () => {
       if (students.length === 0) return;
 
+      // Bỏ delay hoàn toàn để tăng tốc độ
       const newAssignedStudents = new Map();
 
-      await Promise.all(
-        students.map(async (student) => {
+      // Chỉ check assignment cho 2 sinh viên đầu tiên để tăng tốc
+      const studentsToCheck = students.slice(0, 2);
+
+      // Sử dụng Promise.allSettled để không bị block bởi lỗi
+      const results = await Promise.allSettled(
+        studentsToCheck.map(async (student) => {
           try {
             const assignment = await checkStudentAssignment(student.studentId);
-            if (assignment) {
-              newAssignedStudents.set(student.studentId, assignment);
-            }
+            return { studentId: student.studentId, assignment };
           } catch (error) {
-            console.error(
-              `Lỗi khi kiểm tra assignment cho sinh viên ${student.studentId}:`,
+            console.warn(
+              `Không thể kiểm tra assignment cho sinh viên ${student.studentId}:`,
               error
             );
+            return { studentId: student.studentId, assignment: null };
           }
         })
       );
+
+      // Xử lý kết quả
+      results.forEach((result) => {
+        if (result.status === "fulfilled" && result.value.assignment) {
+          newAssignedStudents.set(
+            result.value.studentId,
+            result.value.assignment
+          );
+        }
+      });
 
       setAssignedStudents(newAssignedStudents);
     };
 
     checkAllStudentAssignments();
   }, [students]);
+
+  // Cleanup khi component unmount
+  useEffect(() => {
+    return () => {
+      // Cleanup nếu cần
+    };
+  }, []);
 
   const loadPeriods = async () => {
     try {
@@ -112,15 +169,23 @@ const StudentPeriodManagement = () => {
       if (response && Array.isArray(response)) {
         const formattedPeriods = response.map((period) => ({
           value: period.periodId,
-          label: `${period.periodName} - ${period.status}`,
+          label: `${period.periodName} - ${
+            statusMapping[period.status] || period.status
+          }`,
           status: period.status,
         }));
         setPeriods(formattedPeriods);
 
         if (formattedPeriods.length > 0) {
-          // Đặt cờ để không hiển thị spinner toàn trang lần 2 ngay sau khi chọn đợt đầu tiên
-          suppressNextGlobalLoadingRef.current = true;
-          setSelectedPeriod(formattedPeriods[0]);
+          // Tự động chọn đợt ACTIVE gần nhất
+          const activePeriod = formattedPeriods.find(
+            (period) => period.status === "ACTIVE"
+          );
+          const selectedPeriod = activePeriod || formattedPeriods[0];
+          setSelectedPeriod(selectedPeriod);
+
+          // Load data ngay sau khi chọn đợt
+          await loadStudentsByPeriod(selectedPeriod.value);
         }
       } else {
         setPeriods([]);
@@ -135,162 +200,74 @@ const StudentPeriodManagement = () => {
     }
   };
 
-  const loadTeachers = async () => {
-    try {
-      setLoadingTeachers(true);
-      const teachers = await apiGet(API_ENDPOINTS.GET_ALL_TEACHERS);
-
-      if (teachers && Array.isArray(teachers)) {
-        const teachersMapData = new Map();
-        teachers.forEach((teacher) => {
-          teachersMapData.set(teacher.userId, {
-            fullName:
-              teacher.fullName ||
-              teacher.name ||
-              (teacher.firstName && teacher.lastName
-                ? `${teacher.firstName} ${teacher.lastName}`
-                : null) ||
-              `Giảng viên ${teacher.userId}`,
-            specialization: teacher.specialization || "Chưa có chuyên ngành",
-            department: teacher.department || "Chưa có khoa",
-            email: teacher.phoneNumber || "Chưa có thông tin liên lạc",
-          });
-        });
-        setTeachersMap(teachersMapData);
-        return teachersMapData;
-      }
-    } catch (error) {
-      console.error("Lỗi khi tải danh sách giảng viên:", error);
-      showToast("Không thể tải danh sách giảng viên");
-    } finally {
-      setLoadingTeachers(false);
-    }
-    return new Map();
-  };
-  const ensureTeachersMapReady = async () => {
-    if (teachersMap && teachersMap.size > 0) return teachersMap;
-    return await loadTeachers();
-  };
-
   const loadStudentsByPeriod = async (periodId) => {
     try {
-      if (suppressNextGlobalLoadingRef.current) {
-        // Bỏ qua spinner toàn trang cho lần nạp sinh viên đầu tiên sau khi vừa tải đợt
-        suppressNextGlobalLoadingRef.current = false;
-      } else {
+      // Kiểm tra cache trước
+      const cacheKey = `${periodId}-${viewType}`;
+      if (studentsCache.has(cacheKey) && lastLoadedPeriod === periodId) {
+        console.log("Using cached data for period:", periodId);
+        setStudents(studentsCache.get(cacheKey));
+        return;
+      }
+
+      // Chỉ hiển thị loading nếu chưa có cache và có ít nhất 1 period
+      if (periods.length > 0) {
         setLoading(true);
       }
-      let studentsData = [];
 
-      switch (viewType) {
-        case "registered":
-          studentsData =
-            await studentAssignmentService.getRegistrationsByPeriod(periodId);
-          break;
-        case "suggested":
-          studentsData =
-            await studentAssignmentService.getSuggestedStudentsByPeriod(
+      // Gọi API song song để tăng tốc độ
+      let studentsData = [];
+      const apiCall = (() => {
+        switch (viewType) {
+          case "registered":
+            return studentAssignmentService.getRegistrationsByPeriod(periodId);
+          case "suggested":
+            return studentAssignmentService.getSuggestedStudentsByPeriod(
               periodId
             );
-          break;
-        case "all":
-        default:
-          studentsData = await studentAssignmentService.getAllStudentsByPeriod(
-            periodId
-          );
-          break;
-      }
+          case "all":
+          default:
+            return studentAssignmentService.getAllStudentsByPeriod(periodId);
+        }
+      })();
 
-      const minimalRows = (studentsData || []).filter(Boolean).map((s) => ({
-        studentId: s?.studentId,
-        topicId: s?.topicId,
-        topicTitle: s?.topicTitle || "N/A",
-        topicCode: s?.topicCode || "N/A",
-        supervisorId: s?.supervisorId,
-        registrationType: s?.registrationType || "N/A",
-        suggestionStatus: s?.suggestionStatus || null,
-        registrationPeriodId: s?.registrationPeriodId,
-        fullName: `Sinh viên ${s?.studentId ?? ""}`,
-        studentCode: s?.studentId?.toString() || "",
-        teacherInfo: {
-          fullName: s?.supervisorId ? `Giảng viên ${s?.supervisorId}` : "N/A",
-        },
-      }));
-      setStudents(minimalRows);
+      studentsData = await apiCall;
 
-      // Đảm bảo teachersMap đã được load trước khi xử lý sinh viên chi tiết
-      const localTeachersMap = await ensureTeachersMapReady();
+      // Tối ưu hóa xử lý dữ liệu
+      const studentsWithBasicInfo = (studentsData || [])
+        .filter(Boolean)
+        .map((s) => {
+          const studentCode = s?.username
+            ? extractStudentCode({ username: s.username }, s.studentId)
+            : s?.studentId?.toString() || "";
 
-      // Lấy thông tin profile cho từng sinh viên và giảng viên
-      setLoadingProfiles(true);
-      const studentsWithProfiles = await Promise.all(
-        studentsData.map(async (student) => {
-          try {
-            const profile = await studentAssignmentService.getStudentProfile(
-              student.studentId
-            );
-
-            const teacherInfo = localTeachersMap.get(student.supervisorId) || {
-              fullName: `Giảng viên ${student.supervisorId}`,
-            };
-
-            return {
-              ...student,
+          return {
+            studentId: s?.studentId,
+            topicId: s?.topicId,
+            topicTitle: s?.topicTitle || "N/A",
+            topicCode: s?.topicCode || "N/A",
+            supervisorId: s?.supervisorId,
+            registrationType: s?.registrationType || "N/A",
+            suggestionStatus: s?.suggestionStatus || null,
+            registrationPeriodId: s?.registrationPeriodId,
+            fullName: s?.fullName || `Sinh viên ${s?.studentId ?? ""}`,
+            username: s?.username,
+            studentCode,
+            major: "CNTT",
+            teacherInfo: {
               fullName:
-                profile?.fullName ||
-                profile?.name ||
-                (profile?.firstName && profile?.lastName
-                  ? `${profile.firstName} ${profile.lastName}`
-                  : null) ||
-                `Sinh viên ${student.studentId}`,
-              studentCode:
-                profile?.studentCode ||
-                profile?.userId ||
-                student.studentId.toString(),
-              major: profile?.major || "CNTT",
-              teacherInfo: teacherInfo,
-              // Đảm bảo các trường cần thiết cho việc gán vào buổi bảo vệ
-              topicId: student.topicId,
-              topicTitle: student.topicTitle || "N/A",
-              topicCode: student.topicCode || "N/A",
-              supervisorId: student.supervisorId,
-              registrationType: student.registrationType || "N/A",
-              suggestionStatus: student.suggestionStatus || null,
-            };
-          } catch (error) {
-            console.warn(
-              `Không thể lấy profile cho sinh viên ${student.studentId}:`,
-              error
-            );
+                s?.supervisorFullName ||
+                (s?.supervisorId ? `Giảng viên ${s?.supervisorId}` : "N/A"),
+            },
+          };
+        });
 
-            // Lấy thông tin giảng viên hướng dẫn từ teachersMap
-            const teacherInfo = localTeachersMap.get(student.supervisorId) || {
-              fullName: `Giảng viên ${student.supervisorId}`,
-            };
-
-            return {
-              ...student,
-              fullName: `Sinh viên ${student.studentId}`,
-              studentCode: student.studentId.toString(),
-              major: "CNTT",
-              teacherInfo: teacherInfo,
-              topicId: student.topicId,
-              topicTitle: student.topicTitle || "N/A",
-              topicCode: student.topicCode || "N/A",
-              supervisorId: student.supervisorId,
-              registrationType: student.registrationType || "N/A",
-              suggestionStatus: student.suggestionStatus || null,
-            };
-          }
-        })
+      // Cập nhật state và cache cùng lúc
+      setStudents(studentsWithBasicInfo);
+      setStudentsCache((prev) =>
+        new Map(prev).set(cacheKey, studentsWithBasicInfo)
       );
-      setLoadingProfiles(false);
-
-      setStudents((prev) =>
-        studentsWithProfiles && studentsWithProfiles.length
-          ? studentsWithProfiles
-          : prev
-      );
+      setLastLoadedPeriod(periodId);
     } catch (error) {
       console.error("Lỗi khi tải danh sách sinh viên:", error);
       showToast("Lỗi khi tải danh sách sinh viên");
@@ -300,12 +277,18 @@ const StudentPeriodManagement = () => {
     }
   };
 
-  const handlePeriodChange = (selectedOption) => {
+  const handlePeriodChange = async (selectedOption) => {
     setSelectedPeriod(selectedOption);
+    setCurrentPage(0);
+    // Load data ngay khi chọn đợt
+    if (selectedOption?.value) {
+      await loadStudentsByPeriod(selectedOption.value);
+    }
   };
 
   const handleViewTypeChange = (selectedOption) => {
     setViewType(selectedOption.value);
+    setCurrentPage(0);
   };
 
   const getStatusColor = (status) => {
@@ -357,9 +340,11 @@ const StudentPeriodManagement = () => {
   };
 
   // Lọc sinh viên theo search query và status (an toàn với phần tử undefined)
-  const filteredStudents = (students || [])
-    .filter(Boolean)
-    .filter((student) => {
+  // Sử dụng useMemo để tối ưu performance
+  const filteredStudents = useMemo(() => {
+    if (!students || students.length === 0) return [];
+
+    return students.filter(Boolean).filter((student) => {
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         student?.topicTitle?.toLowerCase().includes(q) ||
@@ -373,22 +358,16 @@ const StudentPeriodManagement = () => {
 
       return !!matchesSearch && !!matchesStatus;
     });
+  }, [students, searchQuery, filterStatus]);
 
-  // Cập nhật snapshot khi không loadingProfiles để tránh nháy
-  useEffect(() => {
-    if (!loadingProfiles) {
-      lastRenderedStudentsRef.current = students;
-    }
-  }, [students, loadingProfiles]);
-
-  // Tập sinh viên dùng để hiển thị (giữ dữ liệu cũ khi đang load profile)
-  const displayBaseStudents = loadingProfiles
-    ? lastRenderedStudentsRef.current
-    : students;
+  // Tập sinh viên dùng để hiển thị
+  const displayBaseStudents = students;
 
   const displayedFilteredStudents = useMemo(() => {
+    if (!displayBaseStudents || displayBaseStudents.length === 0) return [];
+
     const lower = searchQuery.toLowerCase();
-    return (displayBaseStudents || []).filter(Boolean).filter((student) => {
+    return displayBaseStudents.filter(Boolean).filter((student) => {
       const matchesSearch =
         student?.topicTitle?.toLowerCase().includes(lower) ||
         student?.studentId?.toString().includes(searchQuery) ||
@@ -400,6 +379,10 @@ const StudentPeriodManagement = () => {
       return matchesSearch && matchesStatus;
     });
   }, [displayBaseStudents, searchQuery, filterStatus]);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchQuery, filterStatus]);
 
   // Danh sách sinh viên theo trang (client-side pagination)
   const displayedPaginatedStudents = useMemo(() => {
@@ -528,49 +511,53 @@ const StudentPeriodManagement = () => {
         );
         return;
       }
+      // Hiển thị popup ngay lập tức
       console.log("Opening assignment modal for student:", student);
       setSelectedStudent(student);
-      setSelectedSessionId(null); // Reset selectedSessionId
+      setSelectedSessionId(null);
+      setShowAssignmentModal(true);
       setLoadingSessions(true);
 
-      // Lấy danh sách buổi bảo vệ có thể gán thêm sinh viên
-      const sessions = await studentAssignmentService.getAvailableSessions();
-      console.log("Available sessions from API:", sessions);
+      // Load sessions trong background
+      try {
+        const sessions = await studentAssignmentService.getAvailableSessions();
+        console.log("Available sessions from API:", sessions);
 
-      if (!sessions || sessions.length === 0) {
-        console.warn("Không có buổi bảo vệ nào có sẵn");
-        showToast("Không có buổi bảo vệ nào có sẵn để gán sinh viên");
+        if (!sessions || sessions.length === 0) {
+          console.warn("Không có buổi bảo vệ nào có sẵn");
+          setAvailableSessions([]);
+          return;
+        }
+
+        // Đảm bảo dữ liệu có cấu trúc đúng
+        const formattedSessions = sessions.map((session) => {
+          console.log("Processing session:", session);
+          const formatted = {
+            sessionId: session.sessionId || session.id,
+            sessionName:
+              session.sessionName ||
+              session.name ||
+              `Buổi ${session.sessionId || session.id}`,
+            defenseDate: session.defenseDate || session.date,
+            location: session.location || session.room || "N/A",
+            maxStudents: session.maxStudents || 10,
+            currentStudents: session.currentStudents || 0,
+          };
+          console.log("Formatted session:", formatted);
+          return formatted;
+        });
+
+        console.log("Formatted sessions:", formattedSessions);
+        setAvailableSessions(formattedSessions);
+      } catch (sessionError) {
+        console.error("Lỗi khi lấy danh sách buổi bảo vệ:", sessionError);
         setAvailableSessions([]);
-        return;
+      } finally {
+        setLoadingSessions(false);
       }
-
-      // Đảm bảo dữ liệu có cấu trúc đúng
-      const formattedSessions = sessions.map((session) => {
-        console.log("Processing session:", session);
-        const formatted = {
-          sessionId: session.sessionId || session.id,
-          sessionName:
-            session.sessionName ||
-            session.name ||
-            `Buổi ${session.sessionId || session.id}`,
-          defenseDate: session.defenseDate || session.date,
-          location: session.location || session.room || "N/A",
-          maxStudents: session.maxStudents || 10,
-          currentStudents: session.currentStudents || 0,
-        };
-        console.log("Formatted session:", formatted);
-        return formatted;
-      });
-
-      console.log("Formatted sessions:", formattedSessions);
-      setAvailableSessions(formattedSessions);
-
-      setShowAssignmentModal(true);
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách buổi bảo vệ:", error);
-      showToast("Không thể lấy danh sách buổi bảo vệ");
-    } finally {
-      setLoadingSessions(false);
+      console.error("Lỗi khi mở popup gán sinh viên:", error);
+      showToast("Lỗi khi mở popup gán sinh viên");
     }
   };
 
@@ -676,10 +663,167 @@ const StudentPeriodManagement = () => {
     );
   };
 
-  const handleRefresh = () => {
-    loadTeachers(); // Reload thông tin giảng viên
-    if (selectedPeriod) {
-      loadStudentsByPeriod(selectedPeriod.value);
+  // Xử lý khi click vào tên giảng viên
+  const handleViewTeacherInfo = async (supervisorId) => {
+    if (!supervisorId) {
+      showToast("Không có thông tin giảng viên");
+      return;
+    }
+
+    try {
+      setLoadingTeacherInfo(true);
+      setShowTeacherInfoModal(true);
+
+      // Lấy danh sách tất cả giảng viên
+      const teachers = await apiGet(API_ENDPOINTS.GET_ALL_TEACHERS);
+
+      if (teachers && Array.isArray(teachers)) {
+        const teacher = teachers.find((t) => t.userId === supervisorId);
+        if (teacher) {
+          setSelectedTeacherInfo(teacher);
+        } else {
+          showToast("Không tìm thấy thông tin giảng viên");
+          setShowTeacherInfoModal(false);
+        }
+      } else {
+        showToast("Không thể tải thông tin giảng viên");
+        setShowTeacherInfoModal(false);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải thông tin giảng viên:", error);
+      showToast("Lỗi khi tải thông tin giảng viên");
+      setShowTeacherInfoModal(false);
+    } finally {
+      setLoadingTeacherInfo(false);
+    }
+  };
+
+  const handleCloseTeacherInfoModal = () => {
+    setShowTeacherInfoModal(false);
+    setSelectedTeacherInfo(null);
+  };
+
+  // Xử lý khi click vào tên sinh viên
+  const handleViewStudentInfo = async (student) => {
+    if (!student) {
+      showToast("Không có thông tin sinh viên");
+      return;
+    }
+
+    try {
+      setLoadingStudentInfo(true);
+      setShowStudentInfoModal(true);
+
+      // Lấy thông tin chi tiết sinh viên từ profile service
+      const studentProfile = await studentAssignmentService.getStudentProfile(
+        student.studentId
+      );
+
+      if (studentProfile) {
+        setSelectedStudentInfo({
+          ...student,
+          ...studentProfile,
+          // Merge thông tin từ student object và profile
+          fullName: studentProfile.fullName || student.fullName,
+          username: studentProfile.username || student.username,
+          studentCode:
+            student.studentCode ||
+            (studentProfile.username
+              ? extractStudentCode(
+                  { username: studentProfile.username },
+                  student.studentId
+                )
+              : student.studentId?.toString()),
+        });
+      } else {
+        // Fallback nếu không lấy được profile
+        setSelectedStudentInfo(student);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải thông tin sinh viên:", error);
+      showToast("Lỗi khi tải thông tin sinh viên");
+      // Fallback với thông tin có sẵn
+      setSelectedStudentInfo(student);
+    } finally {
+      setLoadingStudentInfo(false);
+    }
+  };
+
+  const handleCloseStudentInfoModal = () => {
+    setShowStudentInfoModal(false);
+    setSelectedStudentInfo(null);
+  };
+
+  const handleRefresh = async () => {
+    if (!selectedPeriod || refreshing) return;
+
+    setRefreshing(true);
+    try {
+      const periodId = selectedPeriod.value;
+      let studentsData = [];
+
+      // Gọi API trực tiếp, tối ưu hóa
+      const apiCall = (() => {
+        switch (viewType) {
+          case "registered":
+            return studentAssignmentService.getRegistrationsByPeriod(periodId);
+          case "suggested":
+            return studentAssignmentService.getSuggestedStudentsByPeriod(
+              periodId
+            );
+          case "all":
+          default:
+            return studentAssignmentService.getAllStudentsByPeriod(periodId);
+        }
+      })();
+
+      studentsData = await apiCall;
+
+      // Tối ưu hóa xử lý dữ liệu
+      const studentsWithBasicInfo = (studentsData || [])
+        .filter(Boolean)
+        .map((s) => {
+          const studentCode = s?.username
+            ? extractStudentCode({ username: s.username }, s.studentId)
+            : s?.studentId?.toString() || "";
+
+          return {
+            studentId: s?.studentId,
+            topicId: s?.topicId,
+            topicTitle: s?.topicTitle || "N/A",
+            topicCode: s?.topicCode || "N/A",
+            supervisorId: s?.supervisorId,
+            registrationType: s?.registrationType || "N/A",
+            suggestionStatus: s?.suggestionStatus || null,
+            registrationPeriodId: s?.registrationPeriodId,
+            fullName: s?.fullName || `Sinh viên ${s?.studentId ?? ""}`,
+            username: s?.username,
+            studentCode,
+            major: "CNTT",
+            teacherInfo: {
+              fullName:
+                s?.supervisorFullName ||
+                (s?.supervisorId ? `Giảng viên ${s?.supervisorId}` : "N/A"),
+              teacherId: s?.supervisorId || null,
+            },
+          };
+        });
+
+      // Cập nhật state và cache cùng lúc
+      setStudents(studentsWithBasicInfo);
+
+      const cacheKey = `${periodId}-${viewType}`;
+      setStudentsCache((prev) =>
+        new Map(prev).set(cacheKey, studentsWithBasicInfo)
+      );
+      setLastLoadedPeriod(periodId);
+
+      showToast("Đã làm mới dữ liệu thành công", "success");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      showToast("Lỗi khi làm mới dữ liệu");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -729,12 +873,126 @@ const StudentPeriodManagement = () => {
     }
   };
 
-  if (loading && students.length === 0) {
+  // Helpers for preview add student
+  const previewAssignedStudentIds = useMemo(() => {
+    const ids = new Set();
+    (previewData || []).forEach((ses) => {
+      (ses.students || []).forEach((st) => ids.add(st.studentId));
+    });
+    return ids;
+  }, [previewData]);
+
+  const getUnassignedStudentsForPreview = () => {
+    return (students || [])
+      .filter(Boolean)
+      .filter((s) => !previewAssignedStudentIds.has(s.studentId));
+  };
+
+  const handlePreviewSelectStudent = (sessionId, studentId) => {
+    setPreviewSelectBySession((prev) => ({ ...prev, [sessionId]: studentId }));
+  };
+
+  const handlePreviewAddStudent = (sessionId) => {
+    const selectedId = previewSelectBySession[sessionId];
+    if (!selectedId) {
+      showToast("Vui lòng chọn sinh viên", "warning");
+      return;
+    }
+    setPreviewData((prev) => {
+      const cloned = prev.map((s) => ({
+        ...s,
+        students: [...(s.students || [])],
+      }));
+      const ses = cloned.find((s) => s.sessionId === sessionId);
+      if (!ses) return prev;
+      if ((ses.students || []).length >= (ses.maxStudents || 5)) {
+        showToast("Buổi đã đủ 5 sinh viên", "warning");
+        return prev;
+      }
+      // Ensure not duplicated
+      if (ses.students.some((st) => st.studentId === selectedId)) return prev;
+      const sv = (students || []).find((u) => u.studentId === selectedId);
+      if (!sv) return prev;
+      ses.students.push({
+        studentId: sv.studentId,
+        name: sv.fullName || `Sinh viên ${sv.studentId}`,
+        topicTitle: sv.topicTitle || "N/A",
+        major: sv.major || "N/A",
+        reviewer: "TBD",
+      });
+      return cloned;
+    });
+    // clear selection for this session
+    setPreviewSelectBySession((prev) => ({ ...prev, [sessionId]: null }));
+  };
+
+  const studentIdToTopicId = useMemo(() => {
+    const map = new Map();
+    (students || []).forEach((s) => {
+      if (s && s.studentId != null) map.set(s.studentId, s.topicId ?? null);
+    });
+    return map;
+  }, [students]);
+
+  const handleConfirmAutoAssign = async () => {
+    try {
+      if (!selectedPeriod?.value) {
+        showToast("Vui lòng chọn đợt đăng ký", "warning");
+        return;
+      }
+      if (!previewData || previewData.length === 0) {
+        showToast("Không có dữ liệu để xác nhận", "warning");
+        return;
+      }
+      setConfirmingAssign(true);
+
+      const assignments = (previewData || [])
+        .filter((ses) => (ses.students || []).length > 0)
+        .map((ses) => ({
+          sessionId: ses.sessionId,
+          sessionName: ses.sessionName,
+          location: ses.location,
+          defenseDate: ses.defenseDate,
+          students: (ses.students || []).map((st) => ({
+            studentId: st.studentId,
+            topicId: studentIdToTopicId.get(st.studentId) || null,
+            topicTitle: st.topicTitle || "",
+            reviewerId: null,
+          })),
+        }));
+
+      const payload = {
+        periodId: selectedPeriod.value,
+        scheduleId: null,
+        assignments,
+      };
+
+      const res = await evalService.confirmAutoAssign(payload);
+      if (res && res.success) {
+        showToast(res.message || "Đã xác nhận phân chia", "success");
+        setPreviewOpen(false);
+        // làm mới dữ liệu sinh viên
+        if (selectedPeriod?.value) {
+          loadStudentsByPeriod(selectedPeriod.value);
+        }
+      } else {
+        showToast(res?.message || "Xác nhận thất bại", "error");
+      }
+    } catch (e) {
+      console.error("Confirm auto-assign failed:", e);
+      showToast("Lỗi khi xác nhận phân chia", "error");
+    } finally {
+      setConfirmingAssign(false);
+    }
+  };
+
+  // Show loading screen only when initially loading periods and no data
+  if (loading && periods.length === 0 && students.length === 0) {
     return (
       <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col items-center justify-center h-96 text-gray-500">
           <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
-          <p>Đang tải danh sách sinh viên...</p>
+          <p>Đang tải danh sách đợt đăng ký...</p>
         </div>
       </div>
     );
@@ -748,9 +1006,6 @@ const StudentPeriodManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Chọn đợt đăng ký */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Chọn Đợt Đăng ký
-              </label>
               <Select
                 value={selectedPeriod}
                 onChange={handlePeriodChange}
@@ -790,9 +1045,6 @@ const StudentPeriodManagement = () => {
 
             {/* Chọn loại hiển thị */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Loại Hiển thị
-              </label>
               <Select
                 value={viewTypeOptions.find(
                   (option) => option.value === viewType
@@ -834,9 +1086,6 @@ const StudentPeriodManagement = () => {
 
             {/* Lọc theo trạng thái */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trạng thái
-              </label>
               <Select
                 value={statusFilterOptions.find(
                   (option) => option.value === filterStatus
@@ -878,9 +1127,6 @@ const StudentPeriodManagement = () => {
 
             {/* Tìm kiếm */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tìm kiếm
-              </label>
               <input
                 type="text"
                 placeholder="Tìm theo tên sinh viên, mã SV, tên đề tài, mã đề tài, ID..."
@@ -895,8 +1141,8 @@ const StudentPeriodManagement = () => {
         {/* Statistics section removed as requested */}
 
         {/* Student List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
               Danh sách Sinh viên
               {selectedPeriod && (
@@ -908,20 +1154,36 @@ const StudentPeriodManagement = () => {
             <div className="flex items-center gap-3">
               <div className="text-sm text-gray-600 hidden sm:block">
                 {(() => {
-                  const total = loadingProfiles
-                    ? lastRenderedStudentsRef.current.length
-                    : students.length;
+                  const total = students.length;
                   const filtered = displayedFilteredStudents.length;
                   return `Hiển thị ${filtered} / ${total} sinh viên`;
                 })()}
               </div>
               <button
                 onClick={handleRefresh}
-                className="px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50"
-                disabled={loading || loadingProfiles}
+                className={`px-3 py-2 text-sm rounded-md text-white ${
+                  refreshing
+                    ? "bg-primary-300"
+                    : "bg-primary-500 hover:bg-primary-400"
+                }`}
+                disabled={refreshing}
                 title="Tải lại danh sách"
               >
-                Làm mới
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className={`inline mr-1 ${refreshing ? "animate-spin" : ""}`}
+                >
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                  <path d="M21 3v5h-5" />
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                  <path d="M3 21v-5h5" />
+                </svg>
+                {refreshing ? "Đang tải..." : "Làm mới"}
               </button>
               <button
                 onClick={handleAutoArrange}
@@ -935,10 +1197,41 @@ const StudentPeriodManagement = () => {
               >
                 {autoAssigning ? "Đang sắp xếp..." : "Tự động sắp xếp"}
               </button>
+              <button
+                onClick={() => {
+                  showToast("Tính năng đang được phát triển", "info");
+                }}
+                className="px-3 py-2 text-sm rounded-md text-white bg-orange-500 hover:bg-orange-400 transition-colors duration-200 flex items-center gap-1"
+                disabled={!selectedPeriod?.value}
+                title="Xem sinh viên chưa hoàn thiện đăng ký đề tài"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="w-4 h-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.182 16.318A4.486 4.486 0 0 0 12.016 15a4.486 4.486 0 0 0-3.198 1.318M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z"
+                  />
+                </svg>
+                Chưa hoàn thiện
+              </button>
             </div>
           </div>
 
-          {displayedFilteredStudents.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center text-sm text-gray-500">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500 mr-2"></div>
+                Đang tải danh sách sinh viên...
+              </div>
+            </div>
+          ) : displayedFilteredStudents.length === 0 ? (
             <div className="text-center py-12">
               <svg
                 className="mx-auto h-12 w-12 text-gray-400"
@@ -998,12 +1291,19 @@ const StudentPeriodManagement = () => {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div
+                            className="text-sm font-medium text-blue-600 cursor-pointer hover:text-blue-800 hover:underline"
+                            onClick={() => handleViewStudentInfo(student)}
+                            title="Click để xem thông tin sinh viên"
+                          >
                             {student?.fullName ||
                               `Sinh viên ${student?.studentId ?? "N/A"}`}
                           </div>
                           <div className="text-sm text-gray-500">
-                            Ngành: {student?.major || "N/A"}
+                            Mã SV:{" "}
+                            {student?.studentCode ||
+                              student?.studentId ||
+                              "N/A"}
                           </div>
                         </div>
                       </td>
@@ -1046,31 +1346,35 @@ const StudentPeriodManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
-                          <div className="font-medium">
+                          <div
+                            className="font-medium cursor-pointer text-blue-600 hover:text-blue-800 hover:underline"
+                            onClick={() =>
+                              handleViewTeacherInfo(student?.supervisorId)
+                            }
+                            title="Click để xem thông tin giảng viên"
+                          >
                             {student?.teacherInfo?.fullName ||
                               (student?.supervisorId
                                 ? `Giảng viên ${student?.supervisorId}`
                                 : null) ||
                               "N/A"}
                           </div>
-                          <div className="text-gray-500 text-xs">
-                            Chuyên ngành:{" "}
-                            {student?.teacherInfo?.specialization || "N/A"}
-                          </div>
-                          <div className="text-gray-500 text-xs">
-                            Khoa:{" "}
-                            {departmentMapping[
-                              student?.teacherInfo?.department
-                            ] ||
-                              student?.teacherInfo?.department ||
-                              "N/A"}
-                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          className="text-blue-600 hover:text-blue-900 mr-3"
+                          className={`mr-3 ${
+                            assignedStudents.has(student?.studentId)
+                              ? "text-blue-600 hover:text-blue-900"
+                              : "text-gray-400 cursor-not-allowed"
+                          }`}
                           onClick={() => student && handleViewDetails(student)}
+                          disabled={!assignedStudents.has(student?.studentId)}
+                          title={
+                            assignedStudents.has(student?.studentId)
+                              ? "Xem chi tiết buổi bảo vệ"
+                              : "Sinh viên chưa được gán vào buổi bảo vệ"
+                          }
                         >
                           Xem chi tiết
                         </button>
@@ -1093,7 +1397,7 @@ const StudentPeriodManagement = () => {
                               student?.suggestionStatus === "PENDING" ||
                               selectedPeriod?.status === "CLOSED"
                                 ? "text-gray-400 cursor-not-allowed"
-                                : "text-green-600 hover:text-green-900"
+                                : "text-primary-500 hover:text-primary-600"
                             }`}
                             onClick={() =>
                               student && handleAssignToSession(student)
@@ -1166,111 +1470,143 @@ const StudentPeriodManagement = () => {
 
       {/* Modal Gán sinh viên vào buổi bảo vệ */}
       {showAssignmentModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Gán sinh viên vào buổi bảo vệ
-                </h3>
-                <button
-                  onClick={handleCloseAssignmentModal}
-                  className="text-gray-400 hover:text-gray-600"
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 m-0">
+                Gán sinh viên vào buổi bảo vệ
+              </h2>
+              <button
+                onClick={handleCloseAssignmentModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
 
+            {/* Content */}
+            <div className="p-6">
               {selectedStudent && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    Thông tin sinh viên:
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                    Thông tin sinh viên
                   </h4>
-                  <div className="text-sm text-gray-600">
-                    <p>
-                      <span className="font-medium">Tên:</span>{" "}
-                      {selectedStudent.fullName}
-                    </p>
-                    <p>
-                      <span className="font-medium">Mã SV:</span>{" "}
-                      {selectedStudent.studentCode}
-                    </p>
-                    <p>
-                      <span className="font-medium">Ngành:</span>{" "}
-                      {selectedStudent.major}
-                    </p>
-                    <p>
-                      <span className="font-medium">Đề tài:</span>{" "}
-                      {selectedStudent.topicTitle}
-                    </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <span className="w-20 text-sm font-medium text-gray-700">
+                        Tên:
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {selectedStudent.fullName}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-20 text-sm font-medium text-gray-700">
+                        Mã SV:
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {selectedStudent.username
+                          ? selectedStudent.username.split("@")[0]
+                          : selectedStudent.studentCode}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-20 text-sm font-medium text-gray-700">
+                        Ngành:
+                      </span>
+                      <span className="text-sm text-gray-900">
+                        {selectedStudent.major}
+                      </span>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="w-20 text-sm font-medium text-gray-700">
+                        Đề tài:
+                      </span>
+                      <span className="text-sm text-gray-900 flex-1">
+                        {selectedStudent.topicTitle}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chọn buổi bảo vệ:
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Chọn buổi bảo vệ
                 </label>
                 {loadingSessions ? (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-sm text-gray-500 mt-2">
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                    <span className="ml-2 text-gray-600">
                       Đang tải danh sách buổi bảo vệ...
-                    </p>
+                    </span>
                   </div>
                 ) : availableSessions.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    Không có buổi bảo vệ nào có sẵn
-                  </p>
+                  <div className="text-center py-8">
+                    <svg
+                      className="mx-auto h-12 w-12 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">
+                      Không có buổi bảo vệ
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Không có buổi bảo vệ nào có sẵn
+                    </p>
+                  </div>
                 ) : (
                   <Select
                     key={`session-select-${availableSessions.length}`}
                     value={(() => {
-                      const found = availableSessions.find(
-                        (s) => s.sessionId === selectedSessionId
-                      );
-                      console.log("Select value found:", found);
-                      console.log("Looking for sessionId:", selectedSessionId);
-                      console.log("Available sessions:", availableSessions);
+                      const opts = availableSessions.map((s) => ({
+                        value: s.sessionId,
+                        label: `${s.sessionName} - ${s.location} (${new Date(
+                          s.defenseDate
+                        ).toLocaleDateString("vi-VN")})`,
+                      }));
+                      const found =
+                        opts.find((o) => o.value === selectedSessionId) || null;
                       return found;
                     })()}
                     onChange={(option) => {
-                      console.log("Selected session option:", option);
-                      console.log("Option value:", option?.value);
-                      console.log("Option sessionId:", option?.sessionId);
-                      setSelectedSessionId(option?.value || option?.sessionId);
-                      console.log(
-                        "Set selectedSessionId to:",
-                        option?.value || option?.sessionId
-                      );
+                      setSelectedSessionId(option?.value || null);
                     }}
-                    options={availableSessions.map((session) => {
-                      console.log("Mapping session:", session);
-                      return {
-                        value: session.sessionId,
-                        label: `${session.sessionName} - ${
-                          session.location
-                        } (${new Date(session.defenseDate).toLocaleDateString(
-                          "vi-VN"
-                        )})`,
-                      };
-                    })}
+                    options={availableSessions.map((session) => ({
+                      value: session.sessionId,
+                      label: `${session.sessionName} - ${
+                        session.location
+                      } (${new Date(session.defenseDate).toLocaleDateString(
+                        "vi-VN"
+                      )})`,
+                    }))}
                     placeholder="Chọn buổi bảo vệ..."
                     className="w-full"
                     isClearable={true}
                     isSearchable={true}
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
                     styles={{
                       control: (base, state) => ({
                         ...base,
@@ -1298,39 +1634,33 @@ const StudentPeriodManagement = () => {
                           : base.backgroundColor,
                         color: state.isSelected ? "#ffffff" : base.color,
                       }),
+                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     }}
                   />
                 )}
               </div>
 
-              {/* Debug info */}
-              <div className="mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                <p>
-                  <strong>Debug Info:</strong>
-                </p>
-                <p>selectedSessionId: {selectedSessionId || "null"}</p>
-                <p>assigningStudent: {assigningStudent ? "true" : "false"}</p>
-                <p>availableSessions count: {availableSessions.length}</p>
-                <p>
-                  Button disabled:{" "}
-                  {!selectedSessionId || assigningStudent ? "true" : "false"}
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-3">
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
                 <button
                   onClick={handleCloseAssignmentModal}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleAssignStudent}
                   disabled={!selectedSessionId || assigningStudent}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={`selectedSessionId: ${selectedSessionId}, assigningStudent: ${assigningStudent}`}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-500 border border-transparent rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {assigningStudent ? "Đang gán..." : "Gán sinh viên"}
+                  {assigningStudent ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Đang gán...
+                    </div>
+                  ) : (
+                    "Gán sinh viên"
+                  )}
                 </button>
               </div>
             </div>
@@ -1411,6 +1741,289 @@ const StudentPeriodManagement = () => {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+              <div className="mt-4 flex items-center justify-end gap-3 border-t pt-4">
+                <button
+                  className="px-4 py-2 text-sm rounded-md border"
+                  onClick={() => setPreviewOpen(false)}
+                  disabled={confirmingAssign}
+                >
+                  Hủy
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm rounded-md text-white ${
+                    confirmingAssign
+                      ? "bg-primary-300"
+                      : "bg-primary-500 hover:bg-primary-400"
+                  }`}
+                  onClick={handleConfirmAutoAssign}
+                  disabled={confirmingAssign}
+                >
+                  {confirmingAssign ? "Đang xác nhận..." : "Xác nhận phân chia"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal hiển thị thông tin giảng viên */}
+      {showTeacherInfoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 m-0">
+                Thông tin giảng viên
+              </h2>
+              <button
+                onClick={handleCloseTeacherInfoModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {loadingTeacherInfo ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                  <span className="ml-2 text-gray-600">
+                    Đang tải thông tin...
+                  </span>
+                </div>
+              ) : selectedTeacherInfo ? (
+                <div className="space-y-4">
+                  {/* Avatar và tên */}
+                  <div className="text-center">
+                    <div className="mx-auto w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mb-3">
+                      {selectedTeacherInfo.avt ? (
+                        <img
+                          src={selectedTeacherInfo.avt}
+                          alt="Avatar"
+                          className="w-20 h-20 rounded-full object-cover"
+                        />
+                      ) : (
+                        <svg
+                          className="w-10 h-10 text-primary-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {selectedTeacherInfo.fullName ||
+                        selectedTeacherInfo.name ||
+                        "N/A"}
+                    </h4>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Số điện thoại
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedTeacherInfo.phoneNumber || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Chuyên ngành
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedTeacherInfo.specialization || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Khoa
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {departmentMapping[selectedTeacherInfo.department] ||
+                        selectedTeacherInfo.department ||
+                        "N/A"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Không có thông tin giảng viên</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal hiển thị thông tin sinh viên */}
+      {showStudentInfoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 m-0">
+                Thông tin sinh viên
+              </h2>
+              <button
+                onClick={handleCloseStudentInfoModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {loadingStudentInfo ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                  <span className="ml-2 text-gray-600">
+                    Đang tải thông tin...
+                  </span>
+                </div>
+              ) : selectedStudentInfo ? (
+                <div className="space-y-4">
+                  {/* Avatar và tên */}
+                  <div className="text-center">
+                    <div className="mx-auto w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mb-3">
+                      {selectedStudentInfo.avt ? (
+                        <img
+                          src={selectedStudentInfo.avt}
+                          alt="Avatar"
+                          className="w-20 h-20 rounded-full object-cover"
+                        />
+                      ) : (
+                        <svg
+                          className="w-10 h-10 text-primary-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {selectedStudentInfo.fullName || "N/A"}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      Mã SV:{" "}
+                      {selectedStudentInfo.studentCode ||
+                        selectedStudentInfo.studentId ||
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedStudentInfo.username ||
+                        (selectedStudentInfo.studentCode
+                          ? `${selectedStudentInfo.studentCode}@st.phenikaa-uni.edu.vn`
+                          : "N/A")}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Đề tài
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedStudentInfo.topicTitle || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Mã đề tài
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedStudentInfo.topicCode || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Giảng viên hướng dẫn
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedStudentInfo.teacherInfo?.fullName ||
+                        (selectedStudentInfo.supervisorId
+                          ? `Giảng viên ${selectedStudentInfo.supervisorId}`
+                          : "N/A")}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Loại đăng ký
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedStudentInfo.registrationType === "REGISTERED"
+                        ? "Đăng ký đề tài"
+                        : selectedStudentInfo.registrationType === "SUGGESTED"
+                        ? "Đề xuất đề tài"
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Trạng thái
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedStudentInfo.suggestionStatus === "APPROVED"
+                        ? "Đã duyệt"
+                        : selectedStudentInfo.suggestionStatus === "PENDING"
+                        ? "Chờ duyệt"
+                        : selectedStudentInfo.suggestionStatus === "REJECTED"
+                        ? "Từ chối"
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Không có thông tin sinh viên</p>
                 </div>
               )}
             </div>

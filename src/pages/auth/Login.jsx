@@ -22,7 +22,6 @@ const PhenikaaLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuthHook();
   const [role, setRole] = useState("STUDENT");
-  // 21012067@st.phenikaa-uni.edu.vn
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -156,11 +155,9 @@ const PhenikaaLogin = () => {
         ) {
           errorMessage = "Tài khoản không tồn tại hoặc đã bị khóa!";
         } else {
-          // Nếu không khớp với các pattern trên, hiển thị message gốc từ server
           errorMessage = serverMessage;
         }
       } else if (err.response?.status) {
-        // Chỉ xử lý theo HTTP status code khi không có message cụ thể từ server
         switch (err.response.status) {
           case 401:
             errorMessage = "Thông tin đăng nhập không chính xác!";

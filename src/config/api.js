@@ -215,91 +215,39 @@ export const API_ENDPOINTS = {
    * Statistics APIs - Internal Services
    */
   // User Service Statistics
-  GET_ALL_USERS: "/internal/users/get-all-users",
-  GET_USERS_BY_ROLE: "/internal/users/get-users-by-role",
   GET_USER_COUNT: "/internal/users/get-user-count",
   GET_USER_COUNT_BY_ROLE: "/internal/users/get-user-count-by-role",
-  GET_USER_COUNT_BY_STATUS: "/internal/users/get-user-count-by-status",
-  GET_ACTIVE_USERS_TODAY: "/internal/users/get-active-users-today",
-  // Internal user profile by id (includes period info)
-  USER_INTERNAL_GET_PROFILE_BY_ID: "/internal/users/get-profile/{userId}",
-
-  // Academic Config Service Statistics
-  GET_ACADEMIC_YEARS_STATS: "/internal/academic/get-academic-years",
-  GET_ACTIVE_ACADEMIC_YEAR_STATS: "/internal/academic/get-active-academic-year",
-  GET_ACADEMIC_YEAR_COUNT: "/internal/academic/get-academic-year-count",
-  GET_ACADEMIC_YEAR_BY_ID: "/internal/academic/get-academic-year-by-id",
+  GET_STUDENT_COUNT_BY_PERIOD: "/internal/users/get-student-count-by-period",
 
   // Thesis Service Statistics
-  GET_TOPIC_COUNT: "/internal/thesis/get-topic-count",
-  GET_TOPIC_COUNT_BY_STATUS: "/internal/thesis/get-topic-count-by-status",
-  GET_TOPIC_COUNT_BY_DIFFICULTY:
-    "/internal/thesis/get-topic-count-by-difficulty",
-  GET_TOPIC_COUNT_BY_ACADEMIC_YEAR:
-    "/internal/thesis/get-topic-count-by-academic-year",
-  GET_TOPIC_COUNT_BY_SUPERVISOR:
-    "/internal/thesis/get-topic-count-by-supervisor",
-  GET_REGISTRATION_COUNT: "/internal/thesis/get-registration-count",
-  GET_REGISTRATION_COUNT_BY_STATUS:
-    "/internal/thesis/get-registration-count-by-status",
-  GET_REGISTRATION_COUNT_BY_ACADEMIC_YEAR:
-    "/internal/thesis/get-registration-count-by-academic-year",
-  GET_TOPICS_BY_SUPERVISOR_STATS: "/internal/thesis/get-topics-by-supervisor",
-  GET_TOPICS_STATS_BY_SUPERVISOR:
-    "/internal/thesis/get-topics-stats-by-supervisor",
-  GET_REGISTRATIONS_BY_TOPIC: "/internal/thesis/get-registrations-by-topic",
-  GET_TOPICS_OVER_TIME: "/internal/thesis/get-topics-over-time",
-  GET_REGISTRATIONS_OVER_TIME: "/internal/thesis/get-registrations-over-time",
-  GET_REGISTRATIONS_TODAY: "/internal/thesis/get-registrations-today",
-  GET_TODAY_REGISTRATIONS: "/internal/thesis/get-today-registrations",
+  GET_REGISTERED_STUDENTS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-registered-students-count-by-period",
+  GET_REGISTERED_STUDENTS_BY_PERIOD:
+    "/internal/thesis/get-registered-students-by-period",
+  GET_APPROVED_STUDENTS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-approved-students-count-by-period",
+  GET_PENDING_STUDENTS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-pending-students-count-by-period",
+  GET_REJECTED_STUDENTS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-rejected-students-count-by-period",
 
-  // Submission Service Statistics
-  GET_SUBMISSION_COUNT: "/internal/submissions/get-submission-count",
-  GET_SUBMISSION_COUNT_BY_STATUS:
-    "/internal/submissions/get-submission-count-by-status",
-  GET_SUBMISSION_COUNT_BY_TOPIC:
-    "/internal/submissions/get-submission-count-by-topic",
-  GET_SUBMISSION_COUNT_BY_USER:
-    "/internal/submissions/get-submission-count-by-user",
-  GET_SUBMISSIONS_OVER_TIME: "/internal/submissions/get-submissions-over-time",
-  GET_SUBMISSIONS_BY_TOPIC: "/internal/submissions/get-submissions-by-topic",
-  GET_SUBMISSIONS_BY_USER: "/internal/submissions/get-submissions-by-user",
-  GET_DEADLINE_STATS: "/internal/submissions/get-deadline-stats",
-  GET_SUBMISSIONS_TODAY: "/internal/submissions/get-submissions-today",
-  GET_TODAY_SUBMISSIONS: "/internal/submissions/get-today-submissions",
+  // Suggested Topics Statistics
+  GET_SUGGESTED_TOPICS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-suggested-topics-count-by-period",
+  GET_SUGGESTED_TOPICS_BY_PERIOD:
+    "/internal/thesis/get-suggested-topics-by-period",
+  GET_APPROVED_SUGGESTIONS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-approved-suggestions-count-by-period",
+  GET_PENDING_SUGGESTIONS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-pending-suggestions-count-by-period",
+  GET_REJECTED_SUGGESTIONS_COUNT_BY_PERIOD:
+    "/internal/thesis/get-rejected-suggestions-count-by-period",
 
-  // Assignment Service Statistics
-  GET_ASSIGNMENT_COUNT: "/internal/assignments/get-assignment-count",
-  GET_ASSIGNMENT_COUNT_BY_STATUS:
-    "/internal/assignments/get-assignment-count-by-status",
-  GET_ASSIGNMENT_COUNT_BY_USER:
-    "/internal/assignments/get-assignment-count-by-user",
-  GET_ASSIGNMENT_COUNT_BY_TOPIC:
-    "/internal/assignments/get-assignment-count-by-topic",
-  GET_ASSIGNMENTS_BY_USER: "/internal/assignments/get-assignments-by-user",
-  GET_ASSIGNMENTS_BY_TOPIC: "/internal/assignments/get-assignments-by-topic",
-  GET_TASK_COUNT: "/internal/assignments/get-task-count",
-  GET_TASK_COUNT_BY_STATUS: "/internal/assignments/get-task-count-by-status",
-  GET_TASK_COUNT_BY_ASSIGNMENT:
-    "/internal/assignments/get-task-count-by-assignment",
-  GET_TASKS_BY_ASSIGNMENT: "/internal/assignments/get-tasks-by-assignment",
-
-  // Profile Service Statistics
-  GET_PROFILE_COUNT: "/internal/profiles/get-profile-count",
-  GET_STUDENT_PROFILE_COUNT: "/internal/profiles/get-student-profile-count",
-  GET_LECTURER_PROFILE_COUNT: "/internal/profiles/get-lecturer-profile-count",
-  GET_PROFILES_BY_MAJOR: "/internal/profiles/get-profiles-by-major",
-  GET_PROFILES_BY_YEAR: "/internal/profiles/get-profiles-by-year",
-  GET_STUDENT_PROFILES_BY_SUPERVISOR:
-    "/internal/profiles/get-student-profiles-by-supervisor",
-  GET_PROFILE_BY_USER_ID: "/internal/profiles/get-profile-by-user-id",
-
-  // Evaluation Service Statistics (Public APIs)
-  GET_OVERVIEW_STATISTICS: "/api/eval-service/admin/statistics/overview",
-  GET_DEFENSE_STATISTICS: "/api/eval-service/admin/statistics/defenses",
-  GET_EVALUATION_STATISTICS: "/api/eval-service/admin/statistics/evaluations",
-  GET_SCORE_STATISTICS: "/api/eval-service/admin/statistics/scores",
-  GET_MONTHLY_STATISTICS: "/api/eval-service/admin/statistics/monthly",
+  // Combined Statistics
+  GET_TOTAL_STUDENTS_INVOLVED_BY_PERIOD:
+    "/internal/thesis/get-total-students-involved-by-period",
+  GET_PERIOD_STATISTICS_SUMMARY:
+    "/internal/thesis/get-period-statistics-summary",
 };
 
 // WebSocket Endpoints
