@@ -245,3 +245,10 @@
     -webkit-line-clamp: 3;
   }
 }
+
+/* Remove focus outline on Recharts containers when clicking the chart */
+.recharts-responsive-container:focus,
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none !important;
+}

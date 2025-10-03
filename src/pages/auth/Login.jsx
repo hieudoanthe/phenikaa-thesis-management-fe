@@ -60,7 +60,6 @@ const PhenikaaLogin = () => {
         role,
       });
 
-      // Xử lý linh hoạt response data từ server
       let accessToken, refreshToken, user;
 
       if (response.data.accessToken) {
@@ -97,7 +96,6 @@ const PhenikaaLogin = () => {
 
       showToast("Đăng nhập thành công!");
 
-      // Chuyển hướng dựa trên role từ user data (ưu tiên) hoặc role từ form
       const userRole = user?.role || role;
 
       // Điều hướng ngay; ToastContainer nằm global nên toast vẫn hiển thị

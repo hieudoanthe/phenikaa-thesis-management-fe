@@ -24,7 +24,7 @@ const studentAssignmentService = {
    * @param {number} periodId - ID của đợt đăng ký
    * @returns {Promise<Array>} Danh sách sinh viên đã đăng ký
    */
-  getRegistrationsByPeriod: async (periodId) => {
+  getRegistrationsByPeriod: async (periodId, page = 0, size = 6) => {
     try {
       if (!periodId) {
         console.warn("periodId không được cung cấp, trả về mảng rỗng");
@@ -34,9 +34,9 @@ const studentAssignmentService = {
         API_ENDPOINTS.GET_REGISTERED_STUDENTS_BY_PERIOD.replace(
           "{periodId}",
           periodId
-        )
+        ) + `?page=${page}&size=${size}`
       );
-      return response || [];
+      return response;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách sinh viên theo đợt:", error);
       throw error;
@@ -48,7 +48,7 @@ const studentAssignmentService = {
    * @param {number} periodId - ID của đợt đăng ký
    * @returns {Promise<Array>} Danh sách sinh viên đã đề xuất
    */
-  getSuggestedStudentsByPeriod: async (periodId) => {
+  getSuggestedStudentsByPeriod: async (periodId, page = 0, size = 6) => {
     try {
       if (!periodId) {
         console.warn("periodId không được cung cấp, trả về mảng rỗng");
@@ -58,9 +58,9 @@ const studentAssignmentService = {
         API_ENDPOINTS.GET_SUGGESTED_STUDENTS_BY_PERIOD.replace(
           "{periodId}",
           periodId
-        )
+        ) + `?page=${page}&size=${size}`
       );
-      return response || [];
+      return response;
     } catch (error) {
       console.error(
         "Lỗi khi lấy danh sách sinh viên đã đề xuất theo đợt:",
@@ -75,16 +75,19 @@ const studentAssignmentService = {
    * @param {number} periodId - ID của đợt đăng ký
    * @returns {Promise<Array>} Danh sách tất cả sinh viên
    */
-  getAllStudentsByPeriod: async (periodId) => {
+  getAllStudentsByPeriod: async (periodId, page = 0, size = 6) => {
     try {
       if (!periodId) {
         console.warn("periodId không được cung cấp, trả về mảng rỗng");
         return [];
       }
       const response = await apiGet(
-        API_ENDPOINTS.GET_ALL_STUDENTS_BY_PERIOD.replace("{periodId}", periodId)
+        API_ENDPOINTS.GET_ALL_STUDENTS_BY_PERIOD.replace(
+          "{periodId}",
+          periodId
+        ) + `?page=${page}&size=${size}`
       );
-      return response || [];
+      return response;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách tất cả sinh viên theo đợt:", error);
       throw error;

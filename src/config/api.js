@@ -218,6 +218,8 @@ export const API_ENDPOINTS = {
   GET_USER_COUNT: "/internal/users/get-user-count",
   GET_USER_COUNT_BY_ROLE: "/internal/users/get-user-count-by-role",
   GET_STUDENT_COUNT_BY_PERIOD: "/internal/users/get-student-count-by-period",
+  // Internal user profile by ID
+  USER_INTERNAL_GET_PROFILE_BY_ID: "/internal/users/get-profile/{userId}",
 
   // Thesis Service Statistics
   GET_REGISTERED_STUDENTS_COUNT_BY_PERIOD:
@@ -248,6 +250,10 @@ export const API_ENDPOINTS = {
     "/internal/thesis/get-total-students-involved-by-period",
   GET_PERIOD_STATISTICS_SUMMARY:
     "/internal/thesis/get-period-statistics-summary",
+
+  // Time Series
+  GET_REGISTRATIONS_TIME_SERIES: "/internal/thesis/registrations/time-series",
+  GET_SUGGESTIONS_TIME_SERIES: "/internal/thesis/suggestions/time-series",
 };
 
 // WebSocket Endpoints

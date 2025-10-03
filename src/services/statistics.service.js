@@ -193,6 +193,46 @@ export const statisticsService = {
       throw error;
     }
   },
+
+  async getRegistrationsTimeSeries({ start, end, periodId } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (start) params.set("start", start);
+      if (end) params.set("end", end);
+      if (periodId !== undefined && periodId !== null)
+        params.set("periodId", String(periodId));
+      const url = `${
+        API_ENDPOINTS.GET_REGISTRATIONS_TIME_SERIES
+      }$${"{"}params{"}"}`;
+      // Build final URL correctly
+      const finalUrl = params.toString()
+        ? `${API_ENDPOINTS.GET_REGISTRATIONS_TIME_SERIES}?${params.toString()}`
+        : `${API_ENDPOINTS.GET_REGISTRATIONS_TIME_SERIES}`;
+      const response = await apiGet(finalUrl);
+      return response;
+    } catch (error) {
+      console.error("Error fetching registrations time series:", error);
+      throw error;
+    }
+  },
+
+  async getSuggestionsTimeSeries({ start, end, periodId } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (start) params.set("start", start);
+      if (end) params.set("end", end);
+      if (periodId !== undefined && periodId !== null)
+        params.set("periodId", String(periodId));
+      const finalUrl = params.toString()
+        ? `${API_ENDPOINTS.GET_SUGGESTIONS_TIME_SERIES}?${params.toString()}`
+        : `${API_ENDPOINTS.GET_SUGGESTIONS_TIME_SERIES}`;
+      const response = await apiGet(finalUrl);
+      return response;
+    } catch (error) {
+      console.error("Error fetching suggestions time series:", error);
+      throw error;
+    }
+  },
 };
 
 export default statisticsService;

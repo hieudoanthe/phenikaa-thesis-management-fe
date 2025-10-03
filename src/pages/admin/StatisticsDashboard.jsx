@@ -5,6 +5,18 @@ import { useNavigate } from "react-router-dom";
 import { statisticsService } from "../../services/statistics.service";
 import registrationPeriodService from "../../services/registrationPeriod.service";
 import { showToast } from "../../utils/toastHelper";
+import {
+  LineChart,
+  Line,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { PieChart, Pie, Cell } from "recharts";
 
 const StatisticsDashboard = () => {
   const navigate = useNavigate();
@@ -17,14 +29,31 @@ const StatisticsDashboard = () => {
     endDate: "",
   });
   const [activeTab, setActiveTab] = useState("overview");
+  const [registrationsSeries, setRegistrationsSeries] = useState([]);
+  const [suggestionsSeries, setSuggestionsSeries] = useState([]);
+  const [combinedSeries, setCombinedSeries] = useState([]);
+  const [totalSeries, setTotalSeries] = useState([]);
+  const [seriesLoading, setSeriesLoading] = useState(false);
 
-  // Tránh gọi API 2 lần trong React StrictMode (dev)
   const didFetchRef = useRef(false);
   useEffect(() => {
     if (didFetchRef.current) return;
     didFetchRef.current = true;
+    // set default to last 30 days in inputs
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    const start = new Date(end);
+    start.setDate(end.getDate() - 29);
+    const toISO = (d) => new Date(d).toISOString().slice(0, 10);
+    setDateRange({ startDate: toISO(start), endDate: toISO(end) });
+
     loadStatistics();
     loadPeriods();
+    setSeriesLoading(true);
+    Promise.all([
+      loadRegistrationsSeries(toISO(start), toISO(end)),
+      loadSuggestionsSeries(toISO(start), toISO(end)),
+    ]).finally(() => setSeriesLoading(false));
   }, []);
 
   const loadStatistics = async (startDate = null, endDate = null) => {
@@ -40,20 +69,64 @@ const StatisticsDashboard = () => {
     }
   };
 
+  // Safe stub loaders for other tabs to avoid runtime errors if backends are not ready
+  const loadDefenseStats = async () => {
+    return {
+      totalDefenses: 0,
+      completedDefenses: 0,
+      scheduledDefenses: 0,
+    };
+  };
+
+  const loadEvaluationStats = async () => {
+    return {
+      evaluationsByStatus: {
+        PENDING: 0,
+        IN_PROGRESS: 0,
+        COMPLETED: 0,
+        CANCELLED: 0,
+      },
+      averageScore: 0,
+      completionRate: 0,
+      totalEvaluators: 0,
+    };
+  };
+
+  const loadScoreStats = async () => {
+    return {
+      averageScore: 0,
+      highestScore: 0,
+      lowestScore: 0,
+      passRate: 0,
+      scoreDistribution: {},
+      totalScores: 0,
+      excellentScores: 0,
+      goodScores: 0,
+      poorScores: 0,
+    };
+  };
+
+  // Recompute merged + total when either series changes
+  useEffect(() => {
+    const merged = mergeSeries(registrationsSeries, suggestionsSeries);
+    setCombinedSeries(merged);
+    setTotalSeries(
+      merged.map((d) => ({
+        date: d.date,
+        count: (d.registrations || 0) + (d.suggestions || 0),
+      }))
+    );
+  }, [registrationsSeries, suggestionsSeries]);
+
   const loadPeriods = async () => {
     try {
       const response = await registrationPeriodService.getAllPeriods();
 
-      console.log("Periods response:", response); // Debug log
-
       if (response.success && response.data) {
-        console.log("Periods data:", response.data); // Debug log
         setPeriods(response.data);
 
-        // Load student count for each period
         const periodStatsData = {};
         for (const period of response.data) {
-          console.log("Processing period:", period); // Debug log
           try {
             const studentCount =
               await statisticsService.getStudentCountByPeriod(period.periodId);
@@ -80,50 +153,113 @@ const StatisticsDashboard = () => {
     }
   };
 
-  const handleDateRangeChange = () => {
+  const handleDateRangeChange = async () => {
     const startDate = dateRange.startDate || null;
     const endDate = dateRange.endDate || null;
-    loadStatistics(startDate, endDate);
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      showToast("Khoảng thời gian không hợp lệ", "error");
+      return;
+    }
+    setSeriesLoading(true);
+    try {
+      await Promise.all([
+        loadRegistrationsSeries(startDate, endDate),
+        loadSuggestionsSeries(startDate, endDate),
+      ]);
+    } finally {
+      setSeriesLoading(false);
+    }
   };
 
-  // Load specific statistics for each tab - Only user statistics available
-  const loadDefenseStats = async () => {
-    // Return empty data since defense stats are not available in InternalStatisticsController
-    return {
-      totalDefenses: 0,
-      completedDefenses: 0,
-      scheduledDefenses: 0,
-    };
+  const toInstantString = (dateStr, isEnd) => {
+    if (!dateStr) return null;
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return null;
+      if (isEnd) {
+        d.setHours(23, 59, 59, 999);
+      }
+      return d.toISOString();
+    } catch (e) {
+      return null;
+    }
   };
 
-  const loadEvaluationStats = async () => {
-    // Return empty data since evaluation stats are not available in InternalStatisticsController
-    return {
-      evaluationsByStatus: {
-        PENDING: 0,
-        IN_PROGRESS: 0,
-        COMPLETED: 0,
-        CANCELLED: 0,
-      },
-      averageScore: 0,
-      completionRate: 0,
-      totalEvaluators: 0,
-    };
+  // Helpers for quick date presets
+  const toISO = (d) => new Date(d).toISOString().slice(0, 10);
+  const applyRange = async (start, end) => {
+    setDateRange({ startDate: start, endDate: end });
+    setSeriesLoading(true);
+    try {
+      await Promise.all([
+        loadRegistrationsSeries(start, end),
+        loadSuggestionsSeries(start, end),
+      ]);
+    } finally {
+      setSeriesLoading(false);
+    }
+  };
+  const setQuickRangeDays = async (days) => {
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    const start = new Date(end);
+    start.setDate(end.getDate() - days + 1);
+    await applyRange(toISO(start), toISO(end));
+  };
+  // Removed preset: This month (30-day preset is sufficient)
+
+  const mergeSeries = (regs, sugs) => {
+    const map = new Map();
+    regs.forEach((p) => {
+      map.set(p.date, { date: p.date, registrations: p.count, suggestions: 0 });
+    });
+    sugs.forEach((p) => {
+      const existing = map.get(p.date);
+      if (existing) {
+        existing.suggestions = p.count;
+      } else {
+        map.set(p.date, {
+          date: p.date,
+          registrations: 0,
+          suggestions: p.count,
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) =>
+      a.date < b.date ? -1 : a.date > b.date ? 1 : 0
+    );
   };
 
-  const loadScoreStats = async () => {
-    // Return empty data since score stats are not available in InternalStatisticsController
-    return {
-      averageScore: 0,
-      highestScore: 0,
-      lowestScore: 0,
-      passRate: 0,
-      scoreDistribution: {},
-      totalScores: 0,
-      excellentScores: 0,
-      goodScores: 0,
-      poorScores: 0,
-    };
+  const loadRegistrationsSeries = async (startDate = null, endDate = null) => {
+    try {
+      const startInstant = toInstantString(startDate, false);
+      const endInstant = toInstantString(endDate, true);
+      const series = await statisticsService.getRegistrationsTimeSeries({
+        start: startInstant,
+        end: endInstant,
+      });
+      const regs = Array.isArray(series) ? series : [];
+      setRegistrationsSeries(regs);
+    } catch (error) {
+      console.error("Error loading registrations time series:", error);
+      setRegistrationsSeries([]);
+    }
+  };
+
+  const loadSuggestionsSeries = async (startDate = null, endDate = null) => {
+    try {
+      const startInstant = toInstantString(startDate, false);
+      const endInstant = toInstantString(endDate, true);
+      const series = await statisticsService.getSuggestionsTimeSeries({
+        start: startInstant,
+        end: endInstant,
+      });
+      const sugs = Array.isArray(series) ? series : [];
+      setSuggestionsSeries(sugs);
+    } catch (error) {
+      console.error("Error loading suggestions time series:", error);
+      setSuggestionsSeries([]);
+    }
   };
 
   const formatNumber = (num) => {
@@ -134,6 +270,22 @@ const StatisticsDashboard = () => {
   const formatPercentage = (num) => {
     if (num === null || num === undefined) return "0%";
     return `${num.toFixed(1)}%`;
+  };
+
+  const TotalTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const point = payload[0];
+      const value = point && point.value ? point.value : 0;
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
+          <div className="text-sm font-medium text-gray-900 mb-1">{`Ngày ${label}`}</div>
+          <div className="text-sm text-blue-600">
+            Tổng: {formatNumber(value)}
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) {
@@ -152,51 +304,80 @@ const StatisticsDashboard = () => {
       <div className="w-full">
         {/* Date Range Filter */}
         <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Bộ lọc thời gian
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="w-full">
-              <label
-                htmlFor="stat-start-date"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Từ ngày
-              </label>
-              <input
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, startDate: e.target.value })
-                }
-                id="stat-start-date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">
+                Bộ lọc thời gian
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setQuickRangeDays(7)}
+                  className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
+                >
+                  7 ngày
+                </button>
+                <button
+                  onClick={() => setQuickRangeDays(14)}
+                  className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
+                >
+                  14 ngày
+                </button>
+                <button
+                  onClick={() => setQuickRangeDays(30)}
+                  className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
+                >
+                  30 ngày
+                </button>
+              </div>
             </div>
-            <div className="w-full">
-              <label
-                htmlFor="stat-end-date"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Đến ngày
-              </label>
-              <input
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, endDate: e.target.value })
-                }
-                id="stat-end-date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={handleDateRangeChange}
-                className="w-full sm:w-auto px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors"
-              >
-                Áp dụng
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+              <div className="w-full lg:col-span-2">
+                <label
+                  htmlFor="stat-start-date"
+                  className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
+                >
+                  Từ ngày
+                </label>
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, startDate: e.target.value })
+                  }
+                  id="stat-start-date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="w-full lg:col-span-2">
+                <label
+                  htmlFor="stat-end-date"
+                  className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
+                >
+                  Đến ngày
+                </label>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, endDate: e.target.value })
+                  }
+                  id="stat-end-date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex items-end lg:col-span-1">
+                <button
+                  onClick={handleDateRangeChange}
+                  disabled={seriesLoading}
+                  className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 rounded-md transition-colors ${
+                    seriesLoading
+                      ? "bg-primary-300 cursor-not-allowed"
+                      : "bg-primary-500 hover:bg-primary-600 text-white"
+                  }`}
+                >
+                  {seriesLoading ? "Đang áp dụng..." : "Áp dụng"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -313,6 +494,18 @@ const StatisticsDashboard = () => {
             data={statistics}
             formatNumber={formatNumber}
             formatPercentage={formatPercentage}
+            totalsInRange={{
+              registrations: registrationsSeries.reduce(
+                (s, p) => s + (p?.count || 0),
+                0
+              ),
+              suggestions: suggestionsSeries.reduce(
+                (s, p) => s + (p?.count || 0),
+                0
+              ),
+              combined: combinedSeries.reduce((s, p) => s + (p?.count || 0), 0),
+            }}
+            totalSeries={totalSeries}
           />
         )}
 
@@ -357,115 +550,194 @@ const StatisticsDashboard = () => {
 };
 
 // Overview Statistics Component
-const OverviewStats = ({ data, formatNumber, formatPercentage }) => (
-  <div className="space-y-6">
-    {/* Key Metrics - Only User Statistics Available */}
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-      <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="text-blue-600"
-              >
-                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-3.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V20h6v-3.5c0-2.33-4.67-3.5-7-3.5z" />
-              </svg>
+const OverviewStats = ({
+  data,
+  formatNumber,
+  formatPercentage,
+  totalSeries,
+  totalsInRange,
+}) => {
+  const TotalTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const value = payload[0]?.value || 0;
+      return (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
+          <div className="text-sm font-medium text-gray-900 mb-1">{`Ngày ${label}`}</div>
+          <div className="text-sm text-blue-600">
+            Tổng: {formatNumber(value)}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const renderLegend = () => (
+    <div className="flex justify-end pr-2">
+      <div className="text-xs flex items-center gap-2 text-gray-700">
+        <span
+          className="w-2.5 h-2.5 rounded-full"
+          style={{ background: "#2563eb" }}
+        ></span>
+        <span>Tổng (đăng ký + đề xuất)</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Key Metrics - reflect date-range where meaningful */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="text-blue-600"
+                >
+                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-3.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V20h6v-3.5c0-2.33-4.67-3.5-7-3.5z" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">
+                Tổng người dùng
+              </p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatNumber(data.totalUsers || 0)}
+              </p>
             </div>
           </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500">Tổng người dùng</p>
-            <p className="text-2xl font-semibold text-gray-900">
-              {formatNumber(data.totalUsers || 0)}
-            </p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="text-green-600"
+                >
+                  <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 13L3.74 11 12 6.82 20.26 11 12 16zm-6 2h12v2H6z" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">
+                Tổng sinh viên
+              </p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatNumber(data.students || 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="text-purple-600"
+                >
+                  <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">
+                Tổng giảng viên
+              </p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatNumber(data.teachers || 0)}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Registrations Time Series */}
       <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="text-green-600"
-              >
-                <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 13L3.74 11 12 6.82 20.26 11 12 16zm-6 2h12v2H6z" />
-              </svg>
-            </div>
-          </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500">Tổng sinh viên</p>
-            <p className="text-2xl font-semibold text-gray-900">
-              {formatNumber(data.students || 0)}
-            </p>
-          </div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">
+            Biểu đồ đăng ký và đề xuất theo ngày
+          </h3>
         </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="text-purple-600"
-              >
-                <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-              </svg>
-            </div>
-          </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500">Tổng giảng viên</p>
-            <p className="text-2xl font-semibold text-gray-900">
-              {formatNumber(data.teachers || 0)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-9 h-9 bg-yellow-100 rounded-full flex items-center justify-center">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="text-yellow-600"
-              >
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-            </div>
-          </div>
-          <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500">
-              Người dùng hoạt động hôm nay
-            </p>
-            <p className="text-2xl font-semibold text-gray-900">
-              {formatNumber(data.activeUsersToday || 0)}
-            </p>
-          </div>
+        <div className="w-full h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={totalSeries}
+              margin={{ top: 6, right: 16, left: 0, bottom: 8 }}
+            >
+              <defs>
+                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 12, fill: "#6b7280" }}
+                tickMargin={8}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "#6b7280" }}
+                allowDecimals={false}
+                width={36}
+              />
+              <Tooltip content={<TotalTooltip />} />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                content={renderLegend}
+              />
+              <Area
+                type="monotone"
+                dataKey="count"
+                name="Tổng (đăng ký + đề xuất)"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorTotal)"
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+              <Line
+                type="monotone"
+                dataKey="count"
+                name=""
+                stroke="#2563eb"
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 0 }}
+                connectNulls
+                strokeLinecap="round"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 OverviewStats.propTypes = {
   data: PropTypes.object,
   formatNumber: PropTypes.func.isRequired,
   formatPercentage: PropTypes.func.isRequired,
+  totalSeries: PropTypes.array,
 };
 
 // Defense Statistics Component
@@ -1021,6 +1293,60 @@ const PeriodStats = ({
               </div>
             ) : periodStatistics ? (
               <div className="space-y-6">
+                {/* Donut: tổng (đăng ký + đề xuất) theo trạng thái */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-base font-medium text-gray-900 mb-3">
+                    Trạng thái tổng (đăng ký + đề xuất)
+                  </h4>
+                  <div className="w-full h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          dataKey="value"
+                          data={[
+                            {
+                              name: "Đã duyệt",
+                              value:
+                                (periodStatistics.approvedRegistrations || 0) +
+                                (periodStatistics.approvedSuggestions || 0),
+                            },
+                            {
+                              name: "Chờ duyệt",
+                              value:
+                                (periodStatistics.pendingRegistrations || 0) +
+                                (periodStatistics.pendingSuggestions || 0),
+                            },
+                            {
+                              name: "Bị từ chối",
+                              value:
+                                (periodStatistics.rejectedRegistrations || 0) +
+                                (periodStatistics.rejectedSuggestions || 0),
+                            },
+                          ]}
+                          innerRadius={70}
+                          outerRadius={110}
+                          paddingAngle={2}
+                        >
+                          <Cell fill="#22c55e" />
+                          <Cell fill="#f59e0b" />
+                          <Cell fill="#ef4444" />
+                        </Pie>
+                        <Legend
+                          verticalAlign="bottom"
+                          align="center"
+                          wrapperStyle={{ fontSize: 12 }}
+                        />
+                        <Tooltip
+                          formatter={(v, n) => [
+                            v?.toLocaleString?.("vi-VN") ?? v,
+                            n,
+                          ]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
                 {/* Thống kê tổng quan sinh viên */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
                   {/* Tổng sinh viên trong đợt */}
@@ -1158,243 +1484,6 @@ const PeriodStats = ({
                         </svg>
                         Xem chi tiết trong Quản lý đợt đăng ký
                       </button>
-                    </div>
-                  </div>
-                </div>
-                {/* Registration Statistics */}
-                <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">
-                    Thống kê đăng ký đề tài
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-blue-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-blue-600">
-                            Tổng đăng ký
-                          </p>
-                          <p className="text-2xl font-bold text-blue-900">
-                            {formatNumber(periodStatistics.totalRegistrations)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-green-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-green-600">
-                            Đã duyệt
-                          </p>
-                          <p className="text-2xl font-bold text-green-900">
-                            {formatNumber(
-                              periodStatistics.approvedRegistrations
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-yellow-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-yellow-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-yellow-600">
-                            Chờ duyệt
-                          </p>
-                          <p className="text-2xl font-bold text-yellow-900">
-                            {formatNumber(
-                              periodStatistics.pendingRegistrations
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-red-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-red-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-red-600">
-                            Bị từ chối
-                          </p>
-                          <p className="text-2xl font-bold text-red-900">
-                            {formatNumber(
-                              periodStatistics.rejectedRegistrations
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Suggestion Statistics */}
-                <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">
-                    Thống kê đề xuất đề tài
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div className="bg-purple-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-purple-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-purple-600">
-                            Tổng đề xuất
-                          </p>
-                          <p className="text-2xl font-bold text-purple-900">
-                            {formatNumber(periodStatistics.totalSuggestions)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-green-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-green-600">
-                            Đã duyệt
-                          </p>
-                          <p className="text-2xl font-bold text-green-900">
-                            {formatNumber(periodStatistics.approvedSuggestions)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-yellow-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-yellow-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-yellow-600">
-                            Chờ duyệt
-                          </p>
-                          <p className="text-2xl font-bold text-yellow-900">
-                            {formatNumber(periodStatistics.pendingSuggestions)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-red-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-red-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-red-600">
-                            Bị từ chối
-                          </p>
-                          <p className="text-2xl font-bold text-red-900">
-                            {formatNumber(periodStatistics.rejectedSuggestions)}
-                          </p>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>

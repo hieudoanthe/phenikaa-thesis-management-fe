@@ -37,6 +37,9 @@ const DefenseSessionsSchedule = () => {
   const [availableStudents, setAvailableStudents] = useState([]);
   const [assignedStudents, setAssignedStudents] = useState([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [committeeMembers, setCommitteeMembers] = useState([]);
+  const [reviewerMembers, setReviewerMembers] = useState([]);
+  const [lecturerById, setLecturerById] = useState({});
   const didInitRef = useRef(false);
 
   const location = useLocation();
@@ -419,8 +422,8 @@ const DefenseSessionsSchedule = () => {
     }
   };
 
-  const getSessionForTimeSlot = (day, time) => {
-    return sessions.find((session) => {
+  const getSessionsForTimeSlot = (day, time) => {
+    return sessions.filter((session) => {
       if (!session.defenseDate) return false;
 
       const sessionDate = new Date(session.defenseDate);
@@ -494,27 +497,27 @@ const DefenseSessionsSchedule = () => {
         return;
       }
 
-      // Tạo defenseDate từ ngày và giờ được chọn, đảm bảo không có giờ hiện tại
+      // Tạo defenseDate từ ngày và giờ được chọn (mặc định độ dài 1 giờ)
       const dateString = formData.date + "T" + formData.time + ":00";
       const defenseDateTime = new Date(dateString);
 
-      // Tạo ISO string với timezone offset để giữ nguyên giờ local
-      const timezoneOffset = defenseDateTime.getTimezoneOffset() * 60000; // Convert to milliseconds
-      const localDateTime = new Date(
-        defenseDateTime.getTime() - timezoneOffset
-      );
-      const isoString = localDateTime.toISOString().slice(0, 16); // Remove seconds and timezone
+      // Điều chỉnh timezone để giữ nguyên giờ hiển thị local
+      const timezoneOffset = defenseDateTime.getTimezoneOffset() * 60000; // ms
+      const localStart = new Date(defenseDateTime.getTime() - timezoneOffset);
+      const localEndRaw = new Date(defenseDateTime.getTime() + 60 * 60 * 1000); // +1h
+      const localEnd = new Date(localEndRaw.getTime() - timezoneOffset);
 
-      // Tạo ISO string với timezone offset để giữ nguyên giờ local
+      const startIso = localStart.toISOString().slice(0, 16);
+      const endIso = localEnd.toISOString().slice(0, 16);
 
       const sessionData = {
         scheduleId: selectedSchedule.value,
         sessionName: formData.topic,
         defenseDate: formData.date, // Chỉ gửi ngày, không có giờ
-        startTime: isoString, // Gửi thời gian đã được điều chỉnh timezone
-        endTime: isoString, // Gửi thời gian đã được điều chỉnh timezone
+        startTime: startIso, // thời gian bắt đầu (đã điều chỉnh timezone)
+        endTime: endIso, // thời gian kết thúc mặc định sau 1 giờ (đã điều chỉnh timezone)
         location: formData.room,
-        maxStudents: 10,
+        maxStudents: 5,
         status: formData.status,
         notes: `Committee: ${formData.committeeMembers.length} members, Reviewers: ${formData.reviewerMembers.length} members`,
         committeeMembers: formData.committeeMembers.map(
@@ -679,6 +682,47 @@ const DefenseSessionsSchedule = () => {
     loadAssignedStudents(session.sessionId).catch((error) => {
       console.error("Lỗi khi tải dữ liệu sinh viên:", error);
     });
+    // Load thông tin hội đồng và phản biện
+    Promise.all([
+      userService
+        .getAllTeachers()
+        .then((ts) =>
+          Array.isArray(ts)
+            ? ts.reduce((acc, t) => {
+                acc[t.userId] = t.fullName || `Giảng viên ${t.userId}`;
+                return acc;
+              }, {})
+            : {}
+        )
+        .catch(() => ({})),
+      evalService
+        .exportDefenseSession(session.sessionId)
+        .then((dto) => (Array.isArray(dto?.committee) ? dto.committee : []))
+        .catch(() => []),
+    ])
+      .then(([lecturerMap, committees]) => {
+        setLecturerById(lecturerMap);
+        const boards = committees
+          .filter((c) => c.role !== "REVIEWER")
+          .map((c) => ({
+            ...c,
+            displayedName:
+              lecturerMap[c.lecturerId] || `Giảng viên ${c.lecturerId}`,
+          }));
+        const reviewers = committees
+          .filter((c) => c.role === "REVIEWER")
+          .map((c) => ({
+            ...c,
+            displayedName:
+              lecturerMap[c.lecturerId] || `Giảng viên ${c.lecturerId}`,
+          }));
+        setCommitteeMembers(boards);
+        setReviewerMembers(reviewers);
+      })
+      .catch(() => {
+        setCommitteeMembers([]);
+        setReviewerMembers([]);
+      });
   };
 
   const getStatusLabel = (status) => {
@@ -1118,123 +1162,139 @@ const DefenseSessionsSchedule = () => {
                   {weekDayLabels[day] || day}
                 </div>
                 {timeSlots.map((time, timeIndex) => {
-                  const session = getSessionForTimeSlot(day, time);
+                  const slotSessions = getSessionsForTimeSlot(day, time);
                   return (
                     <div
-                      key={timeIndex}
+                      key={`${day}-${time}`}
                       className="h-24 border-b border-gray-300 p-1"
                     >
-                      {session && (
-                        <div
-                          className={`h-full rounded-lg p-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                            session.status === "PLANNING"
-                              ? "bg-purple-50 border border-purple-200 hover:bg-purple-100"
-                              : session.status === "SCHEDULED"
-                              ? "bg-blue-50 border border-blue-200 hover:bg-blue-100"
-                              : session.status === "COMPLETED"
-                              ? "bg-green-50 border border-green-200 hover:bg-green-100"
-                              : session.status === "IN_PROGRESS"
-                              ? "bg-yellow-50 border border-yellow-200 hover:bg-yellow-100"
-                              : "bg-gray-50 border border-gray-200 hover:bg-gray-100"
-                          }`}
-                          onClick={() => handleSessionClick(session)}
-                          title={`${session.sessionName} - ${session.location}`}
-                        >
-                          <div className="text-gray-900 font-semibold text-xs mb-1 truncate leading-tight">
-                            {session.sessionName}
-                          </div>
-                          <div className="text-gray-600 text-xs mb-1 font-medium">
-                            {session.startTime
-                              ? new Date(session.startTime).toLocaleTimeString(
-                                  "vi-VN",
-                                  { hour: "2-digit", minute: "2-digit" }
-                                )
-                              : "N/A"}
-                          </div>
-                          <div className="text-gray-500 text-xs truncate leading-tight mb-1">
-                            📍 {session.location || "N/A"}
-                          </div>
-                          <div
-                            className="mt-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Select
-                              value={{
-                                value: session.status,
-                                label: getStatusLabel(session.status),
-                              }}
-                              onChange={(option) =>
-                                handleStatusChange(
-                                  session.sessionId,
-                                  option.value
-                                )
-                              }
-                              options={[
-                                { value: "PLANNING", label: "Lập kế hoạch" },
-                                { value: "SCHEDULED", label: "Sắp diễn ra" },
-                                { value: "IN_PROGRESS", label: "Đang diễn ra" },
-                                { value: "COMPLETED", label: "Hoàn thành" },
-                              ]}
-                              className="text-xs"
-                              classNamePrefix="react-select"
-                              isSearchable={false}
-                              menuPlacement="auto"
-                              styles={{
-                                control: (provided) => ({
-                                  ...provided,
-                                  minHeight: "16px",
-                                  height: "16px",
-                                  fontSize: "8px",
-                                  border: "none",
-                                  backgroundColor: "transparent",
-                                  boxShadow: "none",
-                                  cursor: "pointer",
-                                }),
-                                valueContainer: (provided) => ({
-                                  ...provided,
-                                  padding: "0 2px",
-                                  height: "16px",
-                                }),
-                                input: (provided) => ({
-                                  ...provided,
-                                  margin: "0px",
-                                  fontSize: "8px",
-                                }),
-                                option: (provided) => ({
-                                  ...provided,
-                                  fontSize: "8px",
-                                  padding: "2px 4px",
-                                  cursor: "pointer",
-                                }),
-                                menu: (provided) => ({
-                                  ...provided,
-                                  fontSize: "8px",
-                                  zIndex: 9999,
-                                  minWidth: "70px",
-                                }),
-                                singleValue: (provided) => ({
-                                  ...provided,
-                                  fontSize: "8px",
-                                  color: getStatusColor(session.status),
-                                  fontWeight: "500",
-                                }),
-                                indicatorsContainer: (provided) => ({
-                                  ...provided,
-                                  height: "16px",
-                                }),
-                                indicatorSeparator: (provided) => ({
-                                  ...provided,
-                                  display: "none",
-                                }),
-                                dropdownIndicator: (provided) => ({
-                                  ...provided,
-                                  padding: "0 2px",
-                                  height: "16px",
-                                  width: "12px",
-                                }),
-                              }}
-                            />
-                          </div>
+                      {slotSessions.length > 0 && (
+                        <div className="flex flex-col gap-1 h-full overflow-y-auto pr-1 thin-scrollbar">
+                          {slotSessions.map((session) => (
+                            <div
+                              key={session.sessionId}
+                              className={`rounded-lg p-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                                session.status === "PLANNING"
+                                  ? "bg-purple-50 border border-purple-200 hover:bg-purple-100"
+                                  : session.status === "SCHEDULED"
+                                  ? "bg-blue-50 border border-blue-200 hover:bg-blue-100"
+                                  : session.status === "COMPLETED"
+                                  ? "bg-green-50 border border-green-200 hover:bg-green-100"
+                                  : session.status === "IN_PROGRESS"
+                                  ? "bg-yellow-50 border border-yellow-200 hover:bg-yellow-100"
+                                  : "bg-gray-50 border border-gray-200 hover:bg-gray-100"
+                              }`}
+                              onClick={() => handleSessionClick(session)}
+                              title={`${session.sessionName} - ${session.location}`}
+                            >
+                              <div className="text-gray-900 font-semibold text-xs mb-1 truncate leading-tight">
+                                {session.sessionName}
+                              </div>
+                              <div className="text-gray-600 text-xs mb-1 font-medium">
+                                {session.startTime
+                                  ? new Date(
+                                      session.startTime
+                                    ).toLocaleTimeString("vi-VN", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "N/A"}
+                              </div>
+                              <div className="text-gray-500 text-xs truncate leading-tight mb-1">
+                                📍 {session.location || "N/A"}
+                              </div>
+                              <div
+                                className="mt-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Select
+                                  value={{
+                                    value: session.status,
+                                    label: getStatusLabel(session.status),
+                                  }}
+                                  onChange={(option) =>
+                                    handleStatusChange(
+                                      session.sessionId,
+                                      option.value
+                                    )
+                                  }
+                                  options={[
+                                    {
+                                      value: "PLANNING",
+                                      label: "Lập kế hoạch",
+                                    },
+                                    {
+                                      value: "SCHEDULED",
+                                      label: "Sắp diễn ra",
+                                    },
+                                    {
+                                      value: "IN_PROGRESS",
+                                      label: "Đang diễn ra",
+                                    },
+                                    { value: "COMPLETED", label: "Hoàn thành" },
+                                  ]}
+                                  className="text-xs"
+                                  classNamePrefix="react-select"
+                                  isSearchable={false}
+                                  menuPlacement="auto"
+                                  styles={{
+                                    control: (provided) => ({
+                                      ...provided,
+                                      minHeight: "16px",
+                                      height: "16px",
+                                      fontSize: "8px",
+                                      border: "none",
+                                      backgroundColor: "transparent",
+                                      boxShadow: "none",
+                                      cursor: "pointer",
+                                    }),
+                                    valueContainer: (provided) => ({
+                                      ...provided,
+                                      padding: "0 2px",
+                                      height: "16px",
+                                    }),
+                                    input: (provided) => ({
+                                      ...provided,
+                                      margin: "0px",
+                                      fontSize: "8px",
+                                    }),
+                                    option: (provided) => ({
+                                      ...provided,
+                                      fontSize: "8px",
+                                      padding: "2px 4px",
+                                      cursor: "pointer",
+                                    }),
+                                    menu: (provided) => ({
+                                      ...provided,
+                                      fontSize: "8px",
+                                      zIndex: 9999,
+                                      minWidth: "70px",
+                                    }),
+                                    singleValue: (provided) => ({
+                                      ...provided,
+                                      fontSize: "8px",
+                                      color: getStatusColor(session.status),
+                                      fontWeight: "500",
+                                    }),
+                                    indicatorsContainer: (provided) => ({
+                                      ...provided,
+                                      height: "16px",
+                                    }),
+                                    indicatorSeparator: (provided) => ({
+                                      ...provided,
+                                      display: "none",
+                                    }),
+                                    dropdownIndicator: (provided) => ({
+                                      ...provided,
+                                      padding: "0 2px",
+                                      height: "16px",
+                                      width: "12px",
+                                    }),
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -1326,6 +1386,8 @@ const DefenseSessionsSchedule = () => {
           session={selectedSessionDetail}
           assignedStudents={assignedStudents}
           availableStudents={availableStudents}
+          committeeMembers={committeeMembers}
+          reviewerMembers={reviewerMembers}
           onAssignStudent={handleAssignStudent}
           onUnassignStudent={handleUnassignStudent}
           onClose={() => setIsSessionDetailModalOpen(false)}
@@ -1425,10 +1487,26 @@ const CreateScheduleModal = ({
   };
 
   const roomOptions = [
-    { value: "room301", label: "Room 301" },
-    { value: "room401", label: "Room 401" },
-    { value: "room501", label: "Room 501" },
-    { value: "room601", label: "Room 601" },
+    { value: "A2-201", label: "A2-201" },
+    { value: "A2-202", label: "A2-202" },
+    { value: "A2-203", label: "A2-203" },
+    { value: "A2-204", label: "A2-204" },
+    { value: "A2-205", label: "A2-205" },
+    { value: "A4-201", label: "A4-201" },
+    { value: "A4-202", label: "A4-202" },
+    { value: "A4-203", label: "A4-203" },
+    { value: "A4-204", label: "A4-204" },
+    { value: "A4-205", label: "A4-205" },
+    { value: "A6-201", label: "A6-201" },
+    { value: "A6-202", label: "A6-202" },
+    { value: "A6-203", label: "A6-203" },
+    { value: "A6-204", label: "A6-204" },
+    { value: "A6-205", label: "A6-205" },
+    { value: "A8-201", label: "A8-201" },
+    { value: "A8-202", label: "A8-202" },
+    { value: "A8-203", label: "A8-203" },
+    { value: "A8-204", label: "A8-204" },
+    { value: "A8-205", label: "A8-205" },
   ];
 
   const timeOptions = [
@@ -1884,6 +1962,8 @@ const SessionDetailModal = ({
   session,
   assignedStudents,
   availableStudents,
+  committeeMembers,
+  reviewerMembers,
   onAssignStudent,
   onUnassignStudent,
   onClose,
@@ -1989,6 +2069,69 @@ const SessionDetailModal = ({
               <p className="text-lg font-bold text-gray-900">
                 {session.maxStudents}
               </p>
+            </div>
+          </div>
+
+          {/* Committee & Reviewers */}
+          <div className="border-t border-gray-200 pt-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">
+              Hội đồng & Phản biện
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h5 className="text-md font-medium text-gray-900 mb-2">
+                  Thành viên hội đồng
+                </h5>
+                {!committeeMembers || committeeMembers.length === 0 ? (
+                  <p className="text-gray-600 italic">
+                    Chưa có dữ liệu hội đồng.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {committeeMembers.map((m) => (
+                      <li
+                        key={`board-${m.lecturerId}-${m.role}`}
+                        className="p-2 bg-purple-50 rounded border border-purple-200 text-sm text-gray-800"
+                      >
+                        <span className="font-semibold">
+                          {m.displayedName || `Giảng viên ${m.lecturerId}`}
+                        </span>
+                        <span className="ml-2 text-purple-700">
+                          {m.role === "CHAIRMAN"
+                            ? "Chủ tịch hội đồng"
+                            : m.role === "SECRETARY"
+                            ? "Thư ký"
+                            : "Thành viên hội đồng"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h5 className="text-md font-medium text-gray-900 mb-2">
+                  Giảng viên phản biện
+                </h5>
+                {!reviewerMembers || reviewerMembers.length === 0 ? (
+                  <p className="text-gray-600 italic">
+                    Chưa có dữ liệu phản biện.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {reviewerMembers.map((m) => (
+                      <li
+                        key={`review-${m.lecturerId}-${m.role}`}
+                        className="p-2 bg-indigo-50 rounded border border-indigo-200 text-sm text-gray-800"
+                      >
+                        <span className="font-semibold">
+                          {m.displayedName || `Giảng viên ${m.lecturerId}`}
+                        </span>
+                        {/* Reviewer: ẩn nhãn (REVIEWER) theo yêu cầu */}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
 
