@@ -1,157 +1,452 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useNotifications } from "../../contexts/NotificationContext";
+import { getUserIdFromToken } from "../../auth/authUtils";
+import scheduleService from "../../services/schedule.service";
+import submissionService from "../../services/submission.service";
 
 const StudentHome = () => {
   const navigate = useNavigate();
+  const { notifications, loadNotifications } = useNotifications();
+  const [stats, setStats] = useState({
+    registeredTopics: 0,
+    submittedReports: 0,
+    completionProgress: 0,
+    unreadMessages: 0,
+  });
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
-  const handleCardClick = (path) => {
-    navigate(path);
+  useEffect(() => {
+    // Only load once when component mounts
+    if (hasLoadedRef.current) return;
+
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true);
+        const userId = getUserIdFromToken();
+
+        // Load notifications
+        if (userId) {
+          await loadNotifications(userId);
+        }
+
+        // Calculate real progress based on milestones from API
+        try {
+          const progressData = await calculateThesisProgress();
+          setStats({
+            registeredTopics: progressData.registeredTopics || 1,
+            submittedReports: progressData.submittedReports || 0,
+            completionProgress: progressData.completionProgress || 0,
+            unreadMessages: 0, // Will be updated by separate useEffect
+          });
+        } catch (error) {
+          console.error("Error calculating progress:", error);
+          // Fallback to default values
+          setStats({
+            registeredTopics: 1,
+            submittedReports: 0,
+            completionProgress: 0,
+            unreadMessages: 0,
+          });
+        }
+
+        // Load real upcoming deadlines from schedule
+        try {
+          const userId = getUserIdFromToken();
+          if (userId) {
+            const response = await scheduleService.getCompleteSchedule(
+              parseInt(userId)
+            );
+            if (response.success && response.data && response.data.length > 0) {
+              // Sort by date and get the closest upcoming events
+              const sortedSchedule = response.data.sort((a, b) => {
+                const dateA = new Date(a.date || a.dueDate);
+                const dateB = new Date(b.date || b.dueDate);
+                return dateA - dateB;
+              });
+
+              // Take only upcoming events (not completed) and limit to 3 most recent
+              const upcoming = sortedSchedule
+                .filter((event) => event.status !== "completed")
+                .slice(0, 3)
+                .map((event) => ({
+                  id: event.scheduleId || event.assignmentId,
+                  title: event.title,
+                  dueDate: event.date || event.dueDate,
+                  type: event.eventType,
+                  priority: event.eventType === "deadline" ? "high" : "medium",
+                }));
+
+              setUpcomingDeadlines(upcoming);
+            }
+          }
+        } catch (error) {
+          console.error("Error loading upcoming deadlines:", error);
+          setUpcomingDeadlines([]);
+        }
+
+        hasLoadedRef.current = true;
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []); // Empty dependency array - only run once
+
+  // Separate useEffect to update unread messages count when notifications change
+  useEffect(() => {
+    setStats((prevStats) => ({
+      ...prevStats,
+      unreadMessages: notifications.filter((n) => !n.isRead).length,
+    }));
+  }, [notifications]);
+
+  // Calculate thesis progress based on actual submission status from API
+  const calculateThesisProgress = async () => {
+    try {
+      const userId = getUserIdFromToken();
+      if (!userId) {
+        console.warn("No userId found, using default progress");
+        return getDefaultProgressData();
+      }
+
+      // Call real API để lấy submission status
+      const submissionStatus = await submissionService.getSubmissionStatus(
+        parseInt(userId)
+      );
+
+      // Extract data từ API response
+      const {
+        softCopySubmitted = false,
+        hardCopySubmitted = false,
+        defenseCompleted = false,
+        finalCopySubmitted = false,
+        progressPercentage = 0,
+        completedMilestones = 0,
+      } = submissionStatus;
+
+      return {
+        registeredTopics: 1, // Default cho sinh viên đã đăng ký đề tài
+        submittedReports: completedMilestones,
+        completionProgress: progressPercentage,
+      };
+    } catch (error) {
+      console.error("Error fetching submission status:", error);
+      // Fallback to default values nếu API call fails
+      return getDefaultProgressData();
+    }
   };
+
+  // Helper function to return default progress data when API fails
+  const getDefaultProgressData = () => {
+    return {
+      registeredTopics: 1,
+      submittedReports: 0,
+      completionProgress: 0,
+    };
+  };
+
+  const handleQuickAction = (action) => {
+    switch (action) {
+      case "submit-report":
+        navigate("/student/submissions");
+        break;
+      case "view-feedback":
+        navigate("/student/my-thesis");
+        break;
+      case "check-schedule":
+        navigate("/student/schedule");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
+
+  const getDaysUntilDeadline = (dateString) => {
+    const today = new Date();
+    const deadline = new Date(dateString);
+    const diffTime = deadline - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "high":
+        return "text-red-600 bg-red-50";
+      case "medium":
+        return "text-yellow-600 bg-yellow-50";
+      case "low":
+        return "text-green-600 bg-green-50";
+      default:
+        return "text-gray-600 bg-gray-50";
+    }
+  };
+
+  const getDaysLeftColor = (daysLeft) => {
+    if (daysLeft <= 3) return "text-red-600";
+    if (daysLeft <= 7) return "text-yellow-600";
+    return "text-green-600";
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-8 w-full">
+        <div className="animate-pulse">
+          <div className="h-32 bg-gray-200 rounded-xl mb-8"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="h-64 bg-gray-200 rounded-xl"></div>
+            <div className="h-64 bg-gray-200 rounded-xl"></div>
+            <div className="h-64 bg-gray-200 rounded-xl"></div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-8 w-full">
       {/* Welcome Section */}
-      <div className="text-center mb-12 p-8 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl shadow-lg">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-          Chào mừng bạn đến với Hệ thống Quản lý Luận văn
+      <div className="text-center mb-8 p-6 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+          Dashboard Sinh viên
         </h1>
-        <p className="text-lg opacity-90">Trang chủ dành cho sinh viên</p>
+        <p className="text-lg opacity-90">Tổng quan tiến độ luận văn của bạn</p>
       </div>
 
-      {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        <div
-          onClick={() => handleCardClick("/student/topic-registration")}
-          className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-200 hover:-translate-y-1 hover:border-blue-500"
-        >
-          <div className="text-4xl mb-4 text-center">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-gray-900">
-              Đăng ký đề tài
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              Đăng ký và chọn đề tài luận văn phù hợp
-            </p>
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Progress Overview */}
+        <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-md border border-gray-200">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">
+            Tiến độ luận văn
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-600">
+                  Hoàn thành tổng thể
+                </span>
+                <span className="text-sm font-bold text-blue-600">
+                  {stats.completionProgress}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${stats.completionProgress}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600 mb-1">
+                  {stats.registeredTopics}
+                </div>
+                <div className="text-sm text-gray-600">Đề tài đã đăng ký</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600 mb-1">
+                  {stats.submittedReports}
+                </div>
+                <div className="text-sm text-gray-600">Báo cáo đã nộp</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div
-          onClick={() => handleCardClick("/student/my-thesis")}
-          className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-200 hover:-translate-y-1 hover:border-blue-500"
-        >
-          <div className="text-4xl mb-4 text-center">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-gray-900">
-              Đề tài của tôi
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              Xem và quản lý đề tài đã đăng ký
-            </p>
-          </div>
-        </div>
-
-
-        <div
-          onClick={() => handleCardClick("/student/submissions")}
-          className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-200 hover:-translate-y-1 hover:border-blue-500"
-        >
-          <div className="text-4xl mb-4 text-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="40"
-              height="40"
-              fill="currentColor"
-              className="bi bi-file-earmark-pdf-fill"
-              viewBox="0 0 16 16"
+        {/* Quick Actions */}
+        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">
+            Thao tác nhanh
+          </h2>
+          <div className="space-y-3">
+            <button
+              onClick={() => handleQuickAction("submit-report")}
+              className="w-full p-3 text-left bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200 border border-blue-200"
             >
-              <path d="M5.523 12.424q.21-.124.459-.238a8 8 0 0 1-.45.606c-.28.337-.498.516-.635.572l-.035.012a.3.3 0 0 1-.026-.044c-.056-.11-.054-.216.04-.36.106-.165.319-.354.647-.548m2.455-1.647q-.178.037-.356.078a21 21 0 0 0 .5-1.05 12 12 0 0 0 .51.858q-.326.048-.654.114m2.525.939a4 4 0 0 1-.435-.41q.344.007.612.054c.317.057.466.147.518.209a.1.1 0 0 1 .026.064.44.44 0 0 1-.06.2.3.3 0 0 1-.094.124.1.1 0 0 1-.069.015c-.09-.003-.258-.066-.498-.256M8.278 6.97c-.04.244-.108.524-.2.829a5 5 0 0 1-.089-.346c-.076-.353-.087-.63-.046-.822.038-.177.11-.248.196-.283a.5.5 0 0 1 .145-.04c.013.03.028.092.032.198q.008.183-.038.465z" />
-              <path
-                fill-rule="evenodd"
-                d="M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2m5.5 1.5v2a1 1 0 0 0 1 1h2zM4.165 13.668c.09.18.23.343.438.419.207.075.412.04.58-.03.318-.13.635-.436.926-.786.333-.401.683-.927 1.021-1.51a11.7 11.7 0 0 1 1.997-.406c.3.383.61.713.91.95.28.22.603.403.934.417a.86.86 0 0 0 .51-.138c.155-.101.27-.247.354-.416.09-.181.145-.37.138-.563a.84.84 0 0 0-.2-.518c-.226-.27-.596-.4-.96-.465a5.8 5.8 0 0 0-1.335-.05 11 11 0 0 1-.98-1.686c.25-.66.437-1.284.52-1.794.036-.218.055-.426.048-.614a1.24 1.24 0 0 0-.127-.538.7.7 0 0 0-.477-.365c-.202-.043-.41 0-.601.077-.377.15-.576.47-.651.823-.073.34-.04.736.046 1.136.088.406.238.848.43 1.295a20 20 0 0 1-1.062 2.227 7.7 7.7 0 0 0-1.482.645c-.37.22-.699.48-.897.787-.21.326-.275.714-.08 1.103"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-gray-900">
-              Nộp báo cáo
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              Nộp và theo dõi báo cáo tiến độ luận văn
-            </p>
-          </div>
-        </div>
+              <div className="flex items-center">
+                <svg
+                  className="w-5 h-5 text-blue-600 mr-3"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-gray-900">
+                  Nộp báo cáo
+                </span>
+              </div>
+            </button>
 
-        <div
-          onClick={() => handleCardClick("/student/chat")}
-          className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-200 hover:-translate-y-1 hover:border-blue-500"
-        >
-          <div className="text-4xl mb-4 text-center">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-gray-900">
-              Tin nhắn
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              Trao đổi với giảng viên và nhóm
-            </p>
-          </div>
-        </div>
+            <button
+              onClick={() => handleQuickAction("view-feedback")}
+              className="w-full p-3 text-left bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200 border border-green-200"
+            >
+              <div className="flex items-center">
+                <svg
+                  className="w-5 h-5 text-green-600 mr-3"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-gray-900">
+                  Xem feedback
+                </span>
+              </div>
+            </button>
 
-        <div
-          onClick={() => handleCardClick("/student/settings")}
-          className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-200 hover:-translate-y-1 hover:border-blue-500"
-        >
-          <div className="text-4xl mb-4 text-center">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-gray-900">
-              Cài đặt
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              Cấu hình tài khoản cá nhân
-            </p>
+            <button
+              onClick={() => handleQuickAction("check-schedule")}
+              className="w-full p-3 text-left bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200 border border-purple-200"
+            >
+              <div className="flex items-center">
+                <svg
+                  className="w-5 h-5 text-purple-600 mr-3"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-gray-900">
+                  Kiểm tra lịch
+                </span>
+              </div>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Upcoming Deadlines */}
+      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-gray-900">
+          Deadline sắp tới
+        </h2>
+        <div className="space-y-3">
+          {upcomingDeadlines.length > 0 ? (
+            upcomingDeadlines.map((deadline) => {
+              const daysLeft = getDaysUntilDeadline(deadline.dueDate);
+              let priorityLabel;
+              if (deadline.priority === "high") {
+                priorityLabel = "Cao";
+              } else if (deadline.priority === "medium") {
+                priorityLabel = "Trung bình";
+              } else {
+                priorityLabel = "Thấp";
+              }
+              return (
+                <div
+                  key={deadline.id}
+                  onClick={() => navigate("/student/schedule")}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      {deadline.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Hạn: {formatDate(deadline.dueDate)}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(
+                        deadline.priority
+                      )}`}
+                    >
+                      {priorityLabel}
+                    </span>
+                    <span
+                      className={`text-sm font-bold ${getDaysLeftColor(
+                        daysLeft
+                      )}`}
+                    >
+                      {daysLeft > 0 ? `${daysLeft} ngày` : "Quá hạn"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <svg
+                className="w-12 h-12 mx-auto mb-3 text-gray-300"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p>Không có deadline nào sắp tới</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-6 text-center shadow-md border border-gray-200">
-          <div className="text-3xl font-bold text-blue-600 mb-2">1</div>
+          <div className="text-3xl font-bold text-blue-600 mb-2">
+            {stats.registeredTopics}
+          </div>
           <div className="text-sm font-medium text-gray-600">
             Đề tài đã đăng ký
           </div>
         </div>
         <div className="bg-white rounded-lg p-6 text-center shadow-md border border-gray-200">
-          <div className="text-3xl font-bold text-blue-600 mb-2">3</div>
+          <div className="text-3xl font-bold text-green-600 mb-2">
+            {stats.submittedReports}
+          </div>
           <div className="text-sm font-medium text-gray-600">
             Báo cáo đã nộp
           </div>
         </div>
         <div className="bg-white rounded-lg p-6 text-center shadow-md border border-gray-200">
-          <div className="text-3xl font-bold text-blue-600 mb-2">85%</div>
+          <div className="text-3xl font-bold text-purple-600 mb-2">
+            {stats.completionProgress}%
+          </div>
           <div className="text-sm font-medium text-gray-600">
             Tiến độ hoàn thành
           </div>
         </div>
         <div className="bg-white rounded-lg p-6 text-center shadow-md border border-gray-200">
-          <div className="text-3xl font-bold text-blue-600 mb-2">2</div>
+          <div className="text-3xl font-bold text-orange-600 mb-2">
+            {stats.unreadMessages}
+          </div>
           <div className="text-sm font-medium text-gray-600">
-            Tin nhắn chưa đọc
+            Thông báo chưa đọc
           </div>
         </div>
       </div>

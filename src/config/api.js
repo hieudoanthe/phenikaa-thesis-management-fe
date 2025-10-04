@@ -110,6 +110,12 @@ export const API_ENDPOINTS = {
   // Teacher Profile
   GET_ALL_TEACHERS: "/api/profile-service/student/get-all-teachers",
 
+  // Student Schedule
+  GET_STUDENT_SCHEDULE: "/api/eval-service/student/{studentId}/schedule",
+
+  // Student Assignment Deadlines
+  GET_STUDENT_DEADLINES: "/api/assign-service/student/{studentId}/deadlines",
+
   /**
    * Teacher Permission
    */

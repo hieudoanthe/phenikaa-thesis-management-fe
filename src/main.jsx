@@ -23,6 +23,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ThesisRegister from "./pages/student/ThesisRegister.jsx";
 import TopicRegistration from "./pages/student/TopicRegistration.jsx";
 import StudentHome from "./pages/student/Home.jsx";
+import StudentSchedule from "./pages/student/Schedule.jsx";
 import StudentNotifications from "./pages/student/Notifications.jsx";
 import StudentChat from "./pages/student/Chat.jsx";
 import LecturerChat from "./pages/lecturer/Chat.jsx";
@@ -125,7 +126,9 @@ createRoot(document.getElementById("root")).render(
                 element={
                   <StudentRoute>
                     <ProfileStudentProvider>
-                      <StudentLayout />
+                      <NotificationProvider>
+                        <StudentLayout />
+                      </NotificationProvider>
                     </ProfileStudentProvider>
                   </StudentRoute>
                 }
@@ -137,6 +140,7 @@ createRoot(document.getElementById("root")).render(
                   element={<TopicRegistration />}
                 />
                 <Route path="profile" element={<StudentProfile />} />
+                <Route path="schedule" element={<StudentSchedule />} />
                 <Route path="chat" element={<StudentChat />} />
                 <Route
                   path="notifications"

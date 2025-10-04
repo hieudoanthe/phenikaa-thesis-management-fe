@@ -1,5 +1,5 @@
-import { apiGet, apiPost, apiPut, apiDelete } from "./mainHttpClient";
 import mainHttpClient from "./mainHttpClient";
+import { apiGet, apiPost, apiPut, apiDelete } from "./mainHttpClient";
 
 // Base URL cho submission-service
 const SUBMISSION_SERVICE_BASE = "/api/submission-service";
@@ -422,6 +422,21 @@ export const getRealtimeAnalytics = async () => {
 };
 
 /**
+ * Lấy trạng thái submission để tính progress cho StudentHome dashboard
+ */
+export const getSubmissionStatus = async (userId) => {
+  try {
+    const response = await mainHttpClient.get(
+      `${SUBMISSION_SERVICE_BASE}/submissions/status/${userId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error getting submission status:", error);
+    throw error;
+  }
+};
+
+/**
  * Download file từ submission
  */
 export const downloadFile = async (submissionId) => {
@@ -512,3 +527,35 @@ export const previewFile = async (submissionId) => {
     throw error;
   }
 };
+
+// Export default object containing all methods
+const submissionService = {
+  getStudentConfirmedTopics,
+  createSubmission,
+  updateSubmission,
+  getSubmissionById,
+  getSubmissionsByTopic,
+  getSubmissionsByUser,
+  getSubmissionsWithPagination,
+  filterSubmissions,
+  updateSubmissionStatus,
+  deleteSubmission,
+  createFeedback,
+  updateFeedback,
+  getFeedbacksBySubmission,
+  getFeedbacksByReviewer,
+  approveFeedback,
+  getAverageScore,
+  generateEvaluationReportPDF,
+  generateSampleReportPDF,
+  getOverallAnalytics,
+  getAnalyticsByDateRange,
+  getUserAnalytics,
+  getTopicAnalytics,
+  getRealtimeAnalytics,
+  getSubmissionStatus,
+  downloadFile,
+  previewFile,
+};
+
+export default submissionService;

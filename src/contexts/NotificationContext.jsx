@@ -19,39 +19,26 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load thông báo từ API (tạm thời sử dụng dữ liệu mẫu vì API chưa có)
+  // Load thông báo từ API
   const loadNotifications = async (receiverId, params = {}) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Tạm thời sử dụng dữ liệu mẫu
-      const mockNotifications = [
-        {
-          id: 1,
-          title: "Thông báo mới",
-          message: "Bạn có thông báo mới từ hệ thống",
-          time: "2 phút trước",
-          createdAt: Date.now() - 2 * 60 * 1000,
-          isRead: false,
-        },
-        {
-          id: 2,
-          title: "Cập nhật đề tài",
-          message: "Đề tài của bạn đã được cập nhật",
-          time: "1 giờ trước",
-          createdAt: Date.now() - 60 * 60 * 1000,
-          isRead: true,
-        },
-      ];
+      // Gọi API thật để lấy thông báo
+      const response = await notificationService.getNotifications(
+        receiverId,
+        params
+      );
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Xử lý response từ API
+      const notifications =
+        response?.data || response?.content || response || [];
 
-      setNotifications(mockNotifications);
+      setNotifications(notifications);
       return {
         success: true,
-        data: mockNotifications,
+        data: notifications,
         message: "Tải thông báo thành công",
       };
     } catch (error) {

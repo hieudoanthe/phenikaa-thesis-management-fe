@@ -50,7 +50,7 @@ const StudentLayout = () => {
       case "/student/home":
         return {
           title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
+          subtitle: "Chào mừng bạn đến với hệ thống quản đồ án tốt nghiệp",
         };
       case "/student/topic-registration":
         return {
@@ -86,6 +86,12 @@ const StudentLayout = () => {
         return {
           title: "Hồ sơ cá nhân",
           subtitle: "Quản lý thông tin cá nhân và tài khoản",
+        };
+      case "/student/schedule":
+        return {
+          title: "Lịch",
+          subtitle:
+            "Xem lịch trình bảo vệ đồ án tốt nghiệp và các nhiệm vụ liên quan",
         };
 
       default:
@@ -886,6 +892,8 @@ const StudentLayout = () => {
                   ? "px-6 py-2"
                   : location.pathname === "/student/chat"
                   ? "px-0 py-0"
+                  : location.pathname === "/student/schedule"
+                  ? "px-6 pt-1 pb-6"
                   : "px-6 py-6"
               }`}
             >

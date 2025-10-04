@@ -88,7 +88,7 @@ const SubmissionManagement = () => {
   const submissionTypeOptions = [
     { value: "", label: "Tất cả loại" },
     { value: "1", label: "Báo cáo tiến độ" },
-    { value: "2", label: "Báo cáo cuối kỳ" },
+    { value: "2", label: "Báo cáo KLTN" },
     { value: "3", label: "Báo cáo khác" },
   ];
 
@@ -195,7 +195,14 @@ const SubmissionManagement = () => {
       loadSubmissions();
     } catch (error) {
       console.error("Error creating submission:", error);
-      showToast("Lỗi khi tạo báo cáo");
+      if (
+        error.response?.status === 413 ||
+        error.response?.data?.error === "PAYLOAD_TOO_LARGE"
+      ) {
+        showToast("File quá lớn. Vui lòng chọn file nhỏ hơn 50MB.", "error");
+      } else {
+        showToast("Lỗi khi tạo báo cáo");
+      }
     } finally {
       setLoading(false);
     }
@@ -209,8 +216,14 @@ const SubmissionManagement = () => {
       // Set submittedBy từ token
       const studentId = getUserIdFromToken();
       const submissionData = {
-        ...formData,
+        topicId: formData.topicId,
+        reportTitle: formData.reportTitle,
+        description: formData.description,
+        submissionType: formData.submissionType,
         submittedBy: studentId,
+        file: formData.file,
+        // Only include deadline if it has a value
+        ...(formData.deadline && { deadline: formData.deadline }),
       };
 
       await submissionService.updateSubmission(
@@ -223,7 +236,24 @@ const SubmissionManagement = () => {
       loadSubmissions();
     } catch (error) {
       console.error("Error updating submission:", error);
-      showToast("Lỗi khi cập nhật báo cáo");
+      if (
+        error.response?.status === 413 ||
+        error.response?.data?.error === "PAYLOAD_TOO_LARGE"
+      ) {
+        showToast("File quá lớn. Vui lòng chọn file nhỏ hơn 50MB.", "error");
+      } else if (
+        error.response?.status === 400 &&
+        error.response?.data?.error === "VALIDATION_ERROR"
+      ) {
+        const fieldErrors = error.response?.data?.fieldErrors;
+        if (fieldErrors?.deadline) {
+          showToast("Deadline không hợp lệ: " + fieldErrors.deadline, "error");
+        } else {
+          showToast("Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.", "error");
+        }
+      } else {
+        showToast("Lỗi khi cập nhật báo cáo");
+      }
     } finally {
       setLoading(false);
     }
@@ -289,7 +319,7 @@ const SubmissionManagement = () => {
       reportTitle: submission.reportTitle,
       description: submission.description,
       submissionType: submission.submissionType,
-      deadline: submission.deadline,
+      deadline: submission.deadline || "", // Ensure deadline is not null
       file: null,
     });
     setShowEditModal(true);
@@ -320,7 +350,7 @@ const SubmissionManagement = () => {
   const getSubmissionTypeText = (type) => {
     const typeMap = {
       1: "Báo cáo tiến độ",
-      2: "Báo cáo cuối kỳ",
+      2: "Báo cáo KLTN",
       3: "Báo cáo khác",
     };
     return typeMap[type] || "Không xác định";
@@ -767,7 +797,7 @@ const SubmissionManagement = () => {
                                   width="16"
                                   height="16"
                                   fill="currentColor"
-                                  className="bi bi-cloud-arrow-down-fill"
+                                  className="bi bi-cloud-arrow-down-fill inline mr-1"
                                   viewBox="0 0 16 16"
                                 >
                                   <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
@@ -971,7 +1001,7 @@ const SubmissionManagement = () => {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                   >
                     <option value={1}>Báo cáo tiến độ</option>
-                    <option value={2}>Báo cáo cuối kỳ</option>
+                    <option value={2}>Báo cáo KLTN</option>
                     <option value={3}>Báo cáo khác</option>
                   </select>
                   <label
@@ -985,9 +1015,22 @@ const SubmissionManagement = () => {
                   <input
                     id="create-file"
                     type="file"
-                    onChange={(e) =>
-                      setFormData({ ...formData, file: e.target.files[0] })
-                    }
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        // Check file size (50MB = 50 * 1024 * 1024 bytes)
+                        const maxSize = 50 * 1024 * 1024;
+                        if (file.size > maxSize) {
+                          showToast(
+                            "File quá lớn. Vui lòng chọn file nhỏ hơn 50MB.",
+                            "error"
+                          );
+                          e.target.value = ""; // Clear the input
+                          return;
+                        }
+                      }
+                      setFormData({ ...formData, file });
+                    }}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif"
                   />
@@ -1127,7 +1170,7 @@ const SubmissionManagement = () => {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                   >
                     <option value={1}>Báo cáo tiến độ</option>
-                    <option value={2}>Báo cáo cuối kỳ</option>
+                    <option value={2}>Báo cáo KLTN</option>
                     <option value={3}>Báo cáo khác</option>
                   </select>
                   <label
@@ -1141,9 +1184,22 @@ const SubmissionManagement = () => {
                   <input
                     id="edit-file"
                     type="file"
-                    onChange={(e) =>
-                      setFormData({ ...formData, file: e.target.files[0] })
-                    }
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        // Check file size (50MB = 50 * 1024 * 1024 bytes)
+                        const maxSize = 50 * 1024 * 1024;
+                        if (file.size > maxSize) {
+                          showToast(
+                            "File quá lớn. Vui lòng chọn file nhỏ hơn 50MB.",
+                            "error"
+                          );
+                          e.target.value = ""; // Clear the input
+                          return;
+                        }
+                      }
+                      setFormData({ ...formData, file });
+                    }}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.jpg,.jpeg,.png,.gif"
                   />
@@ -1231,11 +1287,11 @@ const SubmissionManagement = () => {
                     width="16"
                     height="16"
                     fill="currentColor"
-                    className="bi bi-cloud-arrow-down-fill"
+                    className="bi bi-cloud-arrow-down-fill inline mr-1"
                     viewBox="0 0 16 16"
                   >
                     <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
-                  </svg>{" "}
+                  </svg>
                   Tải về
                 </button>
                 <button
@@ -1328,11 +1384,11 @@ const SubmissionManagement = () => {
                             width="16"
                             height="16"
                             fill="currentColor"
-                            className="bi bi-cloud-arrow-down-fill"
+                            className="bi bi-cloud-arrow-down-fill inline mr-1"
                             viewBox="0 0 16 16"
                           >
                             <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
-                          </svg>{" "}
+                          </svg>
                           Tải về để xem
                         </button>
                       </div>
@@ -1362,4 +1418,3 @@ const SubmissionManagement = () => {
 };
 
 export default SubmissionManagement;
-
