@@ -21,8 +21,7 @@ const AddTopicModal = ({
     methodology: "",
     expectedOutcome: "",
     academicYearId: "",
-    maxStudents: "",
-    difficultyLevel: "MEDIUM",
+    // Removed: maxStudents, difficultyLevel per requirement
   };
 
   const [form, setForm] = useState(initialForm);
@@ -30,13 +29,14 @@ const AddTopicModal = ({
   const [academicYearList, setAcademicYearList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Xác định đề tài thuộc sinh viên (đăng ký/đề xuất) khi ở chế độ xem
+  const isStudentOwnedInView = !!(
+    isViewMode &&
+    topicData &&
+    (topicData.registerId || topicData.suggestedBy)
+  );
 
-  // Options cho react-select
-  const difficultyOptions = [
-    { value: "EASY", label: "Dễ" },
-    { value: "MEDIUM", label: "Trung bình" },
-    { value: "HARD", label: "Khó" },
-  ];
+  // Removed difficulty options
 
   // Load danh sách năm học khi modal mở
   useEffect(() => {
@@ -57,8 +57,7 @@ const AddTopicModal = ({
         methodology: topicData.methodology || "",
         expectedOutcome: topicData.expectedOutcome || "",
         academicYearId: topicData.academicYearId || "",
-        maxStudents: topicData.maxStudents || "",
-        difficultyLevel: topicData.difficultyLevel || "MEDIUM",
+        // Removed: maxStudents, difficultyLevel
       });
     }
   }, [open, isViewMode, topicData]);
@@ -248,6 +247,7 @@ const AddTopicModal = ({
                   onChange={handleChange}
                   placeholder=" "
                   autoComplete="off"
+                  disabled={isStudentOwnedInView}
                   className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white peer hover:border-gray-400"
                 />
                 <label
@@ -266,6 +266,7 @@ const AddTopicModal = ({
                   onChange={handleChange}
                   placeholder=" "
                   required
+                  disabled={isStudentOwnedInView}
                   className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white peer hover:border-gray-400"
                 />
                 <label
@@ -287,6 +288,7 @@ const AddTopicModal = ({
                 placeholder=" "
                 rows={3}
                 required
+                disabled={isStudentOwnedInView}
                 className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
               />
               <label
@@ -308,6 +310,7 @@ const AddTopicModal = ({
                   placeholder=" "
                   rows={3}
                   required
+                  disabled={isStudentOwnedInView}
                   className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
                 />
                 <label
@@ -327,6 +330,7 @@ const AddTopicModal = ({
                   placeholder=" "
                   rows={3}
                   required
+                  disabled={isStudentOwnedInView}
                   className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
                 />
                 <label
@@ -348,6 +352,7 @@ const AddTopicModal = ({
                 placeholder=" "
                 rows={3}
                 required
+                disabled={isStudentOwnedInView}
                 className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white resize-none peer hover:border-gray-400"
               />
               <label
@@ -358,179 +363,88 @@ const AddTopicModal = ({
               </label>
             </div>
 
-            {/* Dòng 3: Năm học + Số sinh viên + Mức độ khó */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="relative">
-                <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
-                  Năm học <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  name="academicYearId"
-                  options={academicYearOptions}
-                  value={
-                    academicYearOptions.find(
-                      (option) => option.value === form.academicYearId
-                    ) || null
-                  }
-                  onChange={(selectedOption) =>
-                    handleSelectChange(selectedOption, {
-                      name: "academicYearId",
-                    })
-                  }
-                  placeholder={loading ? "Đang tải..." : "Chọn năm học"}
-                  isLoading={loading}
-                  isDisabled={loading}
-                  isClearable
-                  styles={{
-                    control: (base, state) => ({
-                      ...base,
-                      minHeight: "50px",
-                      border: "2px solid #e2e8f0",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      backgroundColor: "#fff",
-                      boxShadow: state.isFocused
-                        ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
-                        : "none",
-                      borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
-                      "&:hover": {
-                        borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
-                      },
-                    }),
-                    valueContainer: (base) => ({
-                      ...base,
-                      padding: "8px 18px",
-                    }),
-                    placeholder: (base) => ({
-                      ...base,
-                      color: "#64748b",
-                      opacity: 1,
-                    }),
-                    singleValue: (base) => ({
-                      ...base,
-                      color: "#4a5568",
-                      fontWeight: 400,
-                    }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected
-                        ? "#ff6600"
-                        : state.isFocused
-                        ? "#fff5f0"
-                        : "#fff",
-                      color: state.isSelected ? "#fff" : "#4a5568",
-                      fontWeight: state.isSelected ? 500 : 400,
-                      "&:hover": {
+            {/* Dòng 3: Năm học (ẩn khi xem đề tài thuộc sinh viên) */}
+            {!isStudentOwnedInView && (
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-5">
+                <div className="relative">
+                  <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
+                    Năm học <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    name="academicYearId"
+                    options={academicYearOptions}
+                    value={
+                      academicYearOptions.find(
+                        (option) => option.value === form.academicYearId
+                      ) || null
+                    }
+                    onChange={(selectedOption) =>
+                      handleSelectChange(selectedOption, {
+                        name: "academicYearId",
+                      })
+                    }
+                    placeholder={loading ? "Đang tải..." : "Chọn năm học"}
+                    isLoading={loading}
+                    isDisabled={loading || isStudentOwnedInView}
+                    isClearable
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        minHeight: "50px",
+                        border: "2px solid #e2e8f0",
+                        borderRadius: "8px",
+                        fontSize: "16px",
+                        backgroundColor: "#fff",
+                        boxShadow: state.isFocused
+                          ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
+                          : "none",
+                        borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
+                        "&:hover": {
+                          borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
+                        },
+                      }),
+                      valueContainer: (base) => ({
+                        ...base,
+                        padding: "8px 18px",
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: "#64748b",
+                        opacity: 1,
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: "#4a5568",
+                        fontWeight: 400,
+                      }),
+                      option: (base, state) => ({
+                        ...base,
                         backgroundColor: state.isSelected
                           ? "#ff6600"
-                          : "#fff5f0",
+                          : state.isFocused
+                          ? "#fff5f0"
+                          : "#fff",
                         color: state.isSelected ? "#fff" : "#4a5568",
-                      },
-                    }),
-                    menu: (base) => ({
-                      ...base,
-                      border: "2px solid #e2e8f0",
-                      borderRadius: "8px",
-                      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-                    }),
-                  }}
-                />
+                        fontWeight: state.isSelected ? 500 : 400,
+                        "&:hover": {
+                          backgroundColor: state.isSelected
+                            ? "#ff6600"
+                            : "#fff5f0",
+                          color: state.isSelected ? "#fff" : "#4a5568",
+                        },
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        border: "2px solid #e2e8f0",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                      }),
+                    }}
+                  />
+                </div>
               </div>
-
-              <div className="relative">
-                <input
-                  id="maxStudents"
-                  name="maxStudents"
-                  value={form.maxStudents}
-                  onChange={handleChange}
-                  placeholder=" "
-                  type="number"
-                  min={1}
-                  required
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:ring-2 focus:ring-orange-100 focus:shadow-lg bg-white peer hover:border-gray-400"
-                />
-                <label
-                  htmlFor="maxStudents"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Số sinh viên tối đa <span className="text-red-500">*</span>
-                </label>
-              </div>
-
-              <div className="relative">
-                <label className="absolute -top-2 left-3 bg-gray-50 px-1.5 text-sm font-semibold text-secondary z-10">
-                  Mức Độ Khó <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  name="difficultyLevel"
-                  options={difficultyOptions}
-                  value={
-                    difficultyOptions.find(
-                      (option) => option.value === form.difficultyLevel
-                    ) || null
-                  }
-                  onChange={(selectedOption) =>
-                    handleSelectChange(selectedOption, {
-                      name: "difficultyLevel",
-                    })
-                  }
-                  placeholder="Chọn mức độ khó"
-                  styles={{
-                    control: (base, state) => ({
-                      ...base,
-                      minHeight: "50px",
-                      border: "2px solid #e2e8f0",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      backgroundColor: "#fff",
-                      boxShadow: state.isFocused
-                        ? "0 0 0 3px rgba(255, 102, 0, 0.1)"
-                        : "none",
-                      borderColor: state.isFocused ? "#ff6600" : "#e2e8f0",
-                      "&:hover": {
-                        borderColor: state.isFocused ? "#ff6600" : "#cbd5e1",
-                      },
-                    }),
-                    valueContainer: (base) => ({
-                      ...base,
-                      padding: "8px 18px",
-                    }),
-                    placeholder: (base) => ({
-                      ...base,
-                      color: "#64748b",
-                      opacity: 1,
-                    }),
-                    singleValue: (base) => ({
-                      ...base,
-                      color: "#4a5568",
-                      fontWeight: 400,
-                    }),
-                    option: (base, state) => ({
-                      ...base,
-                      backgroundColor: state.isSelected
-                        ? "#ff6600"
-                        : state.isFocused
-                        ? "#fff5f0"
-                        : "#fff",
-                      color: state.isSelected ? "#fff" : "#4a5568",
-                      fontWeight: state.isSelected ? 500 : 400,
-                      "&:hover": {
-                        backgroundColor: state.isSelected
-                          ? "#ff6600"
-                          : "#fff5f0",
-                        color: state.isSelected ? "#fff" : "#4a5568",
-                      },
-                    }),
-                    menu: (base) => ({
-                      ...base,
-                      border: "2px solid #e2e8f0",
-                      borderRadius: "8px",
-                      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-                    }),
-                  }}
-                />
-              </div>
-            </div>
+            )}
+            {/* Removed: Max students and difficulty level */}
             {/* Buttons */}
             <div className="flex justify-end gap-2 mt-5">
               <button
@@ -543,24 +457,26 @@ const AddTopicModal = ({
               >
                 Hủy
               </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[120px] transform hover:scale-105 disabled:transform-none"
-                style={{
-                  background: submitting
-                    ? "#9ca3af"
-                    : "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
-                }}
-              >
-                {submitting
-                  ? isViewMode
-                    ? "Đang cập nhật..."
-                    : "Đang tạo..."
-                  : isViewMode
-                  ? "Cập Nhật Đề Tài"
-                  : "Tạo Đề Tài"}
-              </button>
+              {!isStudentOwnedInView && (
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed min-w-[120px] transform hover:scale-105 disabled:transform-none"
+                  style={{
+                    background: submitting
+                      ? "#9ca3af"
+                      : "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
+                  }}
+                >
+                  {submitting
+                    ? isViewMode
+                      ? "Đang cập nhật..."
+                      : "Đang tạo..."
+                    : isViewMode
+                    ? "Cập Nhật Đề Tài"
+                    : "Tạo Đề Tài"}
+                </button>
+              )}
             </div>
           </form>
         </div>

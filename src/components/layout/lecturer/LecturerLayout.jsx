@@ -1081,7 +1081,17 @@ const LecturerLayout = () => {
 
         {/* Main content */}
         <main className="flex-1 bg-gray-50 text-secondary overflow-auto no-scrollbar">
-          <div className="px-6 py-6">
+          <div
+            className={`${
+              location.pathname === "/lecturer/chat"
+                ? "px-0 py-0"
+                : location.pathname === "/lecturer/notifications"
+                ? "px-4 sm:px-6 py-4"
+                : location.pathname === "/lecturer/thesis"
+                ? "px-3 sm:px-4 md:px-6 py-3 sm:py-4"
+                : "px-6 py-6"
+            }`}
+          >
             <Outlet />
           </div>
         </main>

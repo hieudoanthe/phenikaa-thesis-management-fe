@@ -201,29 +201,7 @@ const ThesisManagement = () => {
           topicsData = [];
         }
 
-        // Kiểm tra xem có đề tài mới không (chỉ khi không phải lần đầu load)
-        if (topics.length > 0) {
-          const currentTopicIds = new Set(topics.map((t) => t.topicId));
-          const newTopics = topicsData.filter(
-            (t) => !currentTopicIds.has(t.topicId)
-          );
-
-          if (newTopics.length > 0) {
-            const now = Date.now();
-            // Chỉ hiển thị toast nếu chưa hiển thị trong 2 giây gần đây
-            if (now - lastToastRef.current > 2000) {
-              console.log(
-                `Phát hiện ${newTopics.length} đề tài mới:`,
-                newTopics.map((t) => t.topicCode || t.title)
-              );
-              showToast(
-                `Có ${newTopics.length} đề tài mới được cập nhật!`,
-                "info"
-              );
-              lastToastRef.current = now;
-            }
-          }
-        }
+        // Bỏ thông báo toast khi chuyển trang hoặc tải dữ liệu mới
 
         setTopics(topicsData);
         const serverTotal =
@@ -551,10 +529,17 @@ const ThesisManagement = () => {
 
   const handleEdit = (id) => {
     const topic = topics.find((t) => String(t.topicId) === String(id));
-    if (topic) {
-      setEditingTopicId(id);
-      setEditRowData({ ...topic });
+    if (!topic) return;
+    // Chặn chỉnh sửa nếu đề tài do sinh viên đăng ký hoặc đề xuất
+    if (topic.registerId || topic.suggestedBy) {
+      showToast(
+        "Đề tài do sinh viên đăng ký/đề xuất — giảng viên không thể chỉnh sửa.",
+        "warning"
+      );
+      return;
     }
+    setEditingTopicId(id);
+    setEditRowData({ ...topic });
   };
 
   const handleEditInputChange = (e) => {
@@ -566,6 +551,14 @@ const ThesisManagement = () => {
   };
 
   const handleSaveEdit = async () => {
+    // Safety: không cho lưu nếu đề tài thuộc sinh viên
+    if (editRowData.registerId || editRowData.suggestedBy) {
+      showToast(
+        "Không thể cập nhật: đề tài do sinh viên đăng ký/đề xuất.",
+        "error"
+      );
+      return;
+    }
     try {
       const updateData = {
         ...editRowData,
@@ -1507,22 +1500,24 @@ const ThesisManagement = () => {
                                 <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                               </svg>
                             </button>
-                            <button
-                              type="button"
-                              className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                              title="Chỉnh sửa"
-                              aria-label="Chỉnh sửa"
-                              onClick={() => handleEdit(topic.topicId)}
-                            >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="currentColor"
+                            {!(topic.registerId || topic.suggestedBy) && (
+                              <button
+                                type="button"
+                                className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+                                title="Chỉnh sửa"
+                                aria-label="Chỉnh sửa"
+                                onClick={() => handleEdit(topic.topicId)}
                               >
-                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                              </svg>
-                            </button>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                >
+                                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                                </svg>
+                              </button>
+                            )}
                             {!topic.suggestedBy && (
                               <button
                                 type="button"
