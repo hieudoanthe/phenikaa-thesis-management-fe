@@ -9,7 +9,7 @@ import {
 import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { WS_ENDPOINTS, APP_CONFIG } from "../../../config/api";
-import { toast } from "react-toastify";
+import { showToast } from "../../../utils/toastHelper";
 import "react-toastify/dist/ReactToastify.css";
 import userService from "../../../services/user.service";
 import useAuth from "../../../hooks/useAuth";
@@ -336,18 +336,6 @@ const LecturerLayout = () => {
     if (hour < 24) return `${hour} giờ trước`;
     const day = Math.floor(hour / 24);
     return `${day} ngày trước`;
-  };
-
-  // Hiển thị toast qua react-toastify
-  const showToast = (message, type = "success") => {
-    try {
-      if (type === "error") return toast.error(message);
-      if (type === "warning") return toast.warn(message);
-      if (type === "info") return toast.info(message);
-      return toast.success(message);
-    } catch (_) {
-      (type === "error" ? console.error : console.log)(message);
-    }
   };
 
   const appendNotification = async ({

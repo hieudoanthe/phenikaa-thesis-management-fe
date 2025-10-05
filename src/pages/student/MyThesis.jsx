@@ -8,6 +8,7 @@ import {
 import userService from "../../services/user.service";
 import { assignmentService } from "../../services";
 import EditTopicModal from "../../components/modals/EditTopicModal";
+import { useTranslation } from "react-i18next";
 
 /**
  * Trang theo dõi trạng thái đề tài của sinh viên
@@ -15,6 +16,7 @@ import EditTopicModal from "../../components/modals/EditTopicModal";
  */
 const MyThesis = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [thesisList, setThesisList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,19 +59,8 @@ const MyThesis = () => {
 
   // Hàm lấy trạng thái hiển thị
   const getStatusDisplay = (status) => {
-    const statusMap = {
-      PENDING: "Chờ duyệt",
-      APPROVED: "Đã duyệt",
-      REJECTED: "Từ chối",
-      IN_PROGRESS: "Đang thực hiện",
-      COMPLETED: "Hoàn thành",
-      DEFENDED: "Đã bảo vệ",
-      // Thêm các trạng thái cho suggested topics
-      SUGGESTED: "Đã đề xuất",
-      UNDER_REVIEW: "Đang xem xét",
-      NEEDS_REVISION: "Cần chỉnh sửa",
-    };
-    return statusMap[status] || "Không xác định";
+    const map = t("myThesis.status", { returnObjects: true });
+    return map?.[status] || map?.UNKNOWN;
   };
 
   // Hàm lấy màu trạng thái
@@ -109,15 +100,14 @@ const MyThesis = () => {
 
   // Hàm format ngày tháng
   const formatDate = (dateString) => {
-    if (!dateString) return "Chưa cập nhật";
+    if (!dateString) return t("myThesis.notUpdated");
     try {
-      return new Date(dateString).toLocaleDateString("vi-VN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+      return new Date(dateString).toLocaleDateString(
+        i18n.language === "vi" ? "vi-VN" : "en-US",
+        { year: "numeric", month: "long", day: "numeric" }
+      );
     } catch {
-      return "Không hợp lệ";
+      return t("myThesis.invalid");
     }
   };
 
@@ -754,7 +744,7 @@ const MyThesis = () => {
 
           {/* Danh sách đề tài - 3 cột */}
           <div className="lg:col-span-3 flex flex-col">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Danh sách đề tài đã đăng ký ({totalElements})
@@ -768,7 +758,7 @@ const MyThesis = () => {
 
               {/* Loading khi chuyển trang - Chỉ hiển thị spinner khi thực sự cần */}
               {isChangingPage && showLoadingSpinner ? (
-                <div className="flex-1 flex items-center justify-center">
+                <div className="flex items-center justify-center py-12">
                   <div className="text-center">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mb-3"></div>
                     <p className="text-sm text-gray-600">
@@ -777,8 +767,8 @@ const MyThesis = () => {
                   </div>
                 </div>
               ) : (
-                /* Grid đề tài - Tăng height và padding */
-                <div className="flex-1 overflow-y-auto mb-4">
+                /* Grid đề tài - tự co giãn theo nội dung, không chiếm full chiều cao */
+                <div className="mb-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                     {thesisList.map((thesis, index) => (
                       <div

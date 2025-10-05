@@ -43,7 +43,8 @@ const StudentChat = () => {
   // WebSocket chat
   const [wsConnection, setWsConnection] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState("disconnected");
+  // idle | connecting | connected | disconnected | error
+  const [connectionStatus, setConnectionStatus] = useState("idle");
 
   // Ref để tránh duplicate WebSocket messages
   const processedMessagesRef = useRef(new Set());
@@ -133,6 +134,11 @@ const StudentChat = () => {
               setSelectedTeacher(teacher);
             }
           }
+
+          // Nếu không có teacherId trên URL, tự động chọn giảng viên đầu tiên
+          if (!teacherId && formattedTeachers.length > 0) {
+            setSelectedTeacher((prev) => prev || formattedTeachers[0]);
+          }
         } else {
           console.error("API không trả về array:", response);
           setErrorTeachers("API không trả về dữ liệu hợp lệ");
@@ -199,6 +205,9 @@ const StudentChat = () => {
       setChatHistoryLoaded(false);
       return;
     }
+
+    // Đánh dấu đang kết nối ngay khi đã có giảng viên
+    setConnectionStatus("connecting");
 
     // Cập nhật conversation topic với tên giảng viên đã chọn
     setConversations((prev) =>
@@ -723,10 +732,13 @@ const StudentChat = () => {
                         ? "Connecting..."
                         : connectionStatus === "error"
                         ? "Error"
-                        : "Offline"}
+                        : selectedTeacher
+                        ? "Offline"
+                        : ""}
                     </span>
                   </div>
-                  {connectionStatus !== "connected" && (
+                  {(connectionStatus === "disconnected" ||
+                    connectionStatus === "error") && (
                     <button
                       onClick={reconnectWebSocket}
                       disabled={connectionStatus === "connecting"}
@@ -766,8 +778,8 @@ const StudentChat = () => {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search conversations..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Tìm kiếm cuộc trò chuyện..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60"
               />
             </div>
           </div>
@@ -969,9 +981,9 @@ const StudentChat = () => {
                     : "Đang kết nối..."
                 }
                 disabled={!isConnected || !selectedTeacher}
-                className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+                className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60 ${
                   isConnected
-                    ? "border-gray-300 focus:ring-2 focus:ring-secondary focus:border-secondary"
+                    ? "border-gray-300"
                     : "border-gray-200 bg-gray-100 cursor-not-allowed"
                 }`}
               />

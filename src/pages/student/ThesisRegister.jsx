@@ -4,6 +4,7 @@ import { suggestTopicForStudent } from "../../services/suggest.service";
 import { userService } from "../../services";
 import { toast } from "react-toastify";
 import { getUserIdFromToken } from "../../auth/authUtils";
+import { useTranslation } from "react-i18next";
 
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
@@ -74,6 +75,7 @@ const fieldsOfStudy = [
 
 const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
   if (!isOpen) return null;
+  const { t, i18n } = useTranslation();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -245,15 +247,12 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
     try {
       if (periodIdsLoading) {
         setLoading(false);
-        showToast(
-          "Đang tải thông tin đợt đăng ký, vui lòng thử lại sau giây lát.",
-          "info"
-        );
+        showToast(t("register.noPeriodText"), "info");
         return;
       }
       if (!currentPeriod) {
         setLoading(false);
-        showToast("Không xác định được đợt đăng ký hiện tại.", "warning");
+        showToast(t("register.noPeriodTitle"), "warning");
         return;
       }
       let effectivePeriodIds = studentPeriodIds;
@@ -272,10 +271,7 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
       }
       if (!effectivePeriodIds.includes(currentPeriod.periodId)) {
         setLoading(false);
-        showToast(
-          "Bạn không thuộc đợt đăng ký này. Vui lòng chọn đúng đợt.",
-          "warning"
-        );
+        showToast(t("register.noPeriodText"), "warning");
         return;
       }
     } catch {
@@ -333,7 +329,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
       tabIndex={-1}
     >
       <div
-        className="relative flex flex-col lg:flex-row gap-8 mx-auto my-4 px-6 py-8 bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto thin-scrollbar animate-in slide-in-from-bottom-4 duration-500"
+        className="relative flex flex-col lg:flex-row gap-8 mx-auto my-4 px-6 py-8 bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto scrollbar-contained animate-in slide-in-from-bottom-4 duration-500"
+        style={{ scrollbarGutter: "stable" }}
         onClick={(e) => {
           e.stopPropagation();
           if (
@@ -367,21 +364,18 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
               </svg>
             </div>
             <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-900 to-blue-700 bg-clip-text text-transparent mb-3">
-              Đề xuất đề tài khóa luận
+              {t("register.headerTitle")}
             </h2>
             <p className="text-gray-600 text-base lg:text-lg">
-              Vui lòng điền đầy đủ thông tin để đề xuất đề tài của bạn
+              {t("register.headerSub")}
             </p>
           </div>
 
           {/* Notice Box */}
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 text-amber-800 rounded-xl p-4 flex items-start gap-3 text-sm mb-6 shadow-sm">
             <div>
-              <p className="font-medium">Lưu ý quan trọng</p>
-              <p className="text-amber-700 mt-1">
-                Bạn chỉ được đề xuất 1 đề tài tại một thời điểm. Hãy kiểm tra kỹ
-                thông tin trước khi gửi.
-              </p>
+              <p className="font-medium">{t("register.importantNote")}</p>
+              <p className="text-amber-700 mt-1">{t("register.noteText")}</p>
             </div>
           </div>
 
@@ -410,13 +404,15 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                       {currentPeriod.periodName}
                     </h3>
                     <p className="text-blue-700 text-sm">
-                      <span className="font-medium">Thời gian:</span>{" "}
+                      <span className="font-medium">
+                        {t("register.periodTime")}
+                      </span>{" "}
                       {new Date(currentPeriod.startDate).toLocaleDateString(
-                        "vi-VN"
+                        i18n.language === "vi" ? "vi-VN" : "en-US"
                       )}{" "}
                       -{" "}
                       {new Date(currentPeriod.endDate).toLocaleDateString(
-                        "vi-VN"
+                        i18n.language === "vi" ? "vi-VN" : "en-US"
                       )}
                     </p>
                   </div>
@@ -437,8 +433,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                       }`}
                     ></div>
                     {new Date(currentPeriod.endDate).getTime() > Date.now()
-                      ? "Đang diễn ra"
-                      : "Đã kết thúc"}
+                      ? t("register.periodOngoing")
+                      : t("register.periodEnded")}
                   </div>
                 </div>
               </div>
@@ -465,11 +461,10 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold text-amber-900 mb-2">
-                  Không có đợt đăng ký nào đang diễn ra
+                  {t("register.noPeriodTitle")}
                 </h3>
                 <p className="text-amber-700 text-base">
-                  Vui lòng chờ đến đợt đăng ký tiếp theo để có thể đề xuất đề
-                  tài.
+                  {t("register.noPeriodText")}
                 </p>
               </div>
             </div>
@@ -509,7 +504,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   htmlFor="tieuDe"
                   className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
-                  Tên đề tài <span className="text-red-500">*</span>
+                  {t("register.fields.title")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
               </div>
 
@@ -544,7 +540,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   htmlFor="moTa"
                   className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
-                  Mô tả đề tài <span className="text-red-500">*</span>
+                  {t("register.fields.description")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
               </div>
 
@@ -579,7 +576,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   htmlFor="mucTieu"
                   className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
-                  Mục tiêu <span className="text-red-500">*</span>
+                  {t("register.fields.objectives")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
               </div>
 
@@ -620,7 +618,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   htmlFor="phuongPhap"
                   className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
-                  Phương pháp thực hiện <span className="text-red-500">*</span>
+                  {t("register.fields.methodology")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
               </div>
 
@@ -655,7 +654,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   htmlFor="ketQuaDuKien"
                   className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
-                  Kết quả dự kiến <span className="text-red-500">*</span>
+                  {t("register.fields.expected")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
               </div>
 
@@ -690,7 +690,8 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   htmlFor="lyDo"
                   className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                 >
-                  Lý do đề xuất <span className="text-red-500">*</span>
+                  {t("register.fields.reason")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
               </div>
 
@@ -751,7 +752,7 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                     htmlFor="lecturer-search"
                     className="absolute top-3 left-10 text-sm text-gray-500 transition-all duration-300 pointer-events-none bg-white px-2 peer-focus:text-blue-600 peer-focus:-top-2 peer-focus:text-xs peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:font-semibold"
                   >
-                    Giảng viên hướng dẫn mong muốn{" "}
+                    {t("register.fields.lecturerWanted")}{" "}
                     <span className="text-red-500">*</span>
                   </label>
 
@@ -761,8 +762,6 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                       ref={dropdownRef}
                       className="absolute left-0 right-0 bottom-full mb-4 bg-white border border-gray-200 rounded-2xl shadow-2xl z-20 max-h-96 overflow-hidden animate-in slide-in-from-top-2 duration-200"
                     >
-                      {/* Search Header removed as requested */}
-
                       {/* Lecturer List */}
                       <div className="max-h-72 overflow-y-auto thin-scrollbar">
                         {loadingLecturers ? (
@@ -799,12 +798,17 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                             {filteredLecturers.slice(0, 8).map((l) => (
                               <div
                                 key={l.id}
-                                className={`flex items-center gap-4 p-4 cursor-pointer transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 border-b border-gray-100 last:border-b-0 group ${
+                                className={`flex items-center gap-4 p-4 transition-all duration-200 border-b border-gray-100 last:border-b-0 group ${
                                   form.giangVien?.id === l.id
                                     ? "bg-gradient-to-r from-blue-100 to-indigo-100"
-                                    : ""
+                                    : l.remainingSlots > 0
+                                    ? "cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50"
+                                    : "cursor-not-allowed opacity-60"
                                 }`}
-                                onClick={() => handleLecturerSelect(l)}
+                                onClick={() =>
+                                  l.remainingSlots > 0 &&
+                                  handleLecturerSelect(l)
+                                }
                               >
                                 <img
                                   src={l.avatar}
@@ -832,23 +836,11 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                                   }`}
                                 >
                                   {l.remainingSlots === 0
-                                    ? "Đã đủ"
-                                    : `Còn ${l.remainingSlots} chỗ`}
+                                    ? t("register.lecturerStatus.full")
+                                    : `${"Còn"} ${l.remainingSlots} ${"chỗ"}`}
                                 </span>
                               </div>
                             ))}
-
-                            {/* Show more results if available */}
-                            {filteredLecturers.length > 8 && (
-                              <div className="border-t border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-blue-50">
-                                <div className="text-center text-sm font-medium text-gray-700 mb-1">
-                                  Hiển thị 8/{filteredLecturers.length} kết quả
-                                </div>
-                                <div className="text-center text-xs text-gray-500">
-                                  💡 Gõ thêm để tìm chính xác hơn
-                                </div>
-                              </div>
-                            )}
                           </>
                         ) : (
                           <div className="p-6 text-center text-gray-500">
@@ -875,8 +867,6 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                           </div>
                         )}
                       </div>
-
-                      {/* Footer removed as requested */}
                     </div>
                   )}
                 </div>
@@ -884,6 +874,29 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
 
               {/* Submit Button */}
               <div className="pt-4 pb-6">
+                {/* Warning message when lecturer is full */}
+                {form.giangVien && form.giangVien.remainingSlots === 0 && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5 text-red-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-sm text-red-700 font-medium">
+                        {t("register.fullWarning")}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <button
                   type="submit"
                   className="w-full text-white border-none rounded-xl py-4 text-base font-bold cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] hover:opacity-90"
@@ -891,13 +904,17 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                     background:
                       "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
                   }}
-                  disabled={loading || periodIdsLoading}
+                  disabled={
+                    loading ||
+                    periodIdsLoading ||
+                    (form.giangVien && form.giangVien.remainingSlots === 0)
+                  }
                   onClick={handleSubmit}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center gap-3">
                       <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      <span>Đang gửi đề xuất...</span>
+                      <span>{t("register.submitting")}</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2">
@@ -914,7 +931,7 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                           d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                         />
                       </svg>
-                      <span>Gửi đề xuất</span>
+                      <span>{t("register.submit")}</span>
                     </div>
                   )}
                 </button>
@@ -954,10 +971,10 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
               </svg>
             </div>
             <h3 className="font-bold text-blue-900 text-lg mb-1">
-              Giảng viên đã chọn
+              {t("register.lecturerSelected")}
             </h3>
             <p className="text-gray-600 text-sm">
-              Thông tin giảng viên hướng dẫn
+              {t("register.lecturerInfo")}
             </p>
           </div>
 
@@ -997,9 +1014,23 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
                   {departmentMapping[form.giangVien.department] ||
                     form.giangVien.department}
                 </div>
-                <span className="inline-flex items-center gap-1 text-xs font-bold rounded-lg px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800">
-                  <div className="w-2 h-2 bg-green-500 rounded-sm"></div>
-                  Còn nhận sinh viên
+                <span
+                  className={`inline-flex items-center gap-1 text-xs font-bold rounded-lg px-3 py-1.5 ${
+                    form.giangVien.remainingSlots > 0
+                      ? "bg-gradient-to-r from-green-100 to-emerald-100 text-green-800"
+                      : "bg-gradient-to-r from-red-100 to-pink-100 text-red-800"
+                  }`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-sm ${
+                      form.giangVien.remainingSlots > 0
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  ></div>
+                  {form.giangVien.remainingSlots > 0
+                    ? t("register.lecturerStatus.accepting")
+                    : t("register.lecturerStatus.full")}
                 </span>
               </div>
             </div>
@@ -1022,10 +1053,10 @@ const ThesisRegisterModal = ({ isOpen, onClose, selectedPeriod }) => {
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-500 mb-1">
-                  Chưa chọn giảng viên
+                  {t("register.lecturerNotSelected")}
                 </p>
                 <p className="text-xs text-gray-400">
-                  Tìm kiếm và chọn giảng viên hướng dẫn
+                  {t("register.lecturerSearchHint")}
                 </p>
               </div>
             </div>

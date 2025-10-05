@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StudentAiChatWidget from "../../common/StudentAiChatWidget.jsx";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const StudentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -40,6 +41,36 @@ const StudentLayout = () => {
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState(false);
   const [timeTick, setTimeTick] = useState(0);
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  // Apply theme & other persisted settings
+  useEffect(() => {
+    const applySettings = (s) => {
+      try {
+        const settings =
+          s || JSON.parse(localStorage.getItem("student_settings_v1")) || {};
+        const theme = settings?.appearance?.theme || "system";
+        const root = document.documentElement;
+        if (
+          theme === "dark" ||
+          (theme === "system" &&
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          root.classList.add("dark");
+        } else {
+          root.classList.remove("dark");
+        }
+        const lang = settings?.appearance?.language || "vi";
+        if (i18n.language !== lang) i18n.changeLanguage(lang);
+      } catch (_) {}
+    };
+
+    applySettings();
+    const handler = (evt) => applySettings(evt?.detail);
+    window.addEventListener("app:student-settings", handler);
+    return () => window.removeEventListener("app:student-settings", handler);
+  }, []);
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
@@ -49,55 +80,59 @@ const StudentLayout = () => {
       case "/student":
       case "/student/home":
         return {
-          title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản đồ án tốt nghiệp",
+          title: t("page.home.title"),
+          subtitle: t("page.home.subtitle"),
         };
       case "/student/topic-registration":
         return {
-          title: "Đăng ký đề tài",
-          subtitle: "Đăng ký đề tài đồ án tốt nghiệp",
+          title: t("page.topicRegistration.title"),
+          subtitle: t("page.topicRegistration.subtitle"),
         };
       case "/student/my-thesis":
         return {
-          title: "Đề tài của tôi",
-          subtitle: "Theo dõi tiến độ và trạng thái đề tài đồ án tốt nghiệp",
+          title: t("page.myThesis.title"),
+          subtitle: t("page.myThesis.subtitle"),
         };
       case "/student/submissions":
         return {
-          title: "Tài liệu của tôi",
-          subtitle: "Xem và quản lý tài liệu",
+          title: t("page.submissions.title"),
+          subtitle: t("page.submissions.subtitle"),
         };
       case "/student/chat":
         return {
-          title: "Tin nhắn",
-          subtitle: "Trao đổi với giảng viên",
+          title: t("page.chat.title"),
+          subtitle: t("page.chat.subtitle"),
         };
       case "/student/notifications":
         return {
-          title: "Thông báo",
-          subtitle: "Quản lý thông báo",
+          title: t("page.notifications.title"),
+          subtitle: t("page.notifications.subtitle"),
         };
       case "/student/settings":
         return {
-          title: "Cài đặt",
-          subtitle: "Cấu hình tài khoản cá nhân",
+          title: t("page.settings.title"),
+          subtitle: t("page.settings.subtitle"),
         };
       case "/student/profile":
         return {
-          title: "Hồ sơ cá nhân",
-          subtitle: "Quản lý thông tin cá nhân và tài khoản",
+          title: t("page.profile.title"),
+          subtitle: t("page.profile.subtitle"),
         };
       case "/student/schedule":
         return {
-          title: "Lịch",
-          subtitle:
-            "Xem lịch trình bảo vệ đồ án tốt nghiệp và các nhiệm vụ liên quan",
+          title: t("page.schedule.title"),
+          subtitle: t("page.schedule.subtitle"),
+        };
+      case "/student/feedback":
+        return {
+          title: t("page.feedback.title"),
+          subtitle: t("page.feedback.subtitle"),
         };
 
       default:
         return {
-          title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý đồ án tốt nghiệp",
+          title: t("page.home.title"),
+          subtitle: t("page.home.subtitle"),
         };
     }
   };
@@ -893,6 +928,8 @@ const StudentLayout = () => {
                   : location.pathname === "/student/chat"
                   ? "px-0 py-0"
                   : location.pathname === "/student/schedule"
+                  ? "px-6 pt-1 pb-6"
+                  : location.pathname === "/student/feedback"
                   ? "px-6 pt-1 pb-6"
                   : "px-6 py-6"
               }`}

@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Override react-toastify colors - FORCE ERROR RED */
+.Toastify__toast--error {
+  background: #e53935 !important;
+  color: white !important;
+}
+
+.Toastify__toast--success {
+  background: #4caf50 !important;
+  color: white !important;
+}
+
+.Toastify__toast--warning {
+  background: #ff9800 !important;
+  color: white !important;
+}
+
+.Toastify__toast--info {
+  background: #2196f3 !important;
+  color: white !important;
+}
+
+/* Force all toasts to be red by default, override success only when needed */
+.Toastify__toast {
+  background: #e53935 !important;
+  color: white !important;
+}
+
+/* Only show green for explicit success messages */
+.Toastify__toast--success {
+  background: #4caf50 !important;
+}
+
 /* Thin scrollbar utility for dropdowns and panels */
 .thin-scrollbar {
   scrollbar-width: thin; /* Firefox */
@@ -18,6 +50,51 @@
 .thin-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Custom scrollbar without arrow buttons */
+.custom-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #cbd5e1 transparent; /* thumb, track */
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none; /* Hide arrow buttons */
+}
+
+/* Scrollbar contained within modal */
+.scrollbar-contained {
+  scrollbar-width: none; /* Firefox - hide completely */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.scrollbar-contained::-webkit-scrollbar {
+  width: 0px; /* Hide completely */
+  background: transparent;
+}
+.scrollbar-contained:hover::-webkit-scrollbar {
+  width: 6px; /* Show on hover */
+}
+.scrollbar-contained::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-contained::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+.scrollbar-contained::-webkit-scrollbar-button {
+  display: none; /* Hide arrow buttons */
+}
+.scrollbar-contained::-webkit-scrollbar-corner {
+  background: transparent;
+}
 .thin-scrollbar::-webkit-scrollbar-button {
   display: none;
   width: 0;
@@ -28,6 +105,30 @@
 .no-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
+}
+
+/* Dark mode baseline so theme switch is visible */
+.dark {
+  color-scheme: dark;
+}
+.dark body {
+  background-color: #1e293b; /* slate-800 - xám nhẹ hơn */
+  color: #e5e7eb; /* gray-300 */
+}
+.dark .bg-white {
+  background-color: #334155 !important; /* slate-700 - card dịu hơn */
+}
+.dark .bg-gray-50 {
+  background-color: #1f2937 !important; /* gray-800 - nền khu vực phụ */
+}
+.dark .text-gray-900 {
+  color: #f3f4f6 !important; /* gray-100 */
+}
+.dark .text-gray-700 {
+  color: #e5e7eb !important; /* gray-300 */
+}
+.dark .border-gray-200 {
+  border-color: #475569 !important; /* slate-600 - viền mềm hơn */
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */

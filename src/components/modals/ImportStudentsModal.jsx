@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { toast } from "react-toastify";
+import { showToast } from "../../utils/toastHelper";
 import importService from "../../services/import.service";
 
 const ImportStudentsModal = ({
@@ -18,7 +18,7 @@ const ImportStudentsModal = ({
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       if (!selectedFile.name.toLowerCase().endsWith(".csv")) {
-        toast.error("Vui lòng chọn file CSV");
+        showToast("Vui lòng chọn file CSV", "error");
         return;
       }
       setFile(selectedFile);
@@ -28,12 +28,12 @@ const ImportStudentsModal = ({
 
   const handleImport = async () => {
     if (!file) {
-      toast.error("Vui lòng chọn file CSV");
+      showToast("Vui lòng chọn file CSV", "error");
       return;
     }
 
     if (!periodId || !academicYearId) {
-      toast.error("Thiếu thông tin đợt đăng ký hoặc năm học");
+      showToast("Thiếu thông tin đợt đăng ký hoặc năm học", "error");
       return;
     }
 
@@ -47,19 +47,20 @@ const ImportStudentsModal = ({
 
       if (result.success) {
         setImportResult(result.data);
-        toast.success(
-          `Import thành công: ${result.data.successCount} sinh viên, ${result.data.errorCount} lỗi`
+        showToast(
+          `Import thành công: ${result.data.successCount} sinh viên, ${result.data.errorCount} lỗi`,
+          "success"
         );
 
         if (onImportSuccess) {
           onImportSuccess();
         }
       } else {
-        toast.error(result.message || "Import thất bại");
+        showToast(result.message || "Import thất bại", "error");
       }
     } catch (error) {
       console.error("Lỗi khi import:", error);
-      toast.error("Có lỗi xảy ra khi import");
+      showToast("Có lỗi xảy ra khi import", "error");
     } finally {
       setImporting(false);
     }
@@ -67,7 +68,7 @@ const ImportStudentsModal = ({
 
   const handleDownloadTemplate = () => {
     importService.downloadCSVTemplate();
-    toast.info("Đã tải template CSV");
+    showToast("Đã tải template CSV", "info");
   };
 
   const handleClose = () => {

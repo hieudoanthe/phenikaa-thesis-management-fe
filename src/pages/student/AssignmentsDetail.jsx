@@ -1,26 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { assignmentService } from "../../services";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import * as submissionService from "../../services/submission.service";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import { showToast } from "../../utils/toastHelper";
 
 const AssignmentsDetail = () => {
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState([]);
+  // Tránh tạo trùng task tổng khi React StrictMode render 2 lần
+  const autoCreatedRef = useRef(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -49,7 +38,34 @@ const AssignmentsDetail = () => {
       }
       const res = await assignmentService.getAssignmentsByTopic(topicId);
       if (res.success) {
-        setAssignments(Array.isArray(res.data) ? res.data : []);
+        const list = Array.isArray(res.data) ? res.data : [];
+        // Auto-create a general task if assignment has no tasks
+        const studentId = getUserIdFromToken();
+        for (const a of list) {
+          if (
+            Array.isArray(a.tasks) &&
+            a.tasks.length === 0 &&
+            !autoCreatedRef.current.has(a.assignmentId)
+          ) {
+            try {
+              await assignmentService.createTask(a.assignmentId, {
+                taskName: "Hoàn thành assignment",
+                description:
+                  "Task tổng tự động tạo để đánh dấu hoàn thành assignment khi không có task chi tiết",
+                priority: 2,
+                status: 2, // đang thực hiện
+                progress: 0,
+                assignedTo: studentId,
+              });
+              autoCreatedRef.current.add(a.assignmentId);
+            } catch (_) {}
+          }
+        }
+        // Reload after potential auto-creation
+        const resReload = await assignmentService.getAssignmentsByTopic(
+          topicId
+        );
+        setAssignments(Array.isArray(resReload.data) ? resReload.data : []);
       } else {
         setError(res.message || "Không thể tải assignments");
       }
@@ -345,13 +361,20 @@ const AssignmentsDetail = () => {
                             <button
                               disabled={!isMine || isCompleted}
                               onClick={() => completeTask(t.taskId)}
-                              className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                              title={
+                                isCompleted
+                                  ? "Nhiệm vụ đã hoàn thành"
+                                  : isMine
+                                  ? "Đánh dấu hoàn thành"
+                                  : "Bạn không được giao nhiệm vụ này"
+                              }
+                              className={`px-3 py-1.5 rounded-md border whitespace-nowrap text-sm transition-colors ${
                                 isMine && !isCompleted
                                   ? "bg-emerald-500 text-white hover:bg-emerald-600 border-emerald-600"
-                                  : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                  : "bg-white text-gray-500 border-gray-300 cursor-not-allowed"
                               }`}
                             >
-                              Hoàn thành
+                              {isCompleted ? "Đã hoàn thành" : "Hoàn thành"}
                             </button>
                           </div>
                         </div>
@@ -369,4 +392,3 @@ const AssignmentsDetail = () => {
 };
 
 export default AssignmentsDetail;
-

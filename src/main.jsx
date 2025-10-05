@@ -31,10 +31,13 @@ import StudentProfile from "./pages/student/StudentProfile.jsx";
 import MyThesis from "./pages/student/MyThesis.jsx";
 import AssignmentsDetail from "./pages/student/AssignmentsDetail.jsx";
 import SubmissionManagement from "./pages/student/SubmissionManagement.jsx";
+import FeedbackView from "./pages/student/FeedbackView.jsx";
+import StudentSettings from "./pages/student/Settings.jsx";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
 import GradingManagement from "./pages/lecturer/GradingManagement.jsx";
 import StudentSubmissionsView from "./pages/lecturer/StudentSubmissionsView.jsx";
+import FeedbackManagement from "./pages/lecturer/FeedbackManagement.jsx";
 
 import AcademicYearManagement from "./pages/admin/AcademicYearManagement.jsx";
 import DefenseSessionsSchedule from "./pages/admin/DefenseSessionsSchedule.jsx";
@@ -46,6 +49,7 @@ import AdminProfile from "./pages/admin/AdminProfile.jsx";
 // Import CSS
 import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
+import "./i18n";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -99,6 +103,10 @@ createRoot(document.getElementById("root")).render(
                   element={<StudentSubmissionsView />}
                 />
                 <Route
+                  path="feedback-management"
+                  element={<FeedbackManagement />}
+                />
+                <Route
                   path="defense-schedule"
                   element={
                     <PlaceholderPage
@@ -149,6 +157,8 @@ createRoot(document.getElementById("root")).render(
                 <Route path="my-thesis" element={<MyThesis />} />
                 <Route path="assignments" element={<AssignmentsDetail />} />
                 <Route path="submissions" element={<SubmissionManagement />} />
+                <Route path="feedback" element={<FeedbackView />} />
+                <Route path="settings" element={<StudentSettings />} />
                 {/* Có thể thêm các route con khác cho student ở đây */}
               </Route>
 

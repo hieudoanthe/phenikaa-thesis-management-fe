@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import Select from "react-select";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -149,17 +150,46 @@ const Notifications = () => {
               placeholder="Tìm kiếm..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg"
+              className="block w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60"
             />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="all">Tất cả</option>
-              <option value="unread">Chưa đọc</option>
-              <option value="read">Đã đọc</option>
-            </select>
+            <div className="w-44">
+              <Select
+                value={[
+                  { value: "all", label: "Tất cả" },
+                  { value: "unread", label: "Chưa đọc" },
+                  { value: "read", label: "Đã đọc" },
+                ].find((o) => o.value === filterStatus)}
+                onChange={(opt) => setFilterStatus(opt?.value || "all")}
+                options={[
+                  { value: "all", label: "Tất cả" },
+                  { value: "unread", label: "Chưa đọc" },
+                  { value: "read", label: "Đã đọc" },
+                ]}
+                isSearchable={false}
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    minHeight: 40,
+                    borderColor: state.isFocused ? "#ea580c" : "#d1d5db",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 1px rgba(234,88,12,0.6)"
+                      : "none",
+                    "&:hover": { borderColor: "#ea580c" },
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#ea580c"
+                      : state.isFocused
+                      ? "#fed7aa"
+                      : "white",
+                    color: state.isSelected ? "white" : "#374151",
+                  }),
+                }}
+                classNamePrefix="notiSelect"
+                placeholder="Lọc"
+              />
+            </div>
             <button
               onClick={handleMarkAllAsRead}
               disabled={isMarkingAll || unreadCount === 0}

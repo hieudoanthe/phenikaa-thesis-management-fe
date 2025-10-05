@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Select from "react-select";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
@@ -18,6 +19,7 @@ import * as submissionService from "../../services/submission.service";
 import { getUserIdFromToken } from "../../auth/authUtils";
 
 const StudentSubmissionsView = () => {
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -30,6 +32,15 @@ const StudentSubmissionsView = () => {
   const [fileType, setFileType] = useState("");
   const [currentViewingSubmissionId, setCurrentViewingSubmissionId] =
     useState(null);
+
+  // Feedback modal states
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedSubmissionForFeedback, setSelectedSubmissionForFeedback] =
+    useState(null);
+  const [feedbackForm, setFeedbackForm] = useState({
+    content: "",
+    feedbackType: 1, // Default to COMMENT type
+  });
   const [filters, setFilters] = useState({
     status: "",
     submissionType: "",
@@ -382,6 +393,47 @@ const StudentSubmissionsView = () => {
     setCurrentViewingSubmissionId(null);
   };
 
+  // Feedback functions
+  const handleCreateFeedback = (submission) => {
+    setSelectedSubmissionForFeedback(submission);
+    setFeedbackForm({
+      content: "",
+      feedbackType: 1, // Default to COMMENT type
+    });
+    setShowFeedbackModal(true);
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackForm.content.trim()) {
+      showToast("Vui lòng nhập nội dung phản hồi", "error");
+      return;
+    }
+
+    try {
+      const feedbackData = {
+        submissionId: selectedSubmissionForFeedback.submissionId,
+        content: feedbackForm.content,
+        feedbackType: feedbackForm.feedbackType,
+        reviewerId: getUserIdFromToken(),
+      };
+
+      await submissionService.createFeedback(feedbackData);
+      showToast("Phản hồi đã được tạo thành công", "success");
+      setShowFeedbackModal(false);
+      setSelectedSubmissionForFeedback(null);
+      setFeedbackForm({ content: "", feedbackType: 1 });
+    } catch (error) {
+      console.error("Error creating feedback:", error);
+      showToast("Lỗi khi tạo phản hồi", "error");
+    }
+  };
+
+  const closeFeedbackModal = () => {
+    setShowFeedbackModal(false);
+    setSelectedSubmissionForFeedback(null);
+    setFeedbackForm({ content: "", feedbackType: 1 });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -440,8 +492,113 @@ const StudentSubmissionsView = () => {
           </div>
         </div>
 
-        {/* Submissions Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Submissions - Mobile Cards */}
+        <div className="md:hidden">
+          {loading ? (
+            <div className="bg-white rounded-lg shadow p-6 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mx-auto mb-4"></div>
+              <p className="text-gray-600 text-lg">
+                Đang tải danh sách báo cáo...
+              </p>
+            </div>
+          ) : submissions.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+              Chưa có báo cáo nào
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {submissions.map((submission) => (
+                <div
+                  key={submission.submissionId}
+                  className="bg-white rounded-lg shadow p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-gray-900 truncate">
+                        {submission.reportTitle || "Không có tiêu đề"}
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1 truncate">
+                        Sinh viên:{" "}
+                        {submission.studentName ||
+                          submission.fullName ||
+                          "Sinh viên"}
+                      </p>
+                    </div>
+                    <div>{getStatusBadge(submission.status)}</div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div>
+                      <span className="text-gray-500">Loại:</span>
+                      <span className="ml-1 font-medium">
+                        {getSubmissionTypeText(submission.submissionType)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-gray-500">Ngày nộp:</span>
+                      <span className="ml-1 font-medium">
+                        {new Date(submission.submittedAt).toLocaleDateString(
+                          "vi-VN"
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {submission.filePath ? (
+                      <>
+                        <button
+                          onClick={() =>
+                            handleFileClick(
+                              submission.submissionId,
+                              submission.filePath
+                            )
+                          }
+                          className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1 px-2 py-1 rounded"
+                        >
+                          <span>{getFileIcon(submission.filePath)}</span>
+                          <span>Xem</span>
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDownloadFile(
+                              submission.submissionId,
+                              submission.filePath
+                            )
+                          }
+                          className="text-green-600 hover:text-green-800 underline flex items-center gap-1 px-2 py-1 rounded"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            fill="currentColor"
+                            className="bi bi-cloud-arrow-down-fill inline mr-1"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
+                          </svg>
+                          <span>Tải về</span>
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">Không có file</span>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => handleCreateFeedback(submission)}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      Phản hồi
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Submissions Table (Desktop) */}
+        <div className="bg-white rounded-lg shadow overflow-hidden hidden md:block">
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -478,6 +635,9 @@ const StudentSubmissionsView = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Ngày nộp
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Hành động
                     </th>
                   </tr>
                 </thead>
@@ -571,6 +731,22 @@ const StudentSubmissionsView = () => {
                               "vi-VN"
                             )
                           : "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleCreateFeedback(submission)}
+                          className="text-primary-600 hover:text-primary-900 bg-primary-50 hover:bg-primary-100 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1"
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z" />
+                          </svg>
+                          Phản hồi
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -839,6 +1015,102 @@ const StudentSubmissionsView = () => {
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Feedback Modal */}
+        {showFeedbackModal && selectedSubmissionForFeedback && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Tạo phản hồi cho báo cáo
+                </h3>
+                <button
+                  onClick={closeFeedbackModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Thông tin báo cáo:
+                  </h4>
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <p className="text-sm text-gray-900">
+                      <span className="font-medium">Tiêu đề:</span>{" "}
+                      {selectedSubmissionForFeedback.title}
+                    </p>
+                    <p className="text-sm text-gray-900">
+                      <span className="font-medium">Sinh viên:</span>{" "}
+                      {selectedSubmissionForFeedback.studentName ||
+                        selectedSubmissionForFeedback.fullName ||
+                        "N/A"}
+                    </p>
+                    <p className="text-sm text-gray-900">
+                      <span className="font-medium">Loại báo cáo:</span>{" "}
+                      {getSubmissionTypeText(
+                        selectedSubmissionForFeedback.submissionType
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="feedbackContent"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Nội dung phản hồi *
+                    </label>
+                    <textarea
+                      id="feedbackContent"
+                      value={feedbackForm.content}
+                      onChange={(e) =>
+                        setFeedbackForm({
+                          ...feedbackForm,
+                          content: e.target.value,
+                        })
+                      }
+                      placeholder="Nhập nội dung phản hồi chi tiết..."
+                      rows={6}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={closeFeedbackModal}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSubmitFeedback}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-500 border border-transparent rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  Tạo phản hồi
+                </button>
               </div>
             </div>
           </div>

@@ -4,20 +4,8 @@ import registrationService from "../../services/registration.service";
 import { userService } from "../../services";
 import registrationPeriodService from "../../services/registrationPeriod.service";
 import ThesisRegisterModal from "./ThesisRegister.jsx";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import { showToast } from "../../utils/toastHelper";
+import { useTranslation } from "react-i18next";
 
 const difficultyMap = {
   ADVANCED: {
@@ -53,6 +41,7 @@ const translateDifficulty = (level) => {
 };
 
 const TopicRegistration = () => {
+  const { t, i18n } = useTranslation();
   const [topics, setTopics] = useState([]);
   const [search, setSearch] = useState("");
   const [serverPage, setServerPage] = useState(0);
@@ -218,11 +207,11 @@ const TopicRegistration = () => {
             "Đăng ký đề tài thành công! Vui lòng chờ giảng viên duyệt."
         );
       } else {
-        showToast(res.message || "Đăng ký đề tài thất bại");
+        showToast(res.message || "Đăng ký đề tài thất bại", "error");
       }
     } catch (err) {
       console.error("Lỗi khi đăng ký:", err);
-      showToast("Đã xảy ra lỗi khi đăng ký đề tài");
+      showToast("Đã xảy ra lỗi khi đăng ký đề tài", "error");
     } finally {
       setRegisteringId(null);
     }
@@ -252,8 +241,10 @@ const TopicRegistration = () => {
   const periodOptions = activePeriods.map((p) => ({
     value: p.periodId,
     label: `${p.periodName} (${new Date(p.startDate).toLocaleDateString(
-      "vi-VN"
-    )} - ${new Date(p.endDate).toLocaleDateString("vi-VN")})`,
+      i18n.language === "vi" ? "vi-VN" : "en-US"
+    )} - ${new Date(p.endDate).toLocaleDateString(
+      i18n.language === "vi" ? "vi-VN" : "en-US"
+    )})`,
   }));
 
   // Đã bỏ data filter theo Khoa và Năm học
@@ -264,22 +255,22 @@ const TopicRegistration = () => {
       ...provided,
       minHeight: "38px",
       backgroundColor: "white",
-      borderColor: state.isFocused ? "#273C62" : "#d1d5db",
-      boxShadow: state.isFocused ? "0 0 0 2px rgba(39, 60, 98, 0.1)" : "none",
+      borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(255, 102, 0, 0.1)" : "none",
       "&:hover": {
-        borderColor: state.isFocused ? "#273C62" : "#9ca3af",
+        borderColor: state.isFocused ? "#ff6600" : "#9ca3af",
       },
     }),
     option: (provided, state) => ({
       ...provided,
       backgroundColor: state.isSelected
-        ? "#273C62"
+        ? "#ff6600"
         : state.isFocused
-        ? "#e5e7eb"
+        ? "#fff7ed"
         : "white",
       color: state.isSelected ? "white" : "#374151",
       "&:hover": {
-        backgroundColor: state.isSelected ? "#273C62" : "#e5e7eb",
+        backgroundColor: state.isSelected ? "#ff6600" : "#fff7ed",
       },
     }),
     placeholder: (provided) => ({
@@ -299,7 +290,7 @@ const TopicRegistration = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mb-4"></div>
-          <p className="text-gray-600 text-lg">Đang tải danh sách đề tài...</p>
+          <p className="text-gray-600 text-lg">{t("topics.loading")}</p>
         </div>
       </div>
     );
@@ -309,9 +300,9 @@ const TopicRegistration = () => {
     <div className="max-w-full mx-auto p-3">
       {/* Chọn đợt đăng ký (nhiều đợt song song) */}
       {activePeriods.length > 0 && (
-        <div className="bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-4">
-          <label className="block text-sm font-semibold text-white mb-2">
-            Chọn đợt đăng ký
+        <div className="bg-gradient-to-r from-accent-50 to-accent-100 border border-accent-200 rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+          <label className="block text-sm font-semibold text-accent-700 mb-2">
+            {t("topics.selectPeriod")}
           </label>
           <Select
             value={
@@ -320,7 +311,7 @@ const TopicRegistration = () => {
             onChange={(opt) => setSelectedPeriodId(opt?.value || null)}
             options={periodOptions}
             styles={customSelectStyles}
-            placeholder="Chọn đợt đăng ký"
+            placeholder={t("topics.selectPeriodPlaceholder")}
             isClearable={false}
             className="text-sm"
           />
@@ -333,22 +324,27 @@ const TopicRegistration = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="text-sm text-gray-300 mb-2">
-                Đợt đăng ký hiện tại
+                {t("topics.currentPeriod")}
               </div>
               <div className="text-2xl font-bold text-white mb-2">
                 {currentPeriod.periodName}
               </div>
               <div className="text-sm text-gray-300">
-                Thời gian:{" "}
-                {new Date(currentPeriod.startDate).toLocaleDateString("vi-VN")}{" "}
-                - {new Date(currentPeriod.endDate).toLocaleDateString("vi-VN")}
+                {t("topics.timeRange")}{" "}
+                {new Date(currentPeriod.startDate).toLocaleDateString(
+                  i18n.language === "vi" ? "vi-VN" : "en-US"
+                )}{" "}
+                -{" "}
+                {new Date(currentPeriod.endDate).toLocaleDateString(
+                  i18n.language === "vi" ? "vi-VN" : "en-US"
+                )}
               </div>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-white">
                 {new Date(currentPeriod.endDate).getTime() > Date.now()
-                  ? "Đang diễn ra"
-                  : "Đã kết thúc"}
+                  ? t("topics.ongoing")
+                  : t("topics.ended")}
               </div>
             </div>
           </div>
@@ -360,17 +356,15 @@ const TopicRegistration = () => {
         <div className="no-period-warning bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
           <div className="text-yellow-800">
             <h3 className="text-lg font-semibold mb-2">
-              Không có đợt đăng ký nào đang diễn ra
+              {t("topics.noActivePeriodTitle")}
             </h3>
-            <p>
-              Vui lòng chờ đến đợt đăng ký tiếp theo để có thể đăng ký đề tài.
-            </p>
+            <p>{t("topics.noActivePeriodMessage")}</p>
           </div>
         </div>
       )}
 
       {/* Nút mở modal đề xuất đề tài */}
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end mb-6">
         <button
           onClick={() => setIsRegisterModalOpen(true)}
           className="text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover:opacity-90"
@@ -391,16 +385,16 @@ const TopicRegistration = () => {
               d="M12 6v6m0 0v6m0-6h6m-6 0H6"
             />
           </svg>
-          Đề xuất đề tài mới
+          {t("topics.createProposal")}
         </button>
       </div>
 
       {/* Filters Bar */}
-      <div className="p-3.5 bg-gray-50 rounded-lg border border-gray-200 mb-4 flex gap-3.5 items-end flex-wrap">
+      <div className="p-4 bg-white rounded-xl border border-gray-200 mb-6 shadow-sm flex gap-4 items-end flex-wrap">
         {/* Search Filter */}
-        <div className="flex flex-col gap-1.5 flex-1 min-w-[300px]">
-          <label className="font-semibold text-blue-900 text-sm uppercase tracking-wider">
-            Tìm kiếm
+        <div className="flex flex-col gap-2 flex-1 min-w-[300px]">
+          <label className="font-semibold text-gray-800 text-sm">
+            {t("topics.searchLabel")}
           </label>
           <div className="relative">
             <svg
@@ -414,85 +408,56 @@ const TopicRegistration = () => {
             </svg>
             <input
               type="text"
-              placeholder="Tìm theo từ khóa hoặc giảng viên"
+              placeholder={t("topics.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-2.5 py-1.5 pl-8 border border-gray-300 rounded-md text-sm min-w-[180px] outline-none focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-200 transition-colors"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm transition-all duration-200"
             />
           </div>
         </div>
 
         {/* Clear Filters Button */}
-        <button
-          className="px-3 py-1.5 bg-gray-500 text-white border-none rounded-md text-xs font-medium cursor-pointer transition-all duration-200 hover:bg-gray-600 hover:-translate-y-0.5 whitespace-nowrap self-end"
-          onClick={clearFilters}
-        >
-          Xóa bộ lọc
-        </button>
+        <div className="flex flex-col gap-2">
+          <div className="h-5"></div> {/* Spacer để align với label */}
+          <button
+            className="px-4 py-2 bg-gray-500 text-white border-none rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-gray-600 whitespace-nowrap h-[36px]"
+            onClick={clearFilters}
+          >
+            {t("topics.clearFilters")}
+          </button>
+        </div>
       </div>
 
       {!error && (
         <>
           {/* Topics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
             {currentTopics.map((topic) => (
               <div
                 key={topic.topicId}
-                className="border border-gray-200 rounded-lg bg-white p-3.5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-orange-500 transition-all duration-200 flex flex-col gap-2.5 min-h-[180px]"
+                className="border border-gray-200 rounded-xl bg-white p-4 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-primary-500 transition-all duration-200 flex flex-col gap-3 min-h-[200px]"
               >
                 {/* Topic Title */}
-                <div className="text-sm font-semibold text-gray-900 leading-tight m-0">
+                <div className="text-base font-semibold text-gray-900 leading-tight">
                   {topic.title}
                 </div>
 
                 {/* Topic Description */}
-                <div className="text-xs text-gray-500 leading-relaxed m-0 flex-grow">
+                <div className="text-sm text-gray-600 leading-relaxed flex-grow">
                   {topic.description}
                 </div>
 
                 {/* Topic Meta */}
-                <div className="bg-gray-50 border border-gray-200 rounded-md p-2.5 flex flex-col gap-1.5">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex flex-col gap-2">
                   {/* Supervisor */}
-                  <div className="flex justify-between items-center gap-1.5">
-                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[55px]">
-                      Giảng viên:
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">
+                      {t("topics.supervisor")}
                     </span>
-                    <span className="text-xs font-medium text-purple-600 font-semibold">
+                    <span className="text-sm font-semibold text-primary-600">
                       {lecturerNameMap[topic.supervisorId] ||
                         topic.supervisorName ||
-                        "Đang cập nhật"}
-                    </span>
-                  </div>
-
-                  {/* Slots */}
-                  <div className="flex justify-between items-center gap-1.5">
-                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[55px]">
-                      Số lượng:
-                    </span>
-                    <span
-                      className={`text-xs font-medium font-semibold ${
-                        topic.currentStudents >= topic.maxStudents
-                          ? "text-red-600"
-                          : "text-green-600"
-                      }`}
-                    >
-                      {topic.currentStudents}/{topic.maxStudents} chỗ trống
-                    </span>
-                  </div>
-
-                  {/* Difficulty */}
-                  <div className="flex justify-between items-center gap-1.5">
-                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[55px]">
-                      Độ khó:
-                    </span>
-                    <span
-                      className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border ${
-                        difficultyMap[
-                          String(topic.difficultyLevel).toUpperCase()
-                        ]?.class || ""
-                      }`}
-                    >
-                      {translateDifficulty(topic.difficultyLevel)}
+                        t("topics.updating")}
                     </span>
                   </div>
                 </div>
@@ -522,14 +487,14 @@ const TopicRegistration = () => {
                   onClick={() => handleRegister(topic.topicId)}
                 >
                   {registeringId === topic.topicId
-                    ? "Đang đăng ký..."
+                    ? t("topics.registering")
                     : topic.status === "Approved"
-                    ? "Đã duyệt"
+                    ? t("topics.approved")
                     : topic.status === "Pending"
-                    ? "Đang chờ"
+                    ? t("topics.pending")
                     : topic.currentStudents >= topic.maxStudents
-                    ? "Hết chỗ"
-                    : "Đăng ký"}
+                    ? t("topics.full")
+                    : t("topics.register")}
                 </button>
               </div>
             ))}

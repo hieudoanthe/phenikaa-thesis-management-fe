@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import Select from "react-select";
-import { toast } from "react-toastify";
+import { showToast } from "../../utils/toastHelper";
 import topicService from "../../services/topic.service";
 import userService from "../../services/user.service";
 import AddTopicModal from "../../components/modals/AddTopicModal.jsx";
@@ -84,20 +84,6 @@ const ThesisManagement = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
-  // Helper hiển thị toast sử dụng react-toastify
-  const showToast = (message, type = "success") => {
-    try {
-      if (type === "error") return toast.error(message);
-      if (type === "warning") return toast.warn(message);
-      if (type === "info") return toast.info(message);
-      return toast.success(message);
-    } catch (err) {
-      console.error("Không thể hiển thị toast:", err);
-      // Fallback: hiển thị trong console
-      (type === "success" ? console.log : console.error)(message);
-    }
-  };
 
   // Hàm load thông tin profile của người đề xuất và người đăng ký
   const loadSuggestedByProfiles = async (topicsData) => {

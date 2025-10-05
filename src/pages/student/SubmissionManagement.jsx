@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
-
-// Helper hiển thị toast sử dụng react-toastify
-const showToast = (message, type = "success") => {
-  try {
-    if (type === "error") return toast.error(message);
-    if (type === "warning") return toast.warn(message);
-    if (type === "info") return toast.info(message);
-    return toast.success(message);
-  } catch (err) {
-    console.error("Không thể hiển thị toast:", err);
-    (type === "success" ? console.log : console.error)(message);
-  }
-};
+import { useNavigate } from "react-router-dom";
+import { showToast } from "../../utils/toastHelper";
 import * as submissionService from "../../services/submission.service";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import Select from "react-select";
+import { useTranslation } from "react-i18next";
 
 const SubmissionManagement = () => {
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -86,10 +77,10 @@ const SubmissionManagement = () => {
   // Bỏ filter theo trạng thái theo yêu cầu
 
   const submissionTypeOptions = [
-    { value: "", label: "Tất cả loại" },
-    { value: "1", label: "Báo cáo tiến độ" },
-    { value: "2", label: "Báo cáo KLTN" },
-    { value: "3", label: "Báo cáo khác" },
+    { value: "", label: t("submission.filters.allTypes") },
+    { value: "1", label: t("submission.filters.progress") },
+    { value: "2", label: t("submission.filters.final") },
+    { value: "3", label: t("submission.filters.other") },
   ];
 
   // Custom styles cho react-select
@@ -130,6 +121,25 @@ const SubmissionManagement = () => {
     }),
   };
 
+  // Helper to resolve topic title/code like MyThesis.jsx
+  const getTopicInfo = (topicId) => {
+    const topic = confirmedTopics.find(
+      (t) => String(t.topicId) === String(topicId)
+    );
+    return {
+      title: topic?.topicTitle || topic?.title || `Đề tài ${topicId}`,
+      code: topic?.topicCode || topic?.code || `Mã ${topicId}`,
+    };
+  };
+
+  // Helper: truncate by words and keep full in title tooltip
+  const truncateWords = (text, maxWords) => {
+    if (!text) return "";
+    const words = String(text).trim().split(/\s+/);
+    if (words.length <= maxWords) return text;
+    return words.slice(0, maxWords).join(" ") + "…";
+  };
+
   const loadSubmissions = async () => {
     try {
       setLoading(true);
@@ -148,7 +158,7 @@ const SubmissionManagement = () => {
       console.error("Error loading submissions:", error);
       if (!hasShownError) {
         setHasShownError(true);
-        showToast("Lỗi khi tải dữ liệu");
+        showToast(t("submission.toasts.loadError"), "error");
       }
     } finally {
       setLoading(false);
@@ -169,7 +179,7 @@ const SubmissionManagement = () => {
       console.error("Error loading confirmed topics:", error);
       if (!hasShownError) {
         setHasShownError(true);
-        showToast("Lỗi khi tải dữ liệu");
+        showToast(t("submission.toasts.loadError"), "error");
       }
     } finally {
       setLoadingTopics(false);
@@ -189,7 +199,7 @@ const SubmissionManagement = () => {
       };
 
       await submissionService.createSubmission(submissionData);
-      showToast("Tạo báo cáo thành công");
+      showToast(t("submission.toasts.createSuccess"));
       setShowCreateModal(false);
       resetForm();
       loadSubmissions();
@@ -201,7 +211,7 @@ const SubmissionManagement = () => {
       ) {
         showToast("File quá lớn. Vui lòng chọn file nhỏ hơn 50MB.", "error");
       } else {
-        showToast("Lỗi khi tạo báo cáo");
+        showToast(t("submission.toasts.loadError"), "error");
       }
     } finally {
       setLoading(false);
@@ -230,7 +240,7 @@ const SubmissionManagement = () => {
         selectedSubmission.submissionId,
         submissionData
       );
-      showToast("Cập nhật báo cáo thành công");
+      showToast(t("submission.toasts.createSuccess"));
       setShowEditModal(false);
       resetForm();
       loadSubmissions();
@@ -252,7 +262,7 @@ const SubmissionManagement = () => {
           showToast("Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.", "error");
         }
       } else {
-        showToast("Lỗi khi cập nhật báo cáo");
+        showToast(t("submission.toasts.loadError"), "error");
       }
     } finally {
       setLoading(false);
@@ -276,7 +286,7 @@ const SubmissionManagement = () => {
       setSubmissionToDelete(null);
     } catch (error) {
       console.error("Error deleting submission:", error);
-      showToast("Lỗi khi xóa báo cáo");
+      showToast(t("submission.toasts.loadError"), "error");
     } finally {
       setLoading(false);
     }
@@ -295,7 +305,7 @@ const SubmissionManagement = () => {
       loadSubmissions();
     } catch (error) {
       console.error("Error updating status:", error);
-      showToast("Lỗi khi cập nhật trạng thái");
+      showToast(t("submission.toasts.loadError"), "error");
     } finally {
       setLoading(false);
     }
@@ -329,13 +339,25 @@ const SubmissionManagement = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      1: { text: "Đã nộp", color: "bg-blue-100 text-blue-800" },
-      2: { text: "Đang xem xét", color: "bg-yellow-100 text-yellow-800" },
-      3: { text: "Đã duyệt", color: "bg-green-100 text-green-800" },
-      4: { text: "Từ chối", color: "bg-red-100 text-red-800" },
+      1: {
+        text: t("submission.status.submitted"),
+        color: "bg-blue-100 text-blue-800",
+      },
+      2: {
+        text: t("submission.status.reviewing"),
+        color: "bg-yellow-100 text-yellow-800",
+      },
+      3: {
+        text: t("submission.status.approved"),
+        color: "bg-green-100 text-green-800",
+      },
+      4: {
+        text: t("submission.status.rejected"),
+        color: "bg-red-100 text-red-800",
+      },
     };
     const statusInfo = statusMap[status] || {
-      text: "Không xác định",
+      text: t("submission.status.unknown"),
       color: "bg-gray-100 text-gray-800",
     };
     return (
@@ -349,26 +371,14 @@ const SubmissionManagement = () => {
 
   const getSubmissionTypeText = (type) => {
     const typeMap = {
-      1: "Báo cáo tiến độ",
-      2: "Báo cáo KLTN",
-      3: "Báo cáo khác",
+      1: t("submission.filters.progress"),
+      2: t("submission.filters.final"),
+      3: t("submission.filters.other"),
     };
-    return typeMap[type] || "Không xác định";
+    return typeMap[type] || t("submission.status.unknown");
   };
 
-  const getTopicInfo = (topicId) => {
-    const topic = confirmedTopics.find((t) => t.topicId === topicId);
-    if (topic) {
-      return {
-        title: topic.topicTitle || `Đề tài ${topicId}`,
-        code: topic.topicCode || `Mã ${topicId}`,
-      };
-    }
-    return {
-      title: `Đề tài ${topicId}`,
-      code: `Mã ${topicId}`,
-    };
-  };
+  // (removed duplicate getTopicInfo defined later)
 
   // Helper function để lấy icon cho từng loại file
   const getFileIcon = (filePath) => {
@@ -618,7 +628,7 @@ const SubmissionManagement = () => {
         <div className="flex flex-col md:flex-row md:items-end gap-4">
           <div className="shrink-0">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Loại báo cáo
+              {t("submission.filters.typeLabel")}
             </label>
             <Select
               value={submissionTypeOptions.find(
@@ -632,14 +642,14 @@ const SubmissionManagement = () => {
               }
               options={submissionTypeOptions}
               styles={customSelectStyles}
-              placeholder="Chọn loại báo cáo"
+              placeholder={t("submission.filters.typePlaceholder")}
               isSearchable
               className="text-sm"
             />
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tìm kiếm
+              {t("submission.filters.searchLabel")}
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
@@ -660,8 +670,8 @@ const SubmissionManagement = () => {
                 onChange={(e) =>
                   setFilters({ ...filters, search: e.target.value })
                 }
-                placeholder="Tìm kiếm theo tiêu đề..."
-                className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t("submission.filters.searchPlaceholder")}
+                className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>
@@ -675,39 +685,176 @@ const SubmissionManagement = () => {
                   "linear-gradient(135deg, #ea580c 100%, #fb923c 100%)",
               }}
             >
-              Tạo báo cáo mới
+              {t("submission.createNew")}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Submissions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Submissions - Mobile Cards */}
+      <div className="md:hidden">
+        {loading ? (
+          <div className="bg-white rounded-lg shadow p-6 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mx-auto mb-4"></div>
+            <p className="text-gray-600 text-lg">
+              {t("submission.loadingList")}
+            </p>
+          </div>
+        ) : submissions.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+            {t("submission.emptyList")}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {submissions.map((submission) => (
+              <div
+                key={submission.submissionId}
+                className="bg-white rounded-lg shadow p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-semibold text-gray-900 truncate">
+                      {submission.reportTitle}
+                    </h4>
+                    <p
+                      className="text-xs text-gray-600 mt-1 truncate"
+                      title={`${t("submission.table.topicPrefix")} ${
+                        getTopicInfo(submission.topicId).title
+                      }`}
+                    >
+                      {t("submission.table.topicPrefix")} {""}
+                      {truncateWords(getTopicInfo(submission.topicId).title, 4)}
+                    </p>
+                  </div>
+                  <div>{getStatusBadge(submission.status)}</div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div>
+                    <span className="text-gray-500">
+                      {t("submission.table.mobile.type")}
+                    </span>
+                    <span className="ml-1 font-medium">
+                      {getSubmissionTypeText(submission.submissionType)}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-gray-500">
+                      {t("submission.table.mobile.submittedAt")}
+                    </span>
+                    <span className="ml-1 font-medium">
+                      {new Date(submission.submittedAt).toLocaleDateString(
+                        "vi-VN"
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {submission.filePath ? (
+                    <>
+                      <button
+                        onClick={() =>
+                          setShowFileModal(true) ||
+                          (setFileUrl(null),
+                          setFileName(getFileName(submission.filePath)),
+                          setFileType(""),
+                          setCurrentViewingSubmissionId(
+                            submission.submissionId
+                          ))
+                        }
+                        className="text-blue-600 hover:text-blue-800 underline flex items-center gap-1 px-2 py-1 rounded"
+                      >
+                        <span>{getFileIcon(submission.filePath)}</span>
+                        <span>{t("submission.table.view")}</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDownloadFile(
+                            submission.submissionId,
+                            submission.filePath
+                          )
+                        }
+                        className="text-green-600 hover:text-green-800 underline flex items-center gap-1 px-2 py-1 rounded"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          className="bi bi-cloud-arrow-down-fill inline mr-1"
+                          viewBox="0 0 16 16"
+                        >
+                          <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
+                        </svg>
+                        <span>{t("submission.table.download")}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-gray-400">
+                      {t("submission.table.noFile")}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button
+                    onClick={() =>
+                      navigate(
+                        `/student/feedback?submission=${submission.submissionId}`
+                      )
+                    }
+                    className="text-green-600 hover:text-green-900"
+                  >
+                    {t("submission.table.feedback")}
+                  </button>
+                  <button
+                    onClick={() => openEditModal(submission)}
+                    className="text-blue-600 hover:text-blue-900"
+                  >
+                    {t("submission.table.edit")}
+                  </button>
+                  {submission.status !== 1 && (
+                    <button
+                      onClick={() =>
+                        handleDeleteSubmission(submission.submissionId)
+                      }
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      {t("submission.table.delete")}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Submissions Table (Desktop) */}
+      <div className="bg-white rounded-lg shadow overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tiêu đề
+                  {t("submission.table.title")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Đề tài
+                  {t("submission.table.topic")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Loại
+                  {t("submission.table.type")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  File
+                  {t("submission.table.file")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
+                  {t("submission.table.status")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày nộp
+                  {t("submission.table.submittedAt")}
                 </th>
 
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hành động
+                  {t("submission.table.actions")}
                 </th>
               </tr>
             </thead>
@@ -717,7 +864,7 @@ const SubmissionManagement = () => {
                   <td colSpan="8" className="px-6 py-4 text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mx-auto mb-4"></div>
                     <p className="text-gray-600 text-lg">
-                      Đang tải danh sách báo cáo...
+                      {t("submission.loadingList")}
                     </p>
                   </td>
                 </tr>
@@ -747,11 +894,17 @@ const SubmissionManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {topicInfo.title}
+                        <div
+                          className="text-sm font-medium text-gray-900 truncate max-w-[240px]"
+                          title={getTopicInfo(submission.topicId).title}
+                        >
+                          {truncateWords(
+                            getTopicInfo(submission.topicId).title,
+                            4
+                          )}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {topicInfo.code}
+                          {getTopicInfo(submission.topicId).code}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -775,7 +928,7 @@ const SubmissionManagement = () => {
                               ) : (
                                 <span>{getFileIcon(submission.filePath)}</span>
                               )}
-                              <span>Xem</span>
+                              <span>{t("submission.table.view")}</span>
                             </button>
                             <button
                               onClick={() =>
@@ -803,7 +956,7 @@ const SubmissionManagement = () => {
                                   <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
                                 </svg>
                               )}
-                              <span>Tải về</span>
+                              <span>{t("submission.table.download")}</span>
                             </button>
                           </div>
                         ) : (
@@ -822,19 +975,31 @@ const SubmissionManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <button
+                            onClick={() =>
+                              navigate(
+                                `/student/feedback?submission=${submission.submissionId}`
+                              )
+                            }
+                            className="text-green-600 hover:text-green-900 flex items-center gap-1"
+                          >
+                            {t("submission.table.feedback")}
+                          </button>
+                          <button
                             onClick={() => openEditModal(submission)}
                             className="text-blue-600 hover:text-blue-900"
                           >
-                            Sửa
+                            {t("submission.table.edit")}
                           </button>
-                          <button
-                            onClick={() =>
-                              handleDeleteSubmission(submission.submissionId)
-                            }
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Xóa
-                          </button>
+                          {submission.status !== 1 && (
+                            <button
+                              onClick={() =>
+                                handleDeleteSubmission(submission.submissionId)
+                              }
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Xóa
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -905,7 +1070,7 @@ const SubmissionManagement = () => {
             <div className="mt-3">
               <div className="flex items-center justify-between mb-6 pb-3 border-b border-gray-200">
                 <h3 className="text-lg font-medium text-gray-900 m-0">
-                  Tạo báo cáo mới
+                  {t("submission.modal.create.title")}
                 </h3>
               </div>
               <form onSubmit={handleCreateSubmission}>
@@ -924,20 +1089,25 @@ const SubmissionManagement = () => {
                     disabled={loadingTopics}
                   >
                     <option value="">
-                      {loadingTopics ? "Đang tải..." : "Chọn đề tài"}
+                      {loadingTopics
+                        ? t("submission.loadingList")
+                        : t("submission.modal.create.topic")}
                     </option>
-                    {confirmedTopics.map((topic) => (
-                      <option key={topic.topicId} value={topic.topicId}>
-                        {topic.topicTitle || `Đề tài ${topic.topicId}`} -{" "}
-                        {topic.topicCode || `Mã ${topic.topicId}`}
-                      </option>
-                    ))}
+                    {confirmedTopics.map((topic) => {
+                      const info = getTopicInfo(topic.topicId);
+                      return (
+                        <option key={topic.topicId} value={topic.topicId}>
+                          {info.title} - {info.code}
+                        </option>
+                      );
+                    })}
                   </select>
                   <label
                     htmlFor="create-topicId"
                     className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
                   >
-                    Chọn đề tài <span className="text-red-500">*</span>
+                    {t("submission.modal.create.topic")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   {confirmedTopics.length === 0 && !loadingTopics && (
                     <p className="text-sm text-red-600 mt-1">
@@ -962,9 +1132,10 @@ const SubmissionManagement = () => {
                   />
                   <label
                     htmlFor="create-title"
-                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm"
+                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs"
                   >
-                    Tiêu đề báo cáo <span className="text-red-500">*</span>
+                    {t("submission.modal.create.titleLabel")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                 </div>
                 <div className="mb-4 relative">
@@ -983,9 +1154,10 @@ const SubmissionManagement = () => {
                   />
                   <label
                     htmlFor="create-desc"
-                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm"
+                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs"
                   >
-                    Mô tả <span className="text-red-500">*</span>
+                    {t("submission.modal.create.description")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                 </div>
                 <div className="mb-4 relative">
@@ -1000,15 +1172,18 @@ const SubmissionManagement = () => {
                     }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                   >
-                    <option value={1}>Báo cáo tiến độ</option>
-                    <option value={2}>Báo cáo KLTN</option>
-                    <option value={3}>Báo cáo khác</option>
+                    <option value={1}>
+                      {t("submission.filters.progress")}
+                    </option>
+                    <option value={2}>{t("submission.filters.final")}</option>
+                    <option value={3}>{t("submission.filters.other")}</option>
                   </select>
                   <label
                     htmlFor="create-type"
-                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs"
                   >
-                    Loại báo cáo <span className="text-red-500">*</span>
+                    {t("submission.modal.create.type")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                 </div>
                 <div className="mb-4 relative">
@@ -1036,13 +1211,13 @@ const SubmissionManagement = () => {
                   />
                   <label
                     htmlFor="create-file"
-                    className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
+                    className="absolute left-2 bg-white px-1 text-gray-500 transition-all duration-200 top-2.5 text-sm peer-focus:-top-2 peer-focus:text-xs peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs"
                   >
-                    File đính kèm <span className="text-red-500">*</span>
+                    {t("submission.modal.create.attachment")}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <p className="text-xs text-gray-500 mt-1">
-                    Hỗ trợ: PDF, Word, Excel, PowerPoint, TXT, ZIP, RAR, JPG,
-                    PNG, GIF (Tối đa 50MB)
+                    {t("submission.modal.create.attachmentHelp")}
                   </p>
                 </div>
                 <div className="flex justify-end space-x-3">
@@ -1051,7 +1226,7 @@ const SubmissionManagement = () => {
                     onClick={() => setShowCreateModal(false)}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                   >
-                    Hủy
+                    {t("submission.modal.create.cancel")}
                   </button>
                   <button
                     type="submit"
@@ -1062,7 +1237,9 @@ const SubmissionManagement = () => {
                         "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
                     }}
                   >
-                    {loading ? "Đang tạo..." : "Tạo báo cáo"}
+                    {loading
+                      ? t("submission.modal.create.submitting")
+                      : t("submission.modal.create.submit")}
                   </button>
                 </div>
               </form>
@@ -1077,7 +1254,7 @@ const SubmissionManagement = () => {
           <div className="relative top-16 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-xl bg-white">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Chỉnh sửa báo cáo
+                {t("submission.modal.edit.title")}
               </h3>
               <form onSubmit={handleUpdateSubmission}>
                 <div className="mb-4 relative">
@@ -1095,20 +1272,24 @@ const SubmissionManagement = () => {
                     disabled={loadingTopics}
                   >
                     <option value="">
-                      {loadingTopics ? "Đang tải..." : "Chọn đề tài"}
+                      {loadingTopics
+                        ? t("submission.loadingList")
+                        : t("submission.modal.edit.topic")}
                     </option>
-                    {confirmedTopics.map((topic) => (
-                      <option key={topic.topicId} value={topic.topicId}>
-                        {topic.topicTitle || `Đề tài ${topic.topicId}`} -{" "}
-                        {topic.topicCode || `Mã ${topic.topicId}`}
-                      </option>
-                    ))}
+                    {confirmedTopics.map((topic) => {
+                      const info = getTopicInfo(topic.topicId);
+                      return (
+                        <option key={topic.topicId} value={topic.topicId}>
+                          {info.title} - {info.code}
+                        </option>
+                      );
+                    })}
                   </select>
                   <label
                     htmlFor="edit-topicId"
                     className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
                   >
-                    Chọn đề tài
+                    {t("submission.modal.edit.topic")}
                   </label>
                   {confirmedTopics.length === 0 && !loadingTopics && (
                     <p className="text-sm text-red-600 mt-1">
@@ -1134,7 +1315,7 @@ const SubmissionManagement = () => {
                     htmlFor="edit-title"
                     className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
                   >
-                    Tiêu đề báo cáo
+                    {t("submission.modal.edit.titleLabel")}
                   </label>
                 </div>
                 <div className="mb-4 relative">
@@ -1154,7 +1335,7 @@ const SubmissionManagement = () => {
                     htmlFor="edit-desc"
                     className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
                   >
-                    Mô tả
+                    {t("submission.modal.edit.description")}
                   </label>
                 </div>
                 <div className="mb-4 relative">
@@ -1169,15 +1350,17 @@ const SubmissionManagement = () => {
                     }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white peer"
                   >
-                    <option value={1}>Báo cáo tiến độ</option>
-                    <option value={2}>Báo cáo KLTN</option>
-                    <option value={3}>Báo cáo khác</option>
+                    <option value={1}>
+                      {t("submission.filters.progress")}
+                    </option>
+                    <option value={2}>{t("submission.filters.final")}</option>
+                    <option value={3}>{t("submission.filters.other")}</option>
                   </select>
                   <label
                     htmlFor="edit-type"
                     className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
                   >
-                    Loại báo cáo
+                    {t("submission.modal.edit.type")}
                   </label>
                 </div>
                 <div className="mb-4 relative">
@@ -1207,11 +1390,10 @@ const SubmissionManagement = () => {
                     htmlFor="edit-file"
                     className="absolute -top-2 left-2 bg-white px-1 text-xs text-gray-500"
                   >
-                    File đính kèm mới (tùy chọn)
+                    {t("submission.modal.edit.attachmentOptional")}
                   </label>
                   <p className="text-xs text-gray-500 mt-1">
-                    Hỗ trợ: PDF, Word, Excel, PowerPoint, TXT, ZIP, RAR, JPG,
-                    PNG, GIF (Tối đa 50MB)
+                    {t("submission.modal.create.attachmentHelp")}
                   </p>
                 </div>
                 <div className="flex justify-end space-x-3">
@@ -1220,7 +1402,7 @@ const SubmissionManagement = () => {
                     onClick={() => setShowEditModal(false)}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                   >
-                    Hủy
+                    {t("submission.modal.edit.cancel")}
                   </button>
                   <button
                     type="submit"
@@ -1231,7 +1413,9 @@ const SubmissionManagement = () => {
                         "linear-gradient(135deg, #ea580c 0%, #fb923c 100%)",
                     }}
                   >
-                    {loading ? "Đang cập nhật..." : "Cập nhật"}
+                    {loading
+                      ? t("submission.modal.edit.submitting")
+                      : t("submission.modal.edit.submit")}
                   </button>
                 </div>
               </form>
@@ -1246,7 +1430,7 @@ const SubmissionManagement = () => {
           <div className="relative top-4 mx-auto p-4 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">
-                Xem file: {fileName}
+                {t("submission.modal.viewFile.title", { name: fileName })}
               </h3>
               <div className="flex gap-2">
                 <button
@@ -1292,13 +1476,13 @@ const SubmissionManagement = () => {
                   >
                     <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
                   </svg>
-                  Tải về
+                  {t("submission.modal.viewFile.download")}
                 </button>
                 <button
                   onClick={closeFileModal}
                   className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
-                  ✕ Đóng
+                  {t("submission.modal.viewFile.close")}
                 </button>
               </div>
             </div>
@@ -1321,7 +1505,7 @@ const SubmissionManagement = () => {
                       onError={() => {
                         console.log("Error loading image");
                         showToast(
-                          "Không thể hiển thị hình ảnh này. Vui lòng tải về để xem."
+                          t("submission.modal.viewFile.cannotShowImage")
                         );
                       }}
                     />
@@ -1337,9 +1521,7 @@ const SubmissionManagement = () => {
                       }}
                       onError={() => {
                         console.log("Error loading PDF");
-                        showToast(
-                          "Không thể hiển thị PDF này. Vui lòng tải về để xem."
-                        );
+                        showToast(t("submission.modal.viewFile.cannotShowPdf"));
                       }}
                     />
                   ) : (
@@ -1347,14 +1529,17 @@ const SubmissionManagement = () => {
                       <div className="text-center p-8">
                         <div className="text-6xl mb-4">📄</div>
                         <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                          File: {fileName}
+                          {t("submission.modal.viewFile.file", {
+                            name: fileName,
+                          })}
                         </h3>
                         <p className="text-gray-600 mb-4">
-                          Loại file: {fileType}
+                          {t("submission.modal.viewFile.fileType", {
+                            type: fileType,
+                          })}
                         </p>
                         <p className="text-gray-600 mb-6">
-                          File này không thể hiển thị trực tiếp. Vui lòng tải về
-                          để xem.
+                          {t("submission.modal.viewFile.notEmbeddable")}
                         </p>
                         <button
                           onClick={async () => {
@@ -1389,7 +1574,7 @@ const SubmissionManagement = () => {
                           >
                             <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2m2.354 6.854-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 9.293V5.5a.5.5 0 0 1 1 0v3.793l1.146-1.147a.5.5 0 0 1 .708.708" />
                           </svg>
-                          Tải về để xem
+                          {t("submission.modal.viewFile.downloadToView")}
                         </button>
                       </div>
                     </div>
@@ -1404,10 +1589,10 @@ const SubmissionManagement = () => {
       {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={showDeleteModal}
-        title="Xóa báo cáo"
-        message="Bạn có chắc chắn muốn xóa báo cáo này? Hành động này không thể hoàn tác."
-        confirmText="Xóa"
-        cancelText="Hủy"
+        title={t("submission.modal.deleteConfirm.title")}
+        message={t("submission.modal.deleteConfirm.message")}
+        confirmText={t("submission.modal.deleteConfirm.confirm")}
+        cancelText={t("submission.modal.deleteConfirm.cancel")}
         confirmVariant="danger"
         onConfirm={confirmDeleteSubmission}
         onCancel={cancelDeleteSubmission}
