@@ -841,7 +841,7 @@ const LecturerLayout = () => {
                         Thông báo
                       </h3>
                       <button
-                        className={`text-info text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100 ${
+                        className={`text-primary-500 text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100 ${
                           isMarkingAllAsRead
                             ? "opacity-50 cursor-not-allowed"
                             : ""
@@ -921,7 +921,7 @@ const LecturerLayout = () => {
                           navigate("/lecturer/notifications");
                           setIsNotificationOpen(false);
                         }}
-                        className="text-info text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                        className="text-primary-500 text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
                       >
                         Xem tất cả thông báo
                       </button>

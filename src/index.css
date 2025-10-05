@@ -23,15 +23,28 @@
   color: white !important;
 }
 
-/* Force all toasts to be red by default, override success only when needed */
+/* Default toast base (neutral). Use per-type colors below */
 .Toastify__toast {
-  background: #e53935 !important;
-  color: white !important;
+  background: #ffffff !important;
+  color: inherit !important;
 }
 
-/* Only show green for explicit success messages */
+/* Keep per-type colors */
 .Toastify__toast--success {
   background: #4caf50 !important;
+  color: #ffffff !important;
+}
+.Toastify__toast--error {
+  background: #e53935 !important;
+  color: #ffffff !important;
+}
+.Toastify__toast--warning {
+  background: #ff9800 !important;
+  color: #ffffff !important;
+}
+.Toastify__toast--info {
+  background: #2196f3 !important;
+  color: #ffffff !important;
 }
 
 /* Thin scrollbar utility for dropdowns and panels */

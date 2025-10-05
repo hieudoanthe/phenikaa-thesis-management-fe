@@ -318,38 +318,7 @@ const TopicRegistration = () => {
         </div>
       )}
 
-      {/* Hiển thị thông tin đợt đăng ký hiện tại (giữ lại để tương thích UI cũ) */}
-      {currentPeriod && (
-        <div className="current-period-info bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <div className="text-sm text-gray-300 mb-2">
-                {t("topics.currentPeriod")}
-              </div>
-              <div className="text-2xl font-bold text-white mb-2">
-                {currentPeriod.periodName}
-              </div>
-              <div className="text-sm text-gray-300">
-                {t("topics.timeRange")}{" "}
-                {new Date(currentPeriod.startDate).toLocaleDateString(
-                  i18n.language === "vi" ? "vi-VN" : "en-US"
-                )}{" "}
-                -{" "}
-                {new Date(currentPeriod.endDate).toLocaleDateString(
-                  i18n.language === "vi" ? "vi-VN" : "en-US"
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-white">
-                {new Date(currentPeriod.endDate).getTime() > Date.now()
-                  ? t("topics.ongoing")
-                  : t("topics.ended")}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Current period banner removed as requested */}
 
       {/* Hiển thị thông báo khi không có đợt đăng ký */}
       {error && error.includes("không có đợt đăng ký") && (

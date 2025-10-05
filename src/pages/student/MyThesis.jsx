@@ -198,6 +198,11 @@ const MyThesis = () => {
     setEditingTopic(null);
   };
 
+  // Reload danh sách đề tài (được onSuccess trong modal gọi tới)
+  const loadThesisList = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
   // Hàm lấy profile của người đề xuất và người được đề xuất
   const fetchProfiles = async (thesisList) => {
     try {
@@ -470,104 +475,19 @@ const MyThesis = () => {
 
         {/* Main Content - Grid Layout */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden">
-          {/* Thông tin đề tài - Bên trái */}
-          <div className="lg:col-span-1 bg-white rounded-lg border border-gray-200 p-6">
+          {/* Nhiệm vụ được giao - Bên trái */}
+          <div className="lg:col-span-3 lg:order-2 bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Thông tin đề tài
+              Nhiệm vụ được giao
             </h3>
 
             {selectedThesis ? (
-              // Hiển thị thông tin chi tiết của đề tài được chọn
+              // Chỉ hiển thị phần nhiệm vụ, bỏ thông tin chi tiết đề tài
               <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4
-                    className="font-semibold text-blue-900 mb-2 break-words"
-                    title={selectedThesis?.title}
-                  >
-                    {selectedThesis?.title ||
-                      `Đề tài #${selectedThesis?.topicId}`}
-                  </h4>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm text-blue-700 mb-1">
-                        Trạng thái:
-                      </label>
-                      <span
-                        className={`inline-block px-3 py-1.5 rounded-lg text-sm font-medium ${getStatusColor(
-                          selectedThesis.suggestionStatus
-                        )}`}
-                      >
-                        {getStatusDisplay(selectedThesis.suggestionStatus)}
-                      </span>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-blue-700 mb-1">
-                        Sinh viên đăng ký:
-                      </label>
-                      <p className="font-medium text-blue-900">
-                        {suggestedByProfiles[selectedThesis.suggestedBy] ||
-                          `ID: ${selectedThesis.suggestedBy}`}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-blue-700 mb-1">
-                        Giảng viên được đăng ký:
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-blue-900">
-                          {(() => {
-                            const name =
-                              suggestedForProfiles[selectedThesis.suggestedFor];
-                            console.log(
-                              `Hiển thị người được đề xuất chi tiết cho thesis ${selectedThesis.suggestedFor}:`,
-                              name
-                            );
-                            return name || `ID: ${selectedThesis.suggestedFor}`;
-                          })()}
-                        </p>
-                        <button
-                          onClick={() =>
-                            handleOpenChat(selectedThesis.suggestedFor)
-                          }
-                          className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                          title="Chat với giảng viên"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            className="size-6"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-blue-700 mb-1">
-                        Ngày đăng ký:
-                      </label>
-                      <p className="font-medium text-blue-900">
-                        {formatDate(selectedThesis.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Danh sách Assignment/Task */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-base font-semibold text-gray-900 m-0">
-                      Nhiệm vụ được giao
+                      -
                     </h4>
                     {selectedThesis?.topicId && (
                       <button
@@ -583,112 +503,165 @@ const MyThesis = () => {
                     )}
                   </div>
                   {assignLoading ? (
-                    <p className="text-sm text-gray-500 m-0">
-                      Đang tải nhiệm vụ...
-                    </p>
-                  ) : assignError ? (
-                    <p className="text-sm text-red-600 m-0">{assignError}</p>
-                  ) : assignments.length === 0 ? (
-                    <p className="text-sm text-gray-500 m-0">
-                      Chưa có assignment nào.
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {assignments.map((a) => (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
                         <div
-                          key={a.assignmentId}
-                          className="border border-gray-200 rounded-md p-3"
+                          key={i}
+                          className="border border-gray-200 rounded-md p-3 animate-pulse"
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-sm font-semibold text-gray-900">
-                                {a.title}
-                              </div>
-                              <div className="text-xs text-gray-600">
-                                Hạn chót: {a.dueDate || "Không có"}
-                              </div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              Tiến độ:{" "}
-                              {Array.isArray(a.tasks) && a.tasks.length > 0
-                                ? Math.round(
-                                    a.tasks.reduce(
-                                      (s, t) =>
-                                        s +
-                                        (typeof t.progress === "number"
-                                          ? t.progress
-                                          : 0),
-                                      0
-                                    ) / a.tasks.length
-                                  )
-                                : 0}
-                              %
-                            </div>
-                          </div>
-                          {/* tasks */}
-                          <div className="mt-3 space-y-2">
-                            {(a.tasks || []).map((t) => {
-                              const isCompleted =
-                                t.status === 3 || t.status === "Hoàn thành";
-                              const currentUserId = getUserIdFromToken();
-                              const isMine = t.assignedTo === currentUserId;
-                              return (
-                                <div
-                                  key={t.taskId}
-                                  className="flex items-center justify-between bg-gray-50 rounded p-2 border border-gray-200"
-                                >
-                                  <div className="min-w-0">
-                                    <div className="text-sm font-medium text-gray-800 truncate">
-                                      {t.taskName}
-                                    </div>
-                                    <div className="text-[11px] text-gray-600">
-                                      Hạn: {t.endDate || "Không có"} • Trạng
-                                      thái:{" "}
-                                      {t.status === 3
-                                        ? "Hoàn thành"
-                                        : t.status === 2
-                                        ? "Đang thực hiện"
-                                        : "Đang chờ xử lý"}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {/* Bỏ progress bar theo yêu cầu */}
-                                    <span className="text-xs text-gray-700 w-8 text-right">
-                                      {typeof t.progress === "number"
-                                        ? t.progress
-                                        : 0}
-                                      %
-                                    </span>
-                                    <button
-                                      disabled={!isMine || isCompleted}
-                                      onClick={() =>
-                                        handleCompleteTask(t.taskId)
-                                      }
-                                      className={`text-xs px-2 py-1 rounded-md border transition-colors ${
-                                        isMine && !isCompleted
-                                          ? "bg-emerald-500 text-white hover:bg-emerald-600 border-emerald-600"
-                                          : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                      }`}
-                                    >
-                                      Hoàn thành
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                          <div className="mt-3 h-2 bg-gray-200 rounded w-full"></div>
                         </div>
                       ))}
                     </div>
+                  ) : assignError ? (
+                    <p className="text-sm text-red-600 m-0">{assignError}</p>
+                  ) : assignments.length === 0 ? (
+                    <div className="text-center text-gray-600 py-6">
+                      <div className="mx-auto mb-3 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                        <svg
+                          className="w-5 h-5 text-gray-400"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                        </svg>
+                      </div>
+                      <div className="text-sm">Chưa có nhiệm vụ nào</div>
+                      <button
+                        onClick={handleRefresh}
+                        className="mt-3 px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-50"
+                      >
+                        Làm mới
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {assignments.slice(0, 4).map((a) => {
+                        const avgProgress =
+                          Array.isArray(a.tasks) && a.tasks.length > 0
+                            ? Math.round(
+                                a.tasks.reduce(
+                                  (s, t) =>
+                                    s +
+                                    (typeof t.progress === "number"
+                                      ? t.progress
+                                      : 0),
+                                  0
+                                ) / a.tasks.length
+                              )
+                            : 0;
+                        const cardBorder = "border-gray-200";
+                        const leftBar = "bg-gray-300";
+                        const dueBadge = a.dueDate
+                          ? "bg-gray-100 text-gray-700"
+                          : "bg-gray-100 text-gray-500";
+                        return (
+                          <div
+                            key={a.assignmentId}
+                            className={`relative rounded-lg border ${cardBorder} bg-white p-3 shadow-sm transition hover:shadow-md hover:-translate-y-0.5`}
+                          >
+                            <span
+                              className={`absolute left-0 top-0 h-full w-1 rounded-l ${leftBar}`}
+                            ></span>
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold text-gray-900 truncate">
+                                  {a.title}
+                                </div>
+                                <div className="mt-1 flex items-center gap-2 text-xs">
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${dueBadge}`}
+                                  >
+                                    <svg
+                                      className="w-3 h-3"
+                                      viewBox="0 0 24 24"
+                                      fill="currentColor"
+                                    >
+                                      <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v13a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 15H5V9h14v10z" />
+                                    </svg>
+                                    {a.dueDate || "Không có"}
+                                  </span>
+                                  <span
+                                    className={
+                                      "inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                                    }
+                                  >
+                                    {avgProgress}%
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-3 space-y-2">
+                              {(a.tasks || []).map((t) => {
+                                const isCompleted =
+                                  t.status === 3 || t.status === "Hoàn thành";
+                                const currentUserId = getUserIdFromToken();
+                                const isMine = t.assignedTo === currentUserId;
+                                const taskLeft = "bg-gray-300";
+                                const statusText = isCompleted
+                                  ? "Hoàn thành"
+                                  : t.status === 2
+                                  ? "Đang thực hiện"
+                                  : "Đang chờ xử lý";
+                                return (
+                                  <div
+                                    key={t.taskId}
+                                    className="relative flex items-center justify-between rounded border border-gray-200 bg-gray-50 p-2"
+                                  >
+                                    <span
+                                      className={`absolute left-0 top-0 h-full w-1 rounded-l ${taskLeft}`}
+                                    ></span>
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-medium text-gray-800 truncate">
+                                        {t.taskName}
+                                      </div>
+                                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-600">
+                                        <span className="inline-flex items-center gap-1">
+                                          <svg
+                                            className="w-3 h-3"
+                                            viewBox="0 0 24 24"
+                                            fill="currentColor"
+                                          >
+                                            <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v13a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 15H5V9h14v10z" />
+                                          </svg>
+                                          {t.endDate || "Không có"}
+                                        </span>
+                                        <span>• Trạng thái: {statusText}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-700 w-8 text-right">
+                                        {typeof t.progress === "number"
+                                          ? t.progress
+                                          : 0}
+                                        %
+                                      </span>
+                                      <button
+                                        disabled={!isMine || isCompleted}
+                                        onClick={() =>
+                                          handleCompleteTask(t.taskId)
+                                        }
+                                        className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                                          isMine && !isCompleted
+                                            ? "bg-primary-500 text-white hover:bg-primary-600 border-primary-600"
+                                            : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                        }`}
+                                      >
+                                        Hoàn thành
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-
-                <button
-                  onClick={() => setSelectedThesis(null)}
-                  className="w-full px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Xem tất cả đề tài
-                </button>
               </div>
             ) : (
               // Hiển thị thông tin tổng quan
@@ -743,12 +716,15 @@ const MyThesis = () => {
           </div>
 
           {/* Danh sách đề tài - 3 cột */}
-          <div className="lg:col-span-3 flex flex-col">
+          <div className="lg:col-span-1 lg:order-1 flex flex-col">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Danh sách đề tài đã đăng ký ({totalElements})
-                  {totalPages > 1 && (
+                  {thesisList.length === 1
+                    ? "Đề tài đã đăng ký"
+                    : "Danh sách đề tài đã đăng ký"}{" "}
+                  ({totalElements})
+                  {totalPages > 1 && thesisList.length > 1 && (
                     <span className="text-sm font-normal text-gray-500 ml-2">
                       - Trang {currentPage + 1}/{totalPages}
                     </span>
@@ -767,110 +743,209 @@ const MyThesis = () => {
                   </div>
                 </div>
               ) : (
-                /* Grid đề tài - tự co giãn theo nội dung, không chiếm full chiều cao */
+                /* Khi chỉ có 1 đề tài: hiển thị 1 thẻ full-width; nếu nhiều: dùng grid */
                 <div className="mb-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {thesisList.map((thesis, index) => (
-                      <div
-                        key={thesis.suggestedId}
-                        className="border border-gray-200 rounded-lg p-4 transition-all duration-200 bg-white min-h-[180px] cursor-pointer hover:shadow-md hover:border-orange-600"
-                        onClick={() => handleThesisSelect(thesis)}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm font-medium text-gray-500">
-                              #{index + 1}
-                            </span>
-                            <span
-                              className="text-base font-semibold text-gray-900 truncate whitespace-nowrap overflow-hidden text-ellipsis"
-                              title={thesis?.title}
-                            >
-                              {getShortWords(
-                                thesis?.title || `Đề tài #${thesis.topicId}`,
-                                5
-                              )}
-                            </span>
-                          </div>
-                          <span
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${getStatusColor(
-                              thesis.suggestionStatus
-                            )}`}
-                          >
-                            {getStatusDisplay(thesis.suggestionStatus)}
-                          </span>
-                        </div>
-
-                        <div className="space-y-2.5 text-sm">
-                          <div>
-                            <label className="block text-gray-600 mb-1.5">
-                              Sinh viên đăng ký:
-                            </label>
-                            <p className="font-medium">
-                              {suggestedByProfiles[thesis.suggestedBy] ||
-                                `ID: ${thesis.suggestedBy}`}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="block text-gray-600 mb-1.5">
-                              Giảng viên được đăng ký:
-                            </label>
-                            <p className="font-medium">
-                              {(() => {
-                                const name =
-                                  suggestedForProfiles[thesis.suggestedFor];
-                                console.log(
-                                  `Hiển thị người được đề xuất cho thesis ${thesis.suggestedFor}:`,
-                                  name
-                                );
-                                return name || `ID: ${thesis.suggestedFor}`;
-                              })()}
-                            </p>
-                          </div>
-                          <div>
-                            <label className="block text-gray-600 mb-1.5">
-                              Ngày đăng ký:
-                            </label>
-                            <p className="font-medium">
-                              {formatDate(thesis.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Nút chỉnh sửa cho đề tài đang chờ duyệt */}
-                        {thesis.suggestionStatus === "PENDING" && (
-                          <div className="mt-4 pt-3 border-t border-gray-200">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditTopic(thesis);
-                              }}
-                              className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                  {thesisList.length === 1 ? (
+                    (() => {
+                      const thesis = thesisList[0];
+                      return (
+                        <div
+                          key={thesis.suggestedId}
+                          className="border border-gray-200 rounded-lg p-4 transition-all duration-200 bg-white min-h-[180px] cursor-pointer hover:shadow-md hover:border-gray-300"
+                          onClick={() => handleThesisSelect(thesis)}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className="text-base font-semibold text-gray-900 truncate whitespace-nowrap overflow-hidden text-ellipsis"
+                                title={thesis?.title}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
-                              </svg>
-                              Chỉnh sửa đề tài
-                            </button>
+                                {getShortWords(
+                                  thesis?.title || `Đề tài #${thesis.topicId}`,
+                                  5
+                                )}
+                              </span>
+                            </div>
+                            <span
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${getStatusColor(
+                                thesis.suggestionStatus
+                              )}`}
+                            >
+                              {getStatusDisplay(thesis.suggestionStatus)}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+
+                          <div className="space-y-2.5 text-sm">
+                            <div>
+                              <label className="block text-gray-600 mb-1.5">
+                                Sinh viên đăng ký:
+                              </label>
+                              <p className="font-medium">
+                                {suggestedByProfiles[thesis.suggestedBy] ||
+                                  `ID: ${thesis.suggestedBy}`}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-gray-600 mb-1.5">
+                                Giảng viên đã đăng ký:
+                              </label>
+                              <p className="font-medium">
+                                {(() => {
+                                  const name =
+                                    suggestedForProfiles[thesis.suggestedFor];
+                                  console.log(
+                                    `Hiển thị người được đề xuất cho thesis ${thesis.suggestedFor}:`,
+                                    name
+                                  );
+                                  return name || `ID: ${thesis.suggestedFor}`;
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-gray-600 mb-1.5">
+                                Ngày đăng ký:
+                              </label>
+                              <p className="font-medium">
+                                {formatDate(thesis.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {thesis.suggestionStatus === "PENDING" && (
+                            <div className="mt-4 pt-3 border-t border-gray-200">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditTopic(thesis);
+                                }}
+                                className="w-full px-3 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 flex items-center justify-center gap-2 border border-primary-600"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                                Chỉnh sửa đề tài
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {thesisList.map((thesis, index) => (
+                        <div
+                          key={thesis.suggestedId}
+                          className="border border-gray-200 rounded-lg p-4 transition-all duration-200 bg-white min-h-[180px] cursor-pointer hover:shadow-md hover:border-gray-300"
+                          onClick={() => handleThesisSelect(thesis)}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {thesisList.length > 1 && (
+                                <span className="text-sm font-medium text-gray-500">
+                                  #{index + 1}
+                                </span>
+                              )}
+                              <span
+                                className="text-base font-semibold text-gray-900 truncate whitespace-nowrap overflow-hidden text-ellipsis"
+                                title={thesis?.title}
+                              >
+                                {getShortWords(
+                                  thesis?.title || `Đề tài #${thesis.topicId}`,
+                                  5
+                                )}
+                              </span>
+                            </div>
+                            <span
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${getStatusColor(
+                                thesis.suggestionStatus
+                              )}`}
+                            >
+                              {getStatusDisplay(thesis.suggestionStatus)}
+                            </span>
+                          </div>
+
+                          <div className="space-y-2.5 text-sm">
+                            <div>
+                              <label className="block text-gray-600 mb-1.5">
+                                Sinh viên đăng ký:
+                              </label>
+                              <p className="font-medium">
+                                {suggestedByProfiles[thesis.suggestedBy] ||
+                                  `ID: ${thesis.suggestedBy}`}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-gray-600 mb-1.5">
+                                Giảng viên đã đăng ký:
+                              </label>
+                              <p className="font-medium">
+                                {(() => {
+                                  const name =
+                                    suggestedForProfiles[thesis.suggestedFor];
+                                  console.log(
+                                    `Hiển thị người được đề xuất cho thesis ${thesis.suggestedFor}:`,
+                                    name
+                                  );
+                                  return name || `ID: ${thesis.suggestedFor}`;
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-gray-600 mb-1.5">
+                                Ngày đăng ký:
+                              </label>
+                              <p className="font-medium">
+                                {formatDate(thesis.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Nút chỉnh sửa cho đề tài đang chờ duyệt */}
+                          {thesis.suggestionStatus === "PENDING" && (
+                            <div className="mt-4 pt-3 border-t border-gray-200">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditTopic(thesis);
+                                }}
+                                className="w-full px-3 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors duration-200 flex items-center justify-center gap-2 border border-primary-600"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                                Chỉnh sửa đề tài
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Phân trang - Tăng font size */}
-              {totalPages > 1 && (
+              {/* Phân trang - chỉ hiển thị khi có hơn 1 đề tài */}
+              {totalPages > 1 && thesisList.length > 1 && (
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-700">

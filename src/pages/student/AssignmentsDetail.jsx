@@ -320,7 +320,6 @@ const AssignmentsDetail = () => {
                     {(a.tasks || []).map((t) => {
                       const isCompleted = t.status === 3;
                       const currentUserId = getUserIdFromToken();
-                      // So sánh string với string để tránh vấn đề kiểu dữ liệu
                       const isMine =
                         String(t.assignedTo) === String(currentUserId);
 

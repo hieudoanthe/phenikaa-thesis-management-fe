@@ -305,7 +305,7 @@ const AdminLayout = () => {
                       <h3 className="text-sm sm:text-base font-semibold text-gray-900 m-0">
                         Thông báo
                       </h3>
-                      <button className="text-info text-xs sm:text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100">
+                      <button className="text-primary-500 text-xs sm:text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100">
                         Đánh dấu tất cả đã đọc
                       </button>
                     </div>
@@ -341,7 +341,7 @@ const AdminLayout = () => {
                       )}
                     </div>
                     <div className="px-4 py-3 border-t border-gray-100 text-center">
-                      <button className="text-info text-xs sm:text-sm cursor-pointer px-3 sm:px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
+                      <button className="text-primary-500 text-xs sm:text-sm cursor-pointer px-3 sm:px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
                         Xem tất cả thông báo
                       </button>
                     </div>

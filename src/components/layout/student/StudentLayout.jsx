@@ -705,7 +705,7 @@ const StudentLayout = () => {
                           Thông báo
                         </h3>
                         <button
-                          className="text-info text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100"
+                          className="text-primary-500 text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100"
                           onClick={handleMarkAllAsRead}
                         >
                           Đánh dấu tất cả đã đọc
@@ -747,7 +747,7 @@ const StudentLayout = () => {
                       </div>
                       <div className="px-4 py-3 border-t border-gray-100 text-center">
                         <button
-                          className="text-info text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                          className="text-primary-500 text-sm cursor-pointer px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
                           onClick={() => {
                             setIsNotificationOpen(false);
                             navigate("/student/notifications");
