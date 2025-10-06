@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import Select from "react-select";
 import academicYearService from "../../services/academic-year.service";
 import topicService from "../../services/topic.service";
+import { showToast } from "../../utils/toastHelper";
 
 const AddTopicModal = ({
   open,
@@ -181,20 +182,19 @@ const AddTopicModal = ({
         // Chế độ cập nhật - gọi API updateTopic
         result = await topicService.updateTopic(form.topicId, submitData);
         if (result.success) {
-          alert("Cập nhật đề tài thành công!");
+          showToast("Cập nhật đề tài thành công!", "success");
         } else {
           console.error("Lỗi cập nhật topic:", result.message);
-          alert(`Lỗi cập nhật: ${result.message}`);
+          showToast(result.message || "Lỗi cập nhật đề tài", "error");
           return;
         }
       } else {
-        // Chế độ tạo mới - gọi API createTopic
         result = await topicService.createTopic(submitData);
         if (result.success) {
-          alert("Tạo đề tài thành công!");
+          showToast("Tạo đề tài thành công!", "success");
         } else {
           console.error("Lỗi tạo topic:", result.message);
-          alert(`Lỗi tạo mới: ${result.message}`);
+          showToast(result.message || "Lỗi tạo đề tài", "error");
           return;
         }
       }
@@ -207,7 +207,7 @@ const AddTopicModal = ({
       onClose();
     } catch (error) {
       console.error("Lỗi không mong muốn:", error);
-      alert("Có lỗi xảy ra khi tạo đề tài");
+      showToast("Có lỗi xảy ra khi xử lý đề tài", "error");
     } finally {
       setSubmitting(false);
     }

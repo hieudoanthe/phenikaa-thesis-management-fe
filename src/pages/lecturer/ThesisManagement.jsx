@@ -959,10 +959,10 @@ const ThesisManagement = () => {
               <span className="sm:hidden">Thêm đề tài</span>
             </button>
 
-            <div className="relative flex-1">
+            <div className="relative flex-1 group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg
-                  className="h-5 w-5 text-gray-400"
+                  className="h-5 w-5 text-gray-400 transition-colors duration-200 group-focus-within:text-orange-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -980,7 +980,7 @@ const ThesisManagement = () => {
                 placeholder="Tìm kiếm đề tài..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-300 focus:border-gray-400 focus:outline-none transition-all duration-200"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-1 focus:ring-orange-200 focus:border-orange-400 focus:outline-none transition-all duration-200"
               />
             </div>
           </div>

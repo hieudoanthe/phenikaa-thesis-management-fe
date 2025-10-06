@@ -7,11 +7,13 @@ import useAuth from "../../hooks/useAuth";
 import { showToast } from "../../utils/toastHelper";
 import GradingModal from "../../components/grading/GradingModal";
 import QnAManagement from "../../components/grading/QnAManagement";
+import CouncilSummaryTab from "../../components/grading/CouncilSummaryTab";
 import AllFinalScoresView from "../../components/grading/AllFinalScoresView";
 import TopicDetailModal from "../../components/grading/TopicDetailModal";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import userService from "../../services/user.service";
 import Select from "react-select";
+import { checkCouncilChairmanAccess } from "../../services/grading.service";
 
 const GradingManagement = () => {
   const { user } = useAuth();
@@ -23,6 +25,8 @@ const GradingManagement = () => {
   const [showTopicDetailModal, setShowTopicDetailModal] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState(null);
   const [selectedQnATopic, setSelectedQnATopic] = useState(null);
+  const [selectedCouncilTopic, setSelectedCouncilTopic] = useState(null);
+  const [isCouncilChairman, setIsCouncilChairman] = useState(false);
   const [studentProfiles, setStudentProfiles] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -177,6 +181,41 @@ const GradingManagement = () => {
       }
     }
   }, [activeTab, selectedQnATopic, evaluations]);
+
+  useEffect(() => {
+    if (
+      activeTab === "council" &&
+      !selectedCouncilTopic &&
+      evaluations.length > 0
+    ) {
+      const uniqueTopics = evaluations.filter(
+        (evaluation, index, self) =>
+          self.findIndex((e) => e.topicId === evaluation.topicId) === index
+      );
+      if (uniqueTopics.length > 0) setSelectedCouncilTopic(uniqueTopics[0]);
+    }
+  }, [activeTab, selectedCouncilTopic, evaluations]);
+
+  // Determine chairman access for council tab via backend
+  useEffect(() => {
+    const resolveChairman = async () => {
+      try {
+        if (!selectedCouncilTopic) {
+          setIsCouncilChairman(false);
+          return;
+        }
+        const me = user?.userId || getUserIdFromToken();
+        const res = await checkCouncilChairmanAccess(
+          selectedCouncilTopic.topicId,
+          me
+        );
+        setIsCouncilChairman(!!res?.hasAccess);
+      } catch (e) {
+        setIsCouncilChairman(false);
+      }
+    };
+    if (activeTab === "council") resolveChairman();
+  }, [activeTab, selectedCouncilTopic, user]);
 
   const handleSubmitGrading = async (gradingForm) => {
     if (!selectedEvaluation) return;
@@ -376,13 +415,13 @@ const GradingManagement = () => {
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
-                      stroke-width="1.5"
+                      strokeWidth="1.5"
                       stroke="currentColor"
                       className="size-4"
                     >
                       <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
                       />
                     </svg>
@@ -401,7 +440,26 @@ const GradingManagement = () => {
                       viewBox="0 0 16 16"
                     >
                       <path
-                        fill-rule="evenodd"
+                        fillRule="evenodd"
+                        d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"
+                      />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "council",
+                  label: "Nhận xét hội đồng",
+                  icon: (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      className="bi bi-question-lg"
+                      viewBox="0 0 16 16"
+                    >
+                      <path
+                        fillRule="evenodd"
                         d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"
                       />
                     </svg>
@@ -638,6 +696,58 @@ const GradingManagement = () => {
           </div>
         )}
 
+        {activeTab === "council" && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="mb-6">
+              <div className="mb-4">
+                <label
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                  htmlFor="councilTopicSelect"
+                >
+                  Chọn đề tài để nhập nhận xét hội đồng:
+                </label>
+                <Select
+                  inputId="councilTopicSelect"
+                  classNamePrefix="rs"
+                  options={qnaTopicOptions}
+                  value={
+                    selectedCouncilTopic
+                      ? {
+                          value: selectedCouncilTopic.topicId,
+                          label: `${
+                            selectedCouncilTopic.topicTitle
+                          } - ${getStudentDisplayName(
+                            selectedCouncilTopic.studentId,
+                            selectedCouncilTopic.studentName
+                          )}`,
+                          data: selectedCouncilTopic,
+                        }
+                      : null
+                  }
+                  onChange={(opt) =>
+                    setSelectedCouncilTopic(opt ? opt.data : null)
+                  }
+                  placeholder="-- Chọn đề tài --"
+                  isClearable={false}
+                  theme={selectTheme}
+                  styles={selectStyles}
+                />
+              </div>
+            </div>
+
+            {selectedCouncilTopic ? (
+              <CouncilSummaryTab
+                topicId={selectedCouncilTopic.topicId}
+                isChairman={isCouncilChairman}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-600">
+                Vui lòng chọn đề tài
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "qna" && (
           <div className="bg-white rounded-lg shadow p-6">
             <div className="mb-6">
@@ -699,7 +809,7 @@ const GradingManagement = () => {
                   viewBox="0 0 16 16"
                 >
                   <path
-                    fill-rule="evenodd"
+                    fillRule="evenodd"
                     d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"
                   />
                 </svg>

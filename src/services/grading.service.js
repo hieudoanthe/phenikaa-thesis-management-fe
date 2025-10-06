@@ -207,6 +207,44 @@ export const getCommitteeByTopic = async (topicId) => {
   }
 };
 
+// ==================== COUNCIL SUMMARY (CHAIRMAN) ====================
+export const getCouncilSummary = async (topicId) => {
+  try {
+    const response = await apiGet(
+      `${EVAL_SERVICE_BASE}/council-summary/${topicId}`
+    );
+    return response;
+  } catch (error) {
+    // Gracefully handle any error (e.g., 404 not found) as no existing summary yet
+    return {};
+  }
+};
+
+export const upsertCouncilSummary = async (topicId, chairmanId, content) => {
+  try {
+    const response = await apiPost(
+      `${EVAL_SERVICE_BASE}/council-summary/${topicId}`,
+      { chairmanId: Number(chairmanId), content }
+    );
+    return response;
+  } catch (error) {
+    console.error("Error upserting council summary:", error);
+    throw error;
+  }
+};
+
+export const checkCouncilChairmanAccess = async (topicId, lecturerId) => {
+  try {
+    const response = await apiGet(
+      `${EVAL_SERVICE_BASE}/council-summary/${topicId}/access/${lecturerId}`
+    );
+    return response;
+  } catch (error) {
+    console.error("Error checking council chairman access:", error);
+    throw error;
+  }
+};
+
 /**
  * Lấy thông tin chi tiết đề tài cho giảng viên chấm điểm
  */

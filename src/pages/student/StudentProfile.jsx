@@ -331,7 +331,7 @@ const StudentProfile = () => {
 
   return (
     <div className="w-full bg-gray-50">
-      <style jsx>{`
+      <style>{`
         .select__control * {
           font-weight: 400 !important;
         }
