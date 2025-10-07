@@ -47,14 +47,14 @@ const AddAssignmentModal = ({
 
   // Set form data khi topicData thay đổi
   useEffect(() => {
-    if (topicData) {
+    if (isOpen && topicData) {
       setFormData((prev) => ({
         ...prev,
         topicId: topicData.id || null,
         assignedTo: topicData.suggestedBy || "",
       }));
     }
-  }, [topicData]);
+  }, [topicData, isOpen]);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -144,139 +144,123 @@ const AddAssignmentModal = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-900 m-0">
-            Thêm Assignment mới
+            Thêm nhiệm vụ mới
           </h2>
         </div>
 
         {/* Form */}
         <form className="p-6 space-y-6" onSubmit={handleSubmit}>
+          {/* Hidden Topic ID - provided automatically */}
+          <input
+            type="hidden"
+            id="topicId"
+            value={formData.topicId || ""}
+            readOnly
+          />
+
+          {/* Title */}
+          <div className="relative">
+            <input
+              id="title"
+              type="text"
+              placeholder=" "
+              value={formData.title}
+              onChange={(e) => handleInputChange("title", e.target.value)}
+              required
+              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white peer min-h-[44px]"
+            />
+            <label
+              htmlFor="title"
+              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+            >
+              Tiêu đề <span className="text-red-600">*</span>
+            </label>
+          </div>
+
+          {/* Description */}
+          <div className="relative">
+            <textarea
+              id="description"
+              placeholder=" "
+              value={formData.description}
+              onChange={(e) => handleInputChange("description", e.target.value)}
+              rows={3}
+              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white resize-y peer min-h-[44px]"
+            />
+            <label
+              htmlFor="description"
+              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+            >
+              Mô tả
+            </label>
+          </div>
+
+          {/* Row: Due date + Priority */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column */}
-            <div className="space-y-5">
-              <div className="relative">
-                <input
-                  id="topicId"
-                  type="text"
-                  placeholder=" "
-                  value={formData.topicId || ""}
-                  readOnly
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 bg-gray-50 peer min-h-[44px]"
-                />
-                <label
-                  htmlFor="topicId"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Đề tài (ID)
-                </label>
-              </div>
-
-              <div className="relative">
-                <input
-                  id="assignedTo"
-                  type="text"
-                  placeholder=" "
-                  value={(() => {
-                    const profile = formData.assignedTo
-                      ? studentProfiles[formData.assignedTo]
-                      : null;
-                    return profile?.fullName || "Sinh viên";
-                  })()}
-                  readOnly
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 bg-gray-50 peer min-h-[44px]"
-                />
-                <label
-                  htmlFor="assignedTo"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Giao cho (Sinh viên đăng ký)
-                </label>
-              </div>
-
-              <div className="relative">
-                <input
-                  id="title"
-                  type="text"
-                  placeholder=" "
-                  value={formData.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
-                  required
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer min-h-[44px]"
-                />
-                <label
-                  htmlFor="title"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Tiêu đề *
-                </label>
-              </div>
+            <div className="relative">
+              <input
+                id="dueDate"
+                type="date"
+                placeholder=" "
+                value={formData.dueDate}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => handleInputChange("dueDate", e.target.value)}
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white peer min-h-[44px]"
+              />
+              <label
+                htmlFor="dueDate"
+                className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+              >
+                Hạn chót
+              </label>
+              {formData.dueDate && new Date(formData.dueDate) < new Date() && (
+                <p className="text-red-500 text-xs mt-1">
+                  Ngày hạn chót không được nhỏ hơn ngày hiện tại
+                </p>
+              )}
             </div>
 
-            {/* Right Column */}
-            <div className="space-y-5">
-              <div className="relative">
-                <textarea
-                  id="description"
-                  placeholder=" "
-                  value={formData.description}
-                  onChange={(e) =>
-                    handleInputChange("description", e.target.value)
-                  }
-                  rows={1}
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white resize-none peer min-h-[44px]"
-                />
-                <label
-                  htmlFor="description"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Mô tả
-                </label>
-              </div>
-
-              <div className="relative">
-                <input
-                  id="dueDate"
-                  type="date"
-                  placeholder=" "
-                  value={formData.dueDate}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => handleInputChange("dueDate", e.target.value)}
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white peer min-h-[44px]"
-                />
-                <label
-                  htmlFor="dueDate"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Hạn chót
-                </label>
-                {formData.dueDate &&
-                  new Date(formData.dueDate) < new Date() && (
-                    <p className="text-red-500 text-xs mt-1">
-                      Ngày hạn chót không được nhỏ hơn ngày hiện tại
-                    </p>
-                  )}
-              </div>
-
-              <div className="relative">
-                <select
-                  id="priority"
-                  value={formData.priority}
-                  onChange={(e) =>
-                    handleInputChange("priority", e.target.value)
-                  }
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-secondary focus:shadow-focus bg-white min-h-[44px]"
-                >
-                  <option value={1}>Thấp</option>
-                  <option value={2}>Trung bình</option>
-                  <option value={3}>Cao</option>
-                </select>
-                <label
-                  htmlFor="priority"
-                  className="absolute -top-2 left-3 bg-white px-1.5 text-sm font-semibold text-secondary z-10"
-                >
-                  Mức ưu tiên
-                </label>
-              </div>
+            <div className="relative">
+              <select
+                id="priority"
+                value={formData.priority}
+                onChange={(e) => handleInputChange("priority", e.target.value)}
+                className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 bg-white min-h-[44px]"
+              >
+                <option value={1}>Thấp</option>
+                <option value={2}>Trung bình</option>
+                <option value={3}>Cao</option>
+              </select>
+              <label
+                htmlFor="priority"
+                className="absolute -top-2 left-3 bg-white px-1.5 text-sm font-semibold text-secondary z-10"
+              >
+                Mức ưu tiên
+              </label>
             </div>
+          </div>
+
+          {/* Assigned to (read-only) */}
+          <div className="relative">
+            <input
+              id="assignedTo"
+              type="text"
+              placeholder=" "
+              value={(() => {
+                const profile = formData.assignedTo
+                  ? studentProfiles[formData.assignedTo]
+                  : null;
+                return profile?.fullName || "Sinh viên";
+              })()}
+              readOnly
+              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 bg-gray-50 peer min-h-[44px]"
+            />
+            <label
+              htmlFor="assignedTo"
+              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-secondary peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+            >
+              Giao cho (Sinh viên đăng ký)
+            </label>
           </div>
 
           {/* Buttons */}
@@ -317,4 +301,3 @@ const AddAssignmentModal = ({
 };
 
 export default AddAssignmentModal;
-

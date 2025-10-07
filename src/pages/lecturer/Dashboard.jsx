@@ -208,6 +208,7 @@ const LecturerDashboard = () => {
       count: topicsLoading ? "..." : guidanceTopicsCount,
       label: "Đề tài hướng dẫn",
       subtitle: "Đề tài đã được phê duyệt",
+      subtitleClass: "text-green-600",
       change: topicsLoading
         ? "Đang tải..."
         : guidanceTopicsCount > 0
@@ -234,6 +235,7 @@ const LecturerDashboard = () => {
       count: topicsLoading ? "..." : rejectedTopics,
       label: "Đề tài đã từ chối",
       subtitle: "Đề tài không được phê duyệt",
+      subtitleClass: "text-red-600",
       change: topicsLoading
         ? "Đang tải..."
         : rejectedTopics > 0
@@ -260,6 +262,7 @@ const LecturerDashboard = () => {
       count: topicsLoading ? "..." : pendingTopics,
       label: "Đánh giá chờ xử lý",
       subtitle: "Cần xem xét",
+      subtitleClass: "text-amber-600",
       change: topicsLoading
         ? "Đang tải..."
         : pendingTopics > 0
@@ -355,6 +358,21 @@ const LecturerDashboard = () => {
       evaluationType: task.evaluationType || "UNKNOWN",
     }));
 
+  const mapRoleVi = (text) => {
+    if (!text) return "";
+    const parts = text.split("/").map((p) => p.trim().toUpperCase());
+    const vi = parts.map((p) => {
+      if (p === "CHAIRMAN") return "Chủ tịch";
+      if (p === "SECRETARY") return "Thư ký";
+      if (p === "MEMBER") return "Thành viên";
+      if (p === "REVIEWER") return "Phản biện";
+      if (p === "SUPERVISOR") return "Hướng dẫn";
+      if (p === "SESSION") return "Phiên";
+      return p;
+    });
+    return vi.join(" / ");
+  };
+
   // Danh sách phiên bảo vệ sắp tới của giảng viên (tối đa 5)
   const upcomingSessions = defenseTasks
     .filter(
@@ -383,7 +401,7 @@ const LecturerDashboard = () => {
           })
         : "--:--",
       title: s.topicTitle || s.title || `Phiên bảo vệ #${s.topicId}`,
-      roles: s.evaluationType,
+      roles: mapRoleVi(s.evaluationType),
       location: s.studentName || "",
     }));
 
@@ -394,6 +412,7 @@ const LecturerDashboard = () => {
       count: topicsLoading ? "..." : guidanceTopicsCount,
       label: "Đề tài hướng dẫn",
       subtitle: "Đề tài đã được phê duyệt",
+      subtitleClass: "text-green-600",
       change: topicsLoading
         ? "Đang tải..."
         : guidanceTopicsCount > 0
@@ -427,6 +446,7 @@ const LecturerDashboard = () => {
       count: topicsLoading ? "..." : rejectedTopics,
       label: "Đề tài đã từ chối",
       subtitle: "Đề tài không được phê duyệt",
+      subtitleClass: "text-red-600",
       change: topicsLoading
         ? "Đang tải..."
         : rejectedTopics > 0
@@ -460,6 +480,7 @@ const LecturerDashboard = () => {
       count: topicsLoading ? "..." : pendingTopics,
       label: "Đánh giá chờ xử lý",
       subtitle: "Cần xem xét",
+      subtitleClass: "text-amber-600",
       change: topicsLoading
         ? "Đang tải..."
         : pendingTopics > 0
@@ -578,23 +599,19 @@ const LecturerDashboard = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 relative -mt-16 z-10 px-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8 relative -mt-16 z-10 px-6">
         {summaryItems.map((item, index) => (
           <div
             key={item.key}
-            className="relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300 bg-white"
+            className="relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-md transition-all duration-300 bg-white"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                    index === 0
-                      ? "bg-blue-50 text-blue-600"
-                      : index === 1
-                      ? "bg-red-50 text-red-600"
-                      : "bg-yellow-50 text-yellow-600"
-                  }`}
+                  className={
+                    "w-9 h-9 rounded-full flex items-center justify-center bg-gray-100 text-gray-600"
+                  }
                 >
                   {item.icon}
                 </div>
@@ -606,16 +623,12 @@ const LecturerDashboard = () => {
             {/* Body */}
             <div className="px-5 py-4 flex items-center justify-between">
               <div className="pr-4">
-                <p className="text-sm text-gray-700">{item.subtitle}</p>
                 <p
-                  className={`mt-1 text-xs font-medium ${
-                    index === 1
-                      ? "text-red-600"
-                      : index === 2
-                      ? "text-yellow-700"
-                      : "text-blue-700"
-                  }`}
+                  className={`text-sm ${item.subtitleClass || "text-gray-700"}`}
                 >
+                  {item.subtitle}
+                </p>
+                <p className="mt-1 text-xs font-medium text-gray-600">
                   {item.change}
                 </p>
               </div>
@@ -704,9 +717,9 @@ const LecturerDashboard = () => {
                               !dayData.isCurrentMonth
                                 ? "text-gray-300"
                                 : dayData.hasDefense
-                                ? "bg-blue-50 text-blue-600 font-semibold hover:bg-blue-100"
+                                ? "bg-primary-100 text-primary-700 font-semibold hover:bg-primary-200 border border-primary-300"
                                 : dayData.isToday
-                                ? "bg-gray-100 text-gray-700 font-bold"
+                                ? "ring-1 ring-gray-300 bg-white text-gray-700 font-bold"
                                 : "text-gray-700 hover:bg-gray-100"
                             }
                           `}
@@ -716,8 +729,6 @@ const LecturerDashboard = () => {
                       ))}
                     </div>
                   </div>
-
-                  {/* Defense info removed for cleaner calendar */}
                 </>
               )}
             </div>
@@ -748,7 +759,7 @@ const LecturerDashboard = () => {
                 </svg>
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {upcomingSessions.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center">
                   Không có phiên bảo vệ nào sắp tới
@@ -768,8 +779,17 @@ const LecturerDashboard = () => {
                         {s.location ? `• ${s.location}` : ""}
                       </div>
                     </div>
-                    <div className="text-xs text-blue-600 font-semibold">
-                      {s.roles}
+                    <div className="flex flex-wrap gap-1 ml-2">
+                      {String(s.roles)
+                        .split("/")
+                        .map((r, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-100"
+                          >
+                            {r.trim()}
+                          </span>
+                        ))}
                     </div>
                   </div>
                 ))

@@ -626,7 +626,7 @@ const AssignmentManagement = () => {
                     <div className="absolute top-3 right-3 w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
                   )}
 
-                  <h3 className="text-sm font-medium text-slate-800 mb-3 leading-tight line-clamp-2 group-hover:text-blue-700 transition-colors">
+                  <h3 className="text-sm font-medium text-slate-800 mb-3 leading-tight line-clamp-2">
                     {thesis.title}
                   </h3>
 
@@ -634,7 +634,7 @@ const AssignmentManagement = () => {
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
                         <svg
-                          className="w-3 h-3 text-blue-600"
+                          className="w-3 h-3 text-gray-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -813,7 +813,7 @@ const AssignmentManagement = () => {
                     <div className="absolute top-3 right-3 w-3 h-3 bg-indigo-500 rounded-full shadow-sm"></div>
                   )}
 
-                  <h4 className="text-sm font-bold text-slate-800 mb-3 leading-tight group-hover:text-indigo-700 transition-colors">
+                  <h4 className="text-sm font-bold text-slate-800 mb-3 leading-tight">
                     {assignment.title}
                   </h4>
 
@@ -825,7 +825,7 @@ const AssignmentManagement = () => {
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
                         <svg
-                          className="w-2.5 h-2.5 text-amber-600"
+                          className="w-2.5 h-2.5 text-gray-600"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -845,7 +845,7 @@ const AssignmentManagement = () => {
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
                           <svg
-                            className="w-2.5 h-2.5 text-blue-600"
+                            className="w-2.5 h-2.5 text-gray-600"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -880,7 +880,7 @@ const AssignmentManagement = () => {
                           }}
                         >
                           <svg
-                            className="w-3 h-3 text-slate-600 group-hover/edit:text-indigo-600 transition-colors"
+                            className="w-3 h-3 text-gray-600"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -889,7 +889,7 @@ const AssignmentManagement = () => {
                         </button>
                         <button
                           type="button"
-                          className="group/delete p-1.5 rounded-lg border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200"
+                          className="group/delete p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedAssignment(index);
@@ -925,7 +925,7 @@ const AssignmentManagement = () => {
                           }}
                         >
                           <svg
-                            className="w-3 h-3 text-red-600 group-hover/delete:text-red-700 transition-colors"
+                            className="w-3 h-3 text-gray-600"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -1002,10 +1002,10 @@ const AssignmentManagement = () => {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-amber-800">
+                      <p className="text-sm font-semibold text-slate-700">
                         Hạn chót
                       </p>
-                      <p className="text-lg font-bold text-amber-900">
+                      <p className="text-lg font-bold text-slate-800">
                         {currentAssignment.dueDate}
                       </p>
                     </div>
@@ -1028,10 +1028,10 @@ const AssignmentManagement = () => {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-blue-800">
+                      <p className="text-sm font-semibold text-slate-700">
                         Tiến độ
                       </p>
-                      <p className="text-lg font-bold text-blue-900">
+                      <p className="text-lg font-bold text-slate-800">
                         {currentAssignment.progress}%
                       </p>
                     </div>
@@ -1112,7 +1112,7 @@ const AssignmentManagement = () => {
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <div className="w-4 h-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
                             <svg
-                              className="w-2.5 h-2.5 text-blue-600"
+                              className="w-2.5 h-2.5 text-gray-600"
                               fill="currentColor"
                               viewBox="0 0 20 20"
                             >
@@ -1202,7 +1202,7 @@ const AssignmentManagement = () => {
                           }}
                         >
                           <svg
-                            className="w-4 h-4 text-red-600 group-hover/delete:text-red-700 transition-colors"
+                            className="w-4 h-4 text-gray-600"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -1223,9 +1223,9 @@ const AssignmentManagement = () => {
 
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center">
+                        <div className="w-4 h-4 bg-gray-100 rounded-lg flex items-center justify-center">
                           <svg
-                            className="w-2.5 h-2.5 text-amber-600"
+                            className="w-2.5 h-2.5 text-gray-600"
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -1309,6 +1309,21 @@ const AssignmentManagement = () => {
                     return;
                   }
 
+                  // Validate: endDate must not be after current assignment dueDate
+                  if (
+                    payload.endDate &&
+                    currentThesis?.assignments &&
+                    currentAssignment?.dueDate &&
+                    new Date(payload.endDate) >
+                      new Date(currentAssignment.dueDate)
+                  ) {
+                    showToast(
+                      "Hạn chót công việc không được vượt quá hạn chót của nhiệm vụ",
+                      "warning"
+                    );
+                    return;
+                  }
+
                   const res = await assignmentService.createTask(
                     assignmentId,
                     payload
@@ -1330,17 +1345,12 @@ const AssignmentManagement = () => {
               }}
             >
               <div className="grid grid-cols-1 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Thuộc assignment (ID)
-                  </label>
-                  <input
-                    type="text"
-                    value={createTaskForm.assignmentId || ""}
-                    readOnly
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50"
-                  />
-                </div>
+                {/* Hidden Assignment ID (filled automatically) */}
+                <input
+                  type="hidden"
+                  value={createTaskForm.assignmentId || ""}
+                  readOnly
+                />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tên công việc
@@ -1355,7 +1365,7 @@ const AssignmentManagement = () => {
                       }))
                     }
                     placeholder="Nhập tên công việc"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     required
                   />
                 </div>
@@ -1372,34 +1382,11 @@ const AssignmentManagement = () => {
                       }))
                     }
                     placeholder="Mô tả chi tiết công việc"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     rows={3}
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bắt đầu
-                    </label>
-                    <input
-                      type="date"
-                      value={createTaskForm.startDate}
-                      min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) =>
-                        setCreateTaskForm((f) => ({
-                          ...f,
-                          startDate: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                    />
-                    {createTaskForm.startDate &&
-                      new Date(createTaskForm.startDate) < new Date() && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Ngày bắt đầu không được nhỏ hơn ngày hiện tại
-                        </p>
-                      )}
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Kết thúc
@@ -1407,52 +1394,50 @@ const AssignmentManagement = () => {
                     <input
                       type="date"
                       value={createTaskForm.endDate}
-                      min={
-                        createTaskForm.startDate ||
-                        new Date().toISOString().split("T")[0]
-                      }
+                      min={new Date().toISOString().split("T")[0]}
                       onChange={(e) =>
                         setCreateTaskForm((f) => ({
                           ...f,
                           endDate: e.target.value,
                         }))
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     />
-                    {createTaskForm.endDate &&
-                      createTaskForm.startDate &&
-                      new Date(createTaskForm.endDate) <
-                        new Date(createTaskForm.startDate) && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Ngày kết thúc không được nhỏ hơn ngày bắt đầu
-                        </p>
-                      )}
                     {createTaskForm.endDate &&
                       new Date(createTaskForm.endDate) < new Date() && (
                         <p className="text-red-500 text-xs mt-1">
                           Ngày kết thúc không được nhỏ hơn ngày hiện tại
                         </p>
                       )}
+                    {createTaskForm.endDate &&
+                      currentAssignment?.dueDate &&
+                      new Date(createTaskForm.endDate) >
+                        new Date(currentAssignment.dueDate) && (
+                        <p className="text-red-500 text-xs mt-1">
+                          Ngày kết thúc công việc không được vượt quá hạn chót
+                          của nhiệm vụ ({currentAssignment.dueDate})
+                        </p>
+                      )}
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mức ưu tiên
-                  </label>
-                  <select
-                    value={createTaskForm.priority}
-                    onChange={(e) =>
-                      setCreateTaskForm((f) => ({
-                        ...f,
-                        priority: e.target.value,
-                      }))
-                    }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value={1}>Thấp</option>
-                    <option value={2}>Trung bình</option>
-                    <option value={3}>Cao</option>
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Mức ưu tiên
+                    </label>
+                    <select
+                      value={createTaskForm.priority}
+                      onChange={(e) =>
+                        setCreateTaskForm((f) => ({
+                          ...f,
+                          priority: e.target.value,
+                        }))
+                      }
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
+                    >
+                      <option value={1}>Thấp</option>
+                      <option value={2}>Trung bình</option>
+                      <option value={3}>Cao</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="flex gap-3 mt-2">
                   <button
@@ -1479,7 +1464,7 @@ const AssignmentManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 min-w-[320px] max-w-[500px] w-full shadow-2xl">
             <h3 className="text-lg font-semibold text-secondary-800 mb-4">
-              Sửa Assignment
+              Sửa nhiệm vụ
             </h3>
             <form
               className="flex flex-col gap-3"
@@ -1522,7 +1507,7 @@ const AssignmentManagement = () => {
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiêu đề
+                    Tiêu đề <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -1533,7 +1518,7 @@ const AssignmentManagement = () => {
                         title: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     required
                   />
                 </div>
@@ -1549,7 +1534,7 @@ const AssignmentManagement = () => {
                         description: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     rows={3}
                   />
                 </div>
@@ -1568,7 +1553,7 @@ const AssignmentManagement = () => {
                           dueDate: e.target.value,
                         }))
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     />
                     {editAssignmentForm.dueDate &&
                       new Date(editAssignmentForm.dueDate) < new Date() && (
@@ -1589,7 +1574,7 @@ const AssignmentManagement = () => {
                           priority: e.target.value,
                         }))
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     >
                       <option value={1}>Thấp</option>
                       <option value={2}>Trung bình</option>
@@ -1609,11 +1594,11 @@ const AssignmentManagement = () => {
                         status: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                   >
-                    <option value={1}>Pending</option>
-                    <option value={2}>On Track</option>
-                    <option value={3}>Completed</option>
+                    <option value={1}>Đang chờ</option>
+                    <option value={2}>Đang thực hiện</option>
+                    <option value={3}>Hoàn thành</option>
                   </select>
                 </div>
                 <div className="flex gap-3 mt-2">
@@ -1689,7 +1674,7 @@ const AssignmentManagement = () => {
                         taskName: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     required
                   />
                 </div>
@@ -1705,34 +1690,11 @@ const AssignmentManagement = () => {
                         description: e.target.value,
                       }))
                     }
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     rows={3}
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bắt đầu
-                    </label>
-                    <input
-                      type="date"
-                      value={editTaskForm.startDate}
-                      min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) =>
-                        setEditTaskForm((f) => ({
-                          ...f,
-                          startDate: e.target.value,
-                        }))
-                      }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                    />
-                    {editTaskForm.startDate &&
-                      new Date(editTaskForm.startDate) < new Date() && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Ngày bắt đầu không được nhỏ hơn ngày hiện tại
-                        </p>
-                      )}
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Kết thúc
@@ -1740,26 +1702,15 @@ const AssignmentManagement = () => {
                     <input
                       type="date"
                       value={editTaskForm.endDate}
-                      min={
-                        editTaskForm.startDate ||
-                        new Date().toISOString().split("T")[0]
-                      }
+                      min={new Date().toISOString().split("T")[0]}
                       onChange={(e) =>
                         setEditTaskForm((f) => ({
                           ...f,
                           endDate: e.target.value,
                         }))
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     />
-                    {editTaskForm.endDate &&
-                      editTaskForm.startDate &&
-                      new Date(editTaskForm.endDate) <
-                        new Date(editTaskForm.startDate) && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Ngày kết thúc không được nhỏ hơn ngày bắt đầu
-                        </p>
-                      )}
                     {editTaskForm.endDate &&
                       new Date(editTaskForm.endDate) < new Date() && (
                         <p className="text-red-500 text-xs mt-1">
@@ -1767,8 +1718,6 @@ const AssignmentManagement = () => {
                         </p>
                       )}
                   </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Ưu tiên
@@ -1781,13 +1730,15 @@ const AssignmentManagement = () => {
                           priority: e.target.value,
                         }))
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     >
                       <option value={1}>Thấp</option>
                       <option value={2}>Trung bình</option>
                       <option value={3}>Cao</option>
                     </select>
                   </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Trạng thái
@@ -1800,11 +1751,11 @@ const AssignmentManagement = () => {
                           status: e.target.value,
                         }))
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     >
-                      <option value={1}>Pending</option>
-                      <option value={2}>On Track</option>
-                      <option value={3}>Completed</option>
+                      <option value={1}>Đang chờ</option>
+                      <option value={2}>Đang thực hiện</option>
+                      <option value={3}>Hoàn thành</option>
                     </select>
                   </div>
                   <div>
@@ -1822,7 +1773,7 @@ const AssignmentManagement = () => {
                           progress: e.target.value,
                         }))
                       }
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                      className="w-full border-2 border-gray-300 rounded-md px-3 py-2 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none"
                     />
                   </div>
                 </div>

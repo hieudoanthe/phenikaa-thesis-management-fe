@@ -358,3 +358,63 @@ export const generateComprehensiveEvaluationPDF = async (topicId) => {
     throw error;
   }
 };
+
+// ==================== REVIEWER SUMMARY (REVIEWER) ====================
+export const getReviewerSummary = async (topicId) => {
+  try {
+    const response = await apiGet(
+      `${EVAL_SERVICE_BASE}/reviewer-summary/${topicId}`
+    );
+    return response;
+  } catch (error) {
+    return {};
+  }
+};
+
+export const upsertReviewerSummary = async (topicId, reviewerId, content) => {
+  const payload = { reviewerId: Number(reviewerId), content };
+  const response = await apiPost(
+    `${EVAL_SERVICE_BASE}/reviewer-summary/${topicId}`,
+    payload
+  );
+  return response;
+};
+
+export const checkReviewerAccess = async (topicId, lecturerId) => {
+  const response = await apiGet(
+    `${EVAL_SERVICE_BASE}/reviewer-summary/${topicId}/access/${lecturerId}`
+  );
+  return response;
+};
+
+// ==================== SUPERVISOR SUMMARY (SUPERVISOR) ====================
+export const getSupervisorSummary = async (topicId) => {
+  try {
+    const response = await apiGet(
+      `${EVAL_SERVICE_BASE}/supervisor-summary/${topicId}`
+    );
+    return response;
+  } catch (error) {
+    return {};
+  }
+};
+
+export const upsertSupervisorSummary = async (
+  topicId,
+  supervisorId,
+  content
+) => {
+  const payload = { supervisorId: Number(supervisorId), content };
+  const response = await apiPost(
+    `${EVAL_SERVICE_BASE}/supervisor-summary/${topicId}`,
+    payload
+  );
+  return response;
+};
+
+export const checkSupervisorAccess = async (topicId, lecturerId) => {
+  const response = await apiGet(
+    `${EVAL_SERVICE_BASE}/supervisor-summary/${topicId}/access/${lecturerId}`
+  );
+  return response;
+};

@@ -3,9 +3,8 @@ import React, {
   useContext,
   useState,
   useEffect,
-  useCallback,
 } from "react";
-import { getToken, getUserIdFromToken } from "../auth/authUtils";
+import { getUserIdFromToken } from "../auth/authUtils";
 import userService from "../services/user.service";
 
 // Tạo context cho Student Profile

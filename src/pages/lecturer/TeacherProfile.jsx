@@ -238,7 +238,7 @@ const TeacherProfile = () => {
 
   // Options cho react-select
   const departmentOptions = [
-    { value: "Công nghệ thông tin", label: "Công nghệ thông tin" },
+    { value: "Khoa Hệ thống thông tin", label: "Khoa Hệ thống thông tin" },
   ];
 
   const specializationOptions = [

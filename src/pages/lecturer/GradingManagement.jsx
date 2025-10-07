@@ -14,6 +14,12 @@ import { getUserIdFromToken } from "../../auth/authUtils";
 import userService from "../../services/user.service";
 import Select from "react-select";
 import { checkCouncilChairmanAccess } from "../../services/grading.service";
+import ReviewerSummaryTab from "../../components/grading/ReviewerSummaryTab";
+import SupervisorSummaryTab from "../../components/grading/SupervisorSummaryTab";
+import {
+  checkReviewerAccess,
+  checkSupervisorAccess,
+} from "../../services/grading.service";
 
 const GradingManagement = () => {
   const { user } = useAuth();
@@ -27,6 +33,10 @@ const GradingManagement = () => {
   const [selectedQnATopic, setSelectedQnATopic] = useState(null);
   const [selectedCouncilTopic, setSelectedCouncilTopic] = useState(null);
   const [isCouncilChairman, setIsCouncilChairman] = useState(false);
+  const [selectedReviewerTopic, setSelectedReviewerTopic] = useState(null);
+  const [isReviewer, setIsReviewer] = useState(false);
+  const [selectedSupervisorTopic, setSelectedSupervisorTopic] = useState(null);
+  const [isSupervisor, setIsSupervisor] = useState(false);
   const [studentProfiles, setStudentProfiles] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
@@ -196,6 +206,36 @@ const GradingManagement = () => {
     }
   }, [activeTab, selectedCouncilTopic, evaluations]);
 
+  // Auto-select first topic when switching to Reviewer tab
+  useEffect(() => {
+    if (
+      activeTab === "reviewer" &&
+      !selectedReviewerTopic &&
+      evaluations.length > 0
+    ) {
+      const uniqueTopics = evaluations.filter(
+        (evaluation, index, self) =>
+          self.findIndex((e) => e.topicId === evaluation.topicId) === index
+      );
+      if (uniqueTopics.length > 0) setSelectedReviewerTopic(uniqueTopics[0]);
+    }
+  }, [activeTab, selectedReviewerTopic, evaluations]);
+
+  // Auto-select first topic when switching to Supervisor tab
+  useEffect(() => {
+    if (
+      activeTab === "supervisor" &&
+      !selectedSupervisorTopic &&
+      evaluations.length > 0
+    ) {
+      const uniqueTopics = evaluations.filter(
+        (evaluation, index, self) =>
+          self.findIndex((e) => e.topicId === evaluation.topicId) === index
+      );
+      if (uniqueTopics.length > 0) setSelectedSupervisorTopic(uniqueTopics[0]);
+    }
+  }, [activeTab, selectedSupervisorTopic, evaluations]);
+
   // Determine chairman access for council tab via backend
   useEffect(() => {
     const resolveChairman = async () => {
@@ -216,6 +256,48 @@ const GradingManagement = () => {
     };
     if (activeTab === "council") resolveChairman();
   }, [activeTab, selectedCouncilTopic, user]);
+
+  // Determine reviewer access via backend
+  useEffect(() => {
+    const resolveReviewer = async () => {
+      try {
+        if (!selectedReviewerTopic) {
+          setIsReviewer(false);
+          return;
+        }
+        const me = user?.userId || getUserIdFromToken();
+        const res = await checkReviewerAccess(
+          selectedReviewerTopic.topicId,
+          me
+        );
+        setIsReviewer(!!res?.hasAccess);
+      } catch (e) {
+        setIsReviewer(false);
+      }
+    };
+    if (activeTab === "reviewer") resolveReviewer();
+  }, [activeTab, selectedReviewerTopic, user]);
+
+  // Determine supervisor access via backend
+  useEffect(() => {
+    const resolveSupervisor = async () => {
+      try {
+        if (!selectedSupervisorTopic) {
+          setIsSupervisor(false);
+          return;
+        }
+        const me = user?.userId || getUserIdFromToken();
+        const res = await checkSupervisorAccess(
+          selectedSupervisorTopic.topicId,
+          me
+        );
+        setIsSupervisor(!!res?.hasAccess);
+      } catch (e) {
+        setIsSupervisor(false);
+      }
+    };
+    if (activeTab === "supervisor") resolveSupervisor();
+  }, [activeTab, selectedSupervisorTopic, user]);
 
   const handleSubmitGrading = async (gradingForm) => {
     if (!selectedEvaluation) return;
@@ -430,6 +512,44 @@ const GradingManagement = () => {
                 {
                   key: "qna",
                   label: "Q&A",
+                  icon: (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      className="bi bi-question-lg"
+                      viewBox="0 0 16 16"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"
+                      />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "reviewer",
+                  label: "Nhận xét phản biện",
+                  icon: (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      className="bi bi-question-lg"
+                      viewBox="0 0 16 16"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4.475 5.458c-.284 0-.514-.237-.47-.517C4.28 3.24 5.576 2 7.825 2c2.25 0 3.767 1.36 3.767 3.215 0 1.344-.665 2.288-1.79 2.973-1.1.659-1.414 1.118-1.414 2.01v.03a.5.5 0 0 1-.5.5h-.77a.5.5 0 0 1-.5-.495l-.003-.2c-.043-1.221.477-2.001 1.645-2.712 1.03-.632 1.397-1.135 1.397-2.028 0-.979-.758-1.698-1.926-1.698-1.009 0-1.71.529-1.938 1.402-.066.254-.278.461-.54.461h-.777ZM7.496 14c.622 0 1.095-.474 1.095-1.09 0-.618-.473-1.092-1.095-1.092-.606 0-1.087.474-1.087 1.091S6.89 14 7.496 14"
+                      />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "supervisor",
+                  label: "Nhận xét hướng dẫn",
                   icon: (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -691,6 +811,110 @@ const GradingManagement = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "supervisor" && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="mb-6">
+              <div className="mb-4">
+                <label
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                  htmlFor="supervisorTopicSelect"
+                >
+                  Chọn đề tài để nhập nhận xét hướng dẫn:
+                </label>
+                <Select
+                  inputId="supervisorTopicSelect"
+                  classNamePrefix="rs"
+                  options={qnaTopicOptions}
+                  value={
+                    selectedSupervisorTopic
+                      ? {
+                          value: selectedSupervisorTopic.topicId,
+                          label: `${
+                            selectedSupervisorTopic.topicTitle
+                          } - ${getStudentDisplayName(
+                            selectedSupervisorTopic.studentId,
+                            selectedSupervisorTopic.studentName
+                          )}`,
+                          data: selectedSupervisorTopic,
+                        }
+                      : null
+                  }
+                  onChange={(opt) =>
+                    setSelectedSupervisorTopic(opt ? opt.data : null)
+                  }
+                  placeholder="-- Chọn đề tài --"
+                  isClearable={false}
+                  theme={selectTheme}
+                  styles={selectStyles}
+                />
+              </div>
+            </div>
+
+            {selectedSupervisorTopic ? (
+              <SupervisorSummaryTab
+                topicId={selectedSupervisorTopic.topicId}
+                isSupervisor={isSupervisor}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-600">
+                Vui lòng chọn đề tài
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "reviewer" && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="mb-6">
+              <div className="mb-4">
+                <label
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                  htmlFor="reviewerTopicSelect"
+                >
+                  Chọn đề tài để nhập nhận xét phản biện:
+                </label>
+                <Select
+                  inputId="reviewerTopicSelect"
+                  classNamePrefix="rs"
+                  options={qnaTopicOptions}
+                  value={
+                    selectedReviewerTopic
+                      ? {
+                          value: selectedReviewerTopic.topicId,
+                          label: `${
+                            selectedReviewerTopic.topicTitle
+                          } - ${getStudentDisplayName(
+                            selectedReviewerTopic.studentId,
+                            selectedReviewerTopic.studentName
+                          )}`,
+                          data: selectedReviewerTopic,
+                        }
+                      : null
+                  }
+                  onChange={(opt) =>
+                    setSelectedReviewerTopic(opt ? opt.data : null)
+                  }
+                  placeholder="-- Chọn đề tài --"
+                  isClearable={false}
+                  theme={selectTheme}
+                  styles={selectStyles}
+                />
+              </div>
+            </div>
+
+            {selectedReviewerTopic ? (
+              <ReviewerSummaryTab
+                topicId={selectedReviewerTopic.topicId}
+                isReviewer={isReviewer}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-600">
+                Vui lòng chọn đề tài
               </div>
             )}
           </div>

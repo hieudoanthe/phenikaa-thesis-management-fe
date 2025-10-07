@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import userService from "../../services/user.service";
 import {
   getFinalScore,
   generateComprehensiveEvaluationPDF,
@@ -23,6 +24,7 @@ const AllFinalScoresView = ({ evaluations }) => {
   const [loading, setLoading] = useState(false);
   const [expandedTopics, setExpandedTopics] = useState(new Set());
   const [pdfLoading, setPdfLoading] = useState({});
+  const [teacherNames, setTeacherNames] = useState({});
 
   useEffect(() => {
     if (evaluations && evaluations.length > 0) {
@@ -62,6 +64,37 @@ const AllFinalScoresView = ({ evaluations }) => {
       }
 
       setFinalScores(scores);
+      // Prefetch teacher names for displayed evaluations
+      try {
+        const uniqueIds = new Set();
+        Object.values(scores).forEach((sd) => {
+          (sd.evaluations || []).forEach((ev) => {
+            if (ev?.evaluatorId) uniqueIds.add(ev.evaluatorId);
+          });
+        });
+        const names = {};
+        for (const id of uniqueIds) {
+          try {
+            // Try teacher profile first
+            const profile = await userService.getTeacherProfile(id);
+            const name =
+              profile?.fullName || profile?.name || profile?.username;
+            if (name) {
+              names[id] = name;
+              continue;
+            }
+          } catch (_) {}
+          try {
+            const profile2 = await userService.getInternalUserProfile(id);
+            const name2 =
+              profile2?.fullName || profile2?.name || profile2?.username;
+            if (name2) names[id] = name2;
+          } catch (_) {}
+        }
+        if (Object.keys(names).length > 0) {
+          setTeacherNames((prev) => ({ ...prev, ...names }));
+        }
+      } catch (_) {}
     } catch (error) {
       showToast("Lỗi khi tải điểm cuối cùng");
     } finally {
@@ -71,6 +104,17 @@ const AllFinalScoresView = ({ evaluations }) => {
 
   const formatScore = (score) => {
     return score ? score.toFixed(1) : "0.0";
+  };
+
+  const renderScoreItem = (label, value) => {
+    const numeric = typeof value === "number" ? value : parseFloat(value);
+    if (isNaN(numeric) || numeric === 0) return null; // ẩn khi không có điểm hoặc bằng 0
+    return (
+      <div>
+        <span className="text-gray-600">{label}</span>
+        <span className="ml-1 font-medium">{formatScore(numeric)}</span>
+      </div>
+    );
   };
 
   const getStatusColor = (status) => {
@@ -372,7 +416,9 @@ const AllFinalScoresView = ({ evaluations }) => {
                                   "Hội đồng chấm"}
                               </h6>
                               <p className="text-sm text-gray-500">
-                                Đánh giá bởi: ID {evaluation.evaluatorId}
+                                Đánh giá bởi:{" "}
+                                {teacherNames[evaluation.evaluatorId] ||
+                                  `ID ${evaluation.evaluatorId}`}
                               </p>
                             </div>
                             <div className="text-right">
@@ -387,32 +433,22 @@ const AllFinalScoresView = ({ evaluations }) => {
 
                           {/* Score details - Same as FinalScoreView */}
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-                            <div>
-                              <span className="text-gray-600">Nội dung:</span>
-                              <span className="ml-1 font-medium">
-                                {formatScore(evaluation.contentScore)}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">
-                                Thuyết trình:
-                              </span>
-                              <span className="ml-1 font-medium">
-                                {formatScore(evaluation.presentationScore)}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Kỹ thuật:</span>
-                              <span className="ml-1 font-medium">
-                                {formatScore(evaluation.technicalScore)}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Sáng tạo:</span>
-                              <span className="ml-1 font-medium">
-                                {formatScore(evaluation.innovationScore)}
-                              </span>
-                            </div>
+                            {renderScoreItem(
+                              "Nội dung:",
+                              evaluation.contentScore
+                            )}
+                            {renderScoreItem(
+                              "Thuyết trình:",
+                              evaluation.presentationScore
+                            )}
+                            {renderScoreItem(
+                              "Kỹ thuật:",
+                              evaluation.technicalScore
+                            )}
+                            {renderScoreItem(
+                              "Sáng tạo:",
+                              evaluation.innovationScore
+                            )}
                             {evaluation.defenseScore && (
                               <div>
                                 <span className="text-gray-600">Bảo vệ:</span>
@@ -448,4 +484,3 @@ const AllFinalScoresView = ({ evaluations }) => {
 };
 
 export default AllFinalScoresView;
-

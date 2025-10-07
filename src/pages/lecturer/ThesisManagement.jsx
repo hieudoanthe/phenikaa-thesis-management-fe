@@ -755,6 +755,15 @@ const ThesisManagement = () => {
     );
   };
 
+  // Chuẩn hóa trạng thái hiển thị của đề tài: nếu đã duyệt thì coi như Hoạt động
+  const getDisplayTopicStatus = (approvalStatus, topicStatus) => {
+    const approvalLower = String(approvalStatus || "").toLowerCase();
+    if (approvalLower === "approved") {
+      return "active";
+    }
+    return String(topicStatus || "active");
+  };
+
   const getOptionBackgroundColor = (state) => {
     if (state.isSelected) return "#2563eb";
     if (state.isFocused) return "#f3f4f6";
@@ -1423,33 +1432,40 @@ const ThesisManagement = () => {
                           </span>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-center hidden xl:table-cell">
-                          <span
-                            className={`inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium border-none ${getStatusBadgeClass(
-                              topic.status || topic.topicStatus || "Active"
-                            )}`}
-                          >
-                            {(() => {
-                              const status =
-                                topic.status || topic.topicStatus || "active";
-                              const statusLower = status.toLowerCase();
-                              switch (statusLower) {
-                                case "active":
-                                  return "Hoạt động";
-                                case "inactive":
-                                  return "Ngừng";
-                                case "archived":
-                                  return "Lưu trữ";
-                                case "deleted":
-                                  return "Đã xóa";
-                                case "available":
-                                  return "Còn trống";
-                                case "pending":
-                                  return "Chờ duyệt";
-                                default:
-                                  return status;
-                              }
-                            })()}
-                          </span>
+                          {(() => {
+                            const displayStatus = getDisplayTopicStatus(
+                              topic.approvalStatus,
+                              topic.status || topic.topicStatus || "active"
+                            );
+                            return (
+                              <span
+                                className={`inline-flex items-center px-3 py-1.5 rounded-2xl text-xs font-medium border-none ${getStatusBadgeClass(
+                                  displayStatus
+                                )}`}
+                              >
+                                {(() => {
+                                  const statusLower =
+                                    displayStatus.toLowerCase();
+                                  switch (statusLower) {
+                                    case "active":
+                                      return "Hoạt động";
+                                    case "inactive":
+                                      return "Ngừng";
+                                    case "archived":
+                                      return "Lưu trữ";
+                                    case "deleted":
+                                      return "Đã xóa";
+                                    case "available":
+                                      return "Còn trống";
+                                    case "pending":
+                                      return "Chờ duyệt";
+                                    default:
+                                      return displayStatus;
+                                  }
+                                })()}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center justify-center gap-1 sm:gap-2 min-h-[40px]">
