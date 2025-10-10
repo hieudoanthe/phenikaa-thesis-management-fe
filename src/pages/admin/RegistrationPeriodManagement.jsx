@@ -7,8 +7,10 @@ import ManageStudentsModal from "../../components/modals/ManageStudentsModal";
 import academicYearService from "../../services/academicYear.service";
 import importService from "../../services/import.service";
 import Select from "react-select";
+import { useTranslation } from "react-i18next";
 
 const RegistrationPeriodManagement = () => {
+  const { t } = useTranslation();
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,7 +21,7 @@ const RegistrationPeriodManagement = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState({
     value: "ALL",
-    label: "Tất cả",
+    label: t("admin.registrationPeriod.all"),
   });
 
   // Import and manage students modals
@@ -71,7 +73,7 @@ const RegistrationPeriodManagement = () => {
         setPeriods(result.data || []);
       }
     } catch (error) {
-      showToast("Không thể tải danh sách đợt đăng ký");
+      showToast(t("admin.registrationPeriod.errorLoadingPeriods"));
     } finally {
       setLoading(false);
     }
@@ -83,13 +85,13 @@ const RegistrationPeriodManagement = () => {
       const result = await registrationPeriodService.getAllPeriods();
       if (result.success) {
         setPeriods(result.data || []);
-        showToast("Đã cập nhật danh sách đợt đăng ký", "success");
+        showToast(t("admin.registrationPeriod.updateSuccess"), "success");
       } else {
         showToast(result.message);
       }
     } catch (error) {
-      showToast("Lỗi khi tải danh sách đợt đăng ký");
-      console.error("Lỗi:", error);
+      showToast(t("admin.registrationPeriod.errorLoadingPeriodsMessage"));
+      console.error(t("admin.defenseSchedule.error"), error);
     } finally {
       setRefreshing(false);
     }
@@ -107,13 +109,13 @@ const RegistrationPeriodManagement = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Đặt về đầu ngày
     if (startDate < today) {
-      showToast("Ngày bắt đầu không được nhỏ hơn ngày hiện tại", "error");
+      showToast(t("admin.registrationPeriod.startDateError"), "error");
       return;
     }
 
     // Kiểm tra ngày kết thúc phải lớn hơn ngày bắt đầu
     if (endDate <= startDate) {
-      showToast("Ngày kết thúc phải lớn hơn ngày bắt đầu", "error");
+      showToast(t("admin.registrationPeriod.endDateError"), "error");
       return;
     }
 
@@ -124,7 +126,7 @@ const RegistrationPeriodManagement = () => {
       Math.abs(endDate - expectedEndDate) / (1000 * 60 * 60 * 24);
 
     if (dayDifference > 1) {
-      showToast("Ngày kết thúc phải là ngày bắt đầu + 10 ngày", "error");
+      showToast(t("admin.registrationPeriod.durationError"), "error");
       return;
     }
 

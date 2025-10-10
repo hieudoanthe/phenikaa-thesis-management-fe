@@ -15,7 +15,7 @@ import Select from "react-select";
 import userService from "../../services/user.service";
 import useAuth from "../../hooks/useAuth";
 import { getUserIdFromToken, getToken } from "../../auth/authUtils";
-import { useProfileStudent } from "../../contexts/ProfileStudentContext";
+import { useProfileStudent } from "../../hooks/useProfile";
 
 const StudentProfile = () => {
   // Hook authentication

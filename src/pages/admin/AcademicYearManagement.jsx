@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import academicYearService from "../../services/academicYear.service";
 import { showToast } from "../../utils/toastHelper";
+import { useTranslation } from "react-i18next";
 
 const AcademicYearManagement = () => {
+  const { t } = useTranslation();
   const [academicYears, setAcademicYears] = useState([]);
   const [currentYear, setCurrentYear] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,11 +29,11 @@ const AcademicYearManagement = () => {
         const activeYear = result.data.find((year) => (year.status || 0) === 1);
         setCurrentYear(activeYear);
       } else {
-        showToast(result.message || "Không thể tải danh sách năm học");
+        showToast(result.message || t("admin.academicYear.errorLoading"));
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách năm học:", error);
-      showToast("Lỗi khi tải danh sách năm học!");
+      showToast(t("admin.academicYear.errorLoadingMessage"));
     } finally {
       setLoading(false);
     }
@@ -42,10 +44,10 @@ const AcademicYearManagement = () => {
       if (newStatus === "active") {
         const result = await academicYearService.activateAcademicYear(yearId);
         if (result.success) {
-          showToast("Đã kích hoạt năm học thành công!");
+          showToast(t("admin.academicYear.activateSuccess"));
           loadAcademicYears(); // Reload để cập nhật trạng thái
         } else {
-          showToast(result.message || "Không thể kích hoạt năm học");
+          showToast(result.message || t("admin.academicYear.activateError"));
         }
       } else {
         // TODO: Implement deactivate nếu cần

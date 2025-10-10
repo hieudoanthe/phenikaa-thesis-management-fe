@@ -7,31 +7,60 @@ import { apiGet } from "../../services/mainHttpClient";
 import { useNavigate } from "react-router-dom";
 import { evalService } from "../../services/evalService";
 import { flushSync } from "react-dom";
-
-// Department mapping
-const departmentMapping = {
-  CNTT: "Công nghệ thông tin",
-  KHMT: "Khoa học máy tính",
-  KTMT: "Kỹ thuật máy tính",
-  HTTT: "Hệ thống thông tin",
-  KTPM: "Kỹ thuật phần mềm",
-  ATTT: "An toàn thông tin",
-  MMT: "Mạng máy tính",
-  PM: "Phần mềm",
-};
-
-// Status mapping
-const statusMapping = {
-  ACTIVE: "Hoạt động",
-  INACTIVE: "Không hoạt động",
-  CLOSED: "Đã đóng",
-  UPCOMING: "Sắp diễn ra",
-  PENDING: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Từ chối",
-};
+import { useTranslation } from "react-i18next";
 
 const StudentPeriodManagement = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  // Global error handler để bắt lỗi từ browser extension
+  useEffect(() => {
+    const handleError = (event) => {
+      // Bỏ qua lỗi từ browser extension
+      if (
+        event.error &&
+        event.error.message &&
+        (event.error.message.includes("translate-page") ||
+          event.error.message.includes("save-page") ||
+          event.error.message.includes("content-all.js"))
+      ) {
+        event.preventDefault();
+        return;
+      }
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleError);
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleError);
+    };
+  }, []);
+
+  // Department mapping sử dụng translation
+  const departmentMapping = {
+    CNTT: t("admin.studentPeriod.departments.CNTT"),
+    KHMT: t("admin.studentPeriod.departments.KHMT"),
+    KTMT: t("admin.studentPeriod.departments.KTMT"),
+    HTTT: t("admin.studentPeriod.departments.HTTT"),
+    KTPM: t("admin.studentPeriod.departments.KTPM"),
+    ATTT: t("admin.studentPeriod.departments.ATTT"),
+    MMT: t("admin.studentPeriod.departments.MMT"),
+    PM: t("admin.studentPeriod.departments.PM"),
+  };
+
+  // Status mapping sử dụng translation
+  const statusMapping = {
+    ACTIVE: t("admin.studentPeriod.status.ACTIVE"),
+    INACTIVE: t("admin.studentPeriod.status.INACTIVE"),
+    CLOSED: t("admin.studentPeriod.status.CLOSED"),
+    UPCOMING: t("admin.studentPeriod.status.UPCOMING"),
+    PENDING: t("admin.studentPeriod.status.PENDING"),
+    APPROVED: t("admin.studentPeriod.status.APPROVED"),
+    REJECTED: t("admin.studentPeriod.status.REJECTED"),
+  };
+
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [periods, setPeriods] = useState([]);
   const [students, setStudents] = useState([]);
@@ -94,8 +123,6 @@ const StudentPeriodManagement = () => {
   const [selectedStudentInfo, setSelectedStudentInfo] = useState(null);
   const [loadingStudentInfo, setLoadingStudentInfo] = useState(false);
 
-  const navigate = useNavigate();
-
   // Load danh sách đợt đăng ký
   useEffect(() => {
     loadPeriods();
@@ -109,36 +136,56 @@ const StudentPeriodManagement = () => {
     const checkAllStudentAssignments = async () => {
       if (students.length === 0) return;
 
-      const newAssignedStudents = new Map();
+      try {
+        // Tối ưu: Lấy tất cả assignments một lần thay vì N+1 queries
+        const allAssignments =
+          await studentAssignmentService.getAllStudentAssignments();
 
-      const studentsToCheck = students.slice(0, 2);
+        const newAssignedStudents = new Map();
 
-      const results = await Promise.allSettled(
-        studentsToCheck.map(async (student) => {
-          try {
-            const assignment = await checkStudentAssignment(student.studentId);
-            return { studentId: student.studentId, assignment };
-          } catch (error) {
-            console.warn(
-              `Không thể kiểm tra assignment cho sinh viên ${student.studentId}:`,
-              error
+        // Map assignments theo studentId
+        allAssignments.forEach((assignment) => {
+          newAssignedStudents.set(assignment.studentId, {
+            sessionId: assignment.sessionId,
+            sessionName: assignment.sessionName,
+            location: assignment.location,
+            defenseDate: assignment.defenseDate,
+            startTime: assignment.startTime,
+            endTime: assignment.endTime,
+            defenseOrder: assignment.defenseOrder,
+          });
+        });
+
+        setAssignedStudents(newAssignedStudents);
+      } catch (error) {
+        // Fallback: chỉ kiểm tra 10 sinh viên đầu tiên để tránh quá tải
+        const studentsToCheck = students.slice(0, 10);
+        const newAssignedStudents = new Map();
+
+        const results = await Promise.allSettled(
+          studentsToCheck.map(async (student) => {
+            try {
+              const assignment = await checkStudentAssignment(
+                student.studentId
+              );
+              return { studentId: student.studentId, assignment };
+            } catch (error) {
+              return { studentId: student.studentId, assignment: null };
+            }
+          })
+        );
+
+        results.forEach((result) => {
+          if (result.status === "fulfilled" && result.value.assignment) {
+            newAssignedStudents.set(
+              result.value.studentId,
+              result.value.assignment
             );
-            return { studentId: student.studentId, assignment: null };
           }
-        })
-      );
+        });
 
-      // Xử lý kết quả
-      results.forEach((result) => {
-        if (result.status === "fulfilled" && result.value.assignment) {
-          newAssignedStudents.set(
-            result.value.studentId,
-            result.value.assignment
-          );
-        }
-      });
-
-      setAssignedStudents(newAssignedStudents);
+        setAssignedStudents(newAssignedStudents);
+      }
     };
 
     checkAllStudentAssignments();
@@ -185,11 +232,11 @@ const StudentPeriodManagement = () => {
         }
       } else {
         setPeriods([]);
-        showToast("Không có đợt đăng ký nào");
+        showToast(t("admin.studentPeriod.noPeriods"));
       }
     } catch (error) {
       console.error("Lỗi khi tải danh sách đợt đăng ký:", error);
-      showToast("Lỗi khi tải danh sách đợt đăng ký");
+      showToast(t("admin.studentPeriod.errorLoadingPeriods"));
       setPeriods([]);
     } finally {
       setLoading(false);
@@ -284,7 +331,7 @@ const StudentPeriodManagement = () => {
       setLastLoadedPeriod(periodId);
     } catch (error) {
       console.error("Lỗi khi tải danh sách sinh viên:", error);
-      showToast("Lỗi khi tải danh sách sinh viên");
+      showToast(t("admin.studentPeriod.errorLoadingStudents"));
       setStudents([]);
     } finally {
       // Only end loading for latest request
@@ -405,6 +452,18 @@ const StudentPeriodManagement = () => {
     }
   };
 
+  // Định dạng chỉ giờ từ ISO hoặc HH:mm(:ss) -> HH:mm
+  const formatTime = (value) => {
+    if (!value) return "";
+    const raw = String(value);
+    // Nếu là ISO có 'T', lấy phần sau 'T'
+    let timePart = raw.includes("T") ? raw.split("T")[1] : raw;
+    // Bỏ suffix Z hoặc mili-giây nếu có
+    timePart = timePart.replace("Z", "");
+    const match = timePart.match(/^(\d{2}):(\d{2})/);
+    return match ? `${match[1]}:${match[2]}` : timePart;
+  };
+
   // Lọc sinh viên theo search query và status (an toàn với phần tử undefined)
   // Sử dụng useMemo để tối ưu performance
   const filteredStudents = useMemo(() => {
@@ -475,9 +534,8 @@ const StudentPeriodManagement = () => {
    */
   const checkStudentAssignment = async (studentId) => {
     try {
-      // Lấy tất cả buổi bảo vệ có sẵn
-      const availableSessions =
-        await studentAssignmentService.getAvailableSessions();
+      // Lấy tất cả buổi bảo vệ (kể cả đã đầy) để kiểm tra assignment
+      const availableSessions = await studentAssignmentService.getAllSessions();
 
       // Kiểm tra từng buổi bảo vệ để tìm sinh viên
       for (const session of availableSessions) {
@@ -486,9 +544,13 @@ const StudentPeriodManagement = () => {
             await studentAssignmentService.getAssignedStudents(
               session.sessionId
             );
+
           const studentAssignment = assignedStudents.find(
-            (student) => student.studentId === studentId
+            (student) =>
+              student.studentId == studentId ||
+              student.studentId === parseInt(studentId)
           );
+
           if (studentAssignment) {
             return {
               sessionId: session.sessionId,
@@ -893,52 +955,6 @@ const StudentPeriodManagement = () => {
     }
   };
 
-  const handleAutoArrange = async () => {
-    try {
-      if (!selectedPeriod?.value) {
-        showToast("Vui lòng chọn đợt đăng ký trước", "warning");
-        return;
-      }
-      setAutoAssigning(true);
-      setPreviewLoading(true);
-      const res = await evalService.autoAssignStudents({
-        periodId: selectedPeriod.value,
-      });
-      if (res && res.success && Array.isArray(res.sessions)) {
-        const mapped = res.sessions.map((s, idx) => ({
-          sessionId: s.sessionId || `preview-${idx + 1}`,
-          sessionName: s.sessionName || `Buổi bổ sung ${idx + 1}`,
-          location: s.location || "TBD",
-          defenseDate: s.defenseDate || new Date().toISOString(),
-          maxStudents: s.maxStudents || 5,
-          isVirtual: !!s.virtualSession,
-          students: (s.students || []).map((st) => ({
-            studentId: st.studentId,
-            name: st.studentName,
-            topicTitle: st.topicTitle,
-            major: st.major,
-            reviewer:
-              st.reviewerName ||
-              (st.reviewerId ? `Giảng viên ${st.reviewerId}` : "TBD"),
-          })),
-        }));
-        setPreviewData(mapped);
-        setPreviewOpen(true);
-      } else {
-        showToast(
-          res?.message || "Không tạo được preview từ server",
-          "warning"
-        );
-      }
-    } catch (e) {
-      console.error("Preview auto arrange failed:", e);
-      showToast("Lỗi khi xem trước sắp xếp", "error");
-    } finally {
-      setPreviewLoading(false);
-      setAutoAssigning(false);
-    }
-  };
-
   // Helpers for preview add student
   const previewAssignedStudentIds = useMemo(() => {
     const ids = new Set();
@@ -1019,13 +1035,16 @@ const StudentPeriodManagement = () => {
           sessionName: ses.sessionName,
           location: ses.location,
           defenseDate: ses.defenseDate,
-          students: (ses.students || []).map((st) => ({
-            studentId: st.studentId,
-            topicId: studentIdToTopicId.get(st.studentId) || null,
-            topicTitle: st.topicTitle || "",
-            reviewerId: null,
-          })),
-        }));
+          students: (ses.students || [])
+            .map((st) => ({
+              studentId: st.studentId,
+              topicId: studentIdToTopicId.get(st.studentId) || null,
+              topicTitle: st.topicTitle || "",
+              reviewerId: null,
+            }))
+            .filter((st) => st.topicId != null),
+        }))
+        .filter((ses) => (ses.students || []).length > 0);
 
       const payload = {
         periodId: selectedPeriod.value,
@@ -1037,6 +1056,21 @@ const StudentPeriodManagement = () => {
       if (res && res.success) {
         showToast(res.message || "Đã xác nhận phân chia", "success");
         setPreviewOpen(false);
+
+        // Cập nhật assignedStudents state với các sinh viên vừa được gán
+        const newAssignedStudents = new Map(assignedStudents);
+        assignments.forEach((session) => {
+          session.students.forEach((student) => {
+            newAssignedStudents.set(student.studentId, {
+              sessionId: session.sessionId,
+              sessionName: session.sessionName,
+              location: session.location,
+              defenseDate: session.defenseDate,
+            });
+          });
+        });
+        setAssignedStudents(newAssignedStudents);
+
         // làm mới dữ liệu sinh viên
         if (selectedPeriod?.value) {
           loadStudentsByPeriod(selectedPeriod.value);
@@ -1250,17 +1284,70 @@ const StudentPeriodManagement = () => {
                 </svg>
                 {refreshing ? "Đang tải..." : "Làm mới"}
               </button>
+              {/* Removed heuristic auto arrange button */}
               <button
-                onClick={handleAutoArrange}
+                onClick={async () => {
+                  if (autoAssigning || previewLoading) return;
+                  try {
+                    if (!selectedPeriod?.value) {
+                      showToast("Vui lòng chọn đợt đăng ký trước", "warning");
+                      return;
+                    }
+                    setAutoAssigning(true);
+                    setPreviewLoading(true);
+                    const res = await evalService.autoAssignStudentsAi({
+                      periodId: selectedPeriod.value,
+                    });
+                    if (res && res.success && Array.isArray(res.sessions)) {
+                      const mapped = res.sessions.map((s, idx) => ({
+                        sessionId: s.sessionId || `preview-${idx + 1}`,
+                        sessionName: s.sessionName || `Buổi bổ sung ${idx + 1}`,
+                        location: s.location || "TBD",
+                        defenseDate: s.defenseDate || new Date().toISOString(),
+                        startTime: s.startTime || null,
+                        maxStudents: s.maxStudents || 5,
+                        isVirtual: !!s.virtualSession,
+                        students: (s.students || []).map((st) => ({
+                          studentId: st.studentId,
+                          name: st.studentName,
+                          topicTitle: st.topicTitle,
+                          reviewerName:
+                            st.reviewerName ||
+                            (st.reviewerId
+                              ? `Giảng viên ${st.reviewerId}`
+                              : "TBD"),
+                          reviewerSpecialization:
+                            st.reviewerSpecialization || "",
+                        })),
+                      }));
+                      setPreviewData(mapped);
+                      setPreviewOpen(true);
+                    } else {
+                      showToast(
+                        res?.message || "Không tạo được preview AI",
+                        "warning"
+                      );
+                    }
+                  } catch (e) {
+                    showToast("Lỗi khi phân chia sinh viên", "error");
+                  } finally {
+                    setPreviewLoading(false);
+                    setAutoAssigning(false);
+                  }
+                }}
                 className={`px-3 py-2 text-sm rounded-md text-white ${
-                  autoAssigning
-                    ? "bg-primary-300"
-                    : "bg-primary-500 hover:bg-primary-400"
+                  autoAssigning || previewLoading
+                    ? "bg-indigo-300"
+                    : "bg-indigo-600 hover:bg-indigo-500"
                 }`}
-                disabled={autoAssigning || !selectedPeriod?.value}
-                title="Tự động sắp xếp sinh viên vào các buổi bảo vệ"
+                disabled={
+                  !selectedPeriod?.value || autoAssigning || previewLoading
+                }
+                title="Phân chia sinh viên"
               >
-                {autoAssigning ? "Đang sắp xếp..." : "Tự động sắp xếp"}
+                {autoAssigning || previewLoading
+                  ? "Đang xử lý..."
+                  : "Phân chia sinh viên"}
               </button>
               <button
                 onClick={() => {
@@ -1393,9 +1480,6 @@ const StudentPeriodManagement = () => {
                                 <div className="font-medium">
                                   {student?.topicTitle || "N/A"}
                                 </div>
-                                <div className="text-gray-500">
-                                  Mã đề tài: {student?.topicCode || "N/A"}
-                                </div>
                               </div>
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap">
@@ -1473,7 +1557,7 @@ const StudentPeriodManagement = () => {
                                       ?.sessionName || "N/A"
                                   }`}
                                 >
-                                  Hủy gán
+                                  Xóa khỏi lịch
                                 </button>
                               ) : (
                                 <button
@@ -1498,7 +1582,7 @@ const StudentPeriodManagement = () => {
                                       : undefined
                                   }
                                 >
-                                  Gán vào lịch
+                                  Thêm vào lịch
                                 </button>
                               )}
                             </td>
@@ -1669,7 +1753,7 @@ const StudentPeriodManagement = () => {
             </div>
 
             {/* Content */}
-            <div className="p-6">
+            <div className="p-6 thin-scrollbar overflow-y-auto max-h-[70vh]">
               {selectedStudent && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <h4 className="text-lg font-semibold text-gray-900 mb-3">
@@ -1840,70 +1924,90 @@ const StudentPeriodManagement = () => {
       )}
       {previewOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold">
-                Xem trước phân chia (tối đa 5 SV/buổi)
-              </h3>
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => setPreviewOpen(false)}
-              >
-                Đóng
-              </button>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+              <h2 className="text-xl font-semibold text-gray-900 m-0">
+                Xem trước phân chia
+              </h2>
             </div>
-            <div className="p-4">
+            <div className="p-4 flex-1 overflow-y-auto thin-scrollbar">
               {previewLoading ? (
                 <div className="text-center py-8 text-gray-600">
                   Đang xử lý...
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {(previewData || []).map((ses) => (
-                    <div key={ses.sessionId} className="border rounded-lg p-4">
+                    <div
+                      key={ses.sessionId}
+                      className="rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition"
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <div className="font-medium text-gray-900">
+                        <div className="font-semibold text-gray-900">
                           {ses.sessionName}
                         </div>
                         {ses.isVirtual && (
-                          <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                          <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800 border border-yellow-200">
                             Bổ sung
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-600 mb-3">
-                        Phòng: {ses.location} • Ngày:{" "}
-                        {new Date(ses.defenseDate).toLocaleDateString("vi-VN")}{" "}
-                        • Sức chứa: {ses.students.length}/{ses.maxStudents}
+                      {(() => {
+                        const first = (ses.students || []).find(
+                          (st) => st.reviewerName
+                        );
+                        const text = first
+                          ? `${first.reviewerName}${
+                              first.reviewerSpecialization
+                                ? ` (${first.reviewerSpecialization})`
+                                : ""
+                            }`
+                          : "";
+                        return (
+                          <div className="text-center text-sm text-primary-700 font-medium mb-1">
+                            {text}
+                          </div>
+                        );
+                      })()}
+                      <div className="mb-3 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-gray-50 text-gray-700 border border-gray-200 text-xs sm:text-sm">
+                          Phòng: {ses.location}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-gray-50 text-gray-700 border border-gray-200 text-xs sm:text-sm">
+                          Ngày:{" "}
+                          {new Date(ses.defenseDate).toLocaleDateString(
+                            "vi-VN"
+                          )}
+                        </span>
+                        {ses.startTime && (
+                          <span className="px-2 py-0.5 rounded-full bg-gray-50 text-gray-700 border border-gray-200 text-xs sm:text-sm">
+                            Giờ: {formatTime(ses.startTime)}
+                          </span>
+                        )}
+                        {/* Removed capacity badge as requested */}
                       </div>
                       {ses.students.length === 0 ? (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 text-center py-4">
                           Chưa có sinh viên
                         </div>
                       ) : (
-                        <table className="w-full text-sm">
+                        <table className="w-full text-sm border-t border-gray-100 mt-2">
                           <thead>
                             <tr className="text-left text-gray-500">
-                              <th className="py-1 pr-2">SV</th>
-                              <th className="py-1 pr-2">Đề tài</th>
-                              <th className="py-1 pr-2">Chuyên ngành</th>
-                              <th className="py-1">Reviewer gợi ý</th>
+                              <th className="py-2 pr-2 font-medium">
+                                Sinh viên
+                              </th>
+                              <th className="py-2 pr-2 font-medium">Đề tài</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-gray-100">
                             {ses.students.map((st) => (
                               <tr key={st.studentId} className="align-top">
-                                <td className="py-1 pr-2 font-medium text-gray-900">
+                                <td className="py-2 pr-2 font-medium text-gray-900">
                                   {st.name}
                                 </td>
-                                <td className="py-1 pr-2 text-gray-700">
+                                <td className="py-2 pr-2 text-gray-700">
                                   {st.topicTitle}
-                                </td>
-                                <td className="py-1 pr-2 text-gray-700">
-                                  {st.major}
-                                </td>
-                                <td className="py-1 text-gray-700">
-                                  {st.reviewer}
                                 </td>
                               </tr>
                             ))}
@@ -1914,7 +2018,7 @@ const StudentPeriodManagement = () => {
                   ))}
                 </div>
               )}
-              <div className="mt-4 flex items-center justify-end gap-3 border-t pt-4">
+              <div className="mt-4 flex items-center justify-end gap-3 border-t pt-4 flex-shrink-0">
                 <button
                   className="px-4 py-2 text-sm rounded-md border"
                   onClick={() => setPreviewOpen(false)}

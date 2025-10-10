@@ -266,6 +266,53 @@ const DefenseSessionsSchedule = () => {
                 console.error("Lỗi khi tải dữ liệu sinh viên:", error);
               });
 
+              // Load thông tin hội đồng và phản biện
+              Promise.all([
+                userService
+                  .getAllTeachers()
+                  .then((ts) =>
+                    Array.isArray(ts)
+                      ? ts.reduce((acc, t) => {
+                          acc[t.userId] =
+                            t.fullName || `Giảng viên ${t.userId}`;
+                          return acc;
+                        }, {})
+                      : {}
+                  )
+                  .catch(() => ({})),
+                evalService
+                  .exportDefenseSession(session.sessionId)
+                  .then((dto) =>
+                    Array.isArray(dto?.committee) ? dto.committee : []
+                  )
+                  .catch(() => []),
+              ])
+                .then(([lecturerMap, committees]) => {
+                  setLecturerById(lecturerMap);
+                  const boards = committees
+                    .filter((c) => c.role !== "REVIEWER")
+                    .map((c) => ({
+                      ...c,
+                      displayedName:
+                        lecturerMap[c.lecturerId] ||
+                        `Giảng viên ${c.lecturerId}`,
+                    }));
+                  const reviewers = committees
+                    .filter((c) => c.role === "REVIEWER")
+                    .map((c) => ({
+                      ...c,
+                      displayedName:
+                        lecturerMap[c.lecturerId] ||
+                        `Giảng viên ${c.lecturerId}`,
+                    }));
+                  setCommitteeMembers(boards);
+                  setReviewerMembers(reviewers);
+                })
+                .catch(() => {
+                  setCommitteeMembers([]);
+                  setReviewerMembers([]);
+                });
+
               // Xóa URL parameters để tránh mở lại popup khi refresh
               window.history.replaceState(
                 {},
@@ -310,6 +357,59 @@ const DefenseSessionsSchedule = () => {
               // Mở popup hiển thị thông tin buổi bảo vệ
               setSelectedSessionDetail(session);
               setIsSessionDetailModalOpen(true);
+
+              // Load danh sách sinh viên đã được gán
+              loadAssignedStudents(session.sessionId).catch((error) => {
+                console.error("Lỗi khi tải dữ liệu sinh viên:", error);
+              });
+
+              // Load thông tin hội đồng và phản biện
+              Promise.all([
+                userService
+                  .getAllTeachers()
+                  .then((ts) =>
+                    Array.isArray(ts)
+                      ? ts.reduce((acc, t) => {
+                          acc[t.userId] =
+                            t.fullName || `Giảng viên ${t.userId}`;
+                          return acc;
+                        }, {})
+                      : {}
+                  )
+                  .catch(() => ({})),
+                evalService
+                  .exportDefenseSession(session.sessionId)
+                  .then((dto) =>
+                    Array.isArray(dto?.committee) ? dto.committee : []
+                  )
+                  .catch(() => []),
+              ])
+                .then(([lecturerMap, committees]) => {
+                  setLecturerById(lecturerMap);
+                  const boards = committees
+                    .filter((c) => c.role !== "REVIEWER")
+                    .map((c) => ({
+                      ...c,
+                      displayedName:
+                        lecturerMap[c.lecturerId] ||
+                        `Giảng viên ${c.lecturerId}`,
+                    }));
+                  const reviewers = committees
+                    .filter((c) => c.role === "REVIEWER")
+                    .map((c) => ({
+                      ...c,
+                      displayedName:
+                        lecturerMap[c.lecturerId] ||
+                        `Giảng viên ${c.lecturerId}`,
+                    }));
+                  setCommitteeMembers(boards);
+                  setReviewerMembers(reviewers);
+                })
+                .catch(() => {
+                  setCommitteeMembers([]);
+                  setReviewerMembers([]);
+                });
+
               break;
             }
           }

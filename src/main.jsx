@@ -14,8 +14,7 @@ import StudentRoute from "./routers/StudentRoute.jsx";
 import StudentLayout from "./components/layout/student/StudentLayout.jsx";
 import PlaceholderPage from "./components/common/PlaceholderPage.jsx";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ProfileStudentProvider } from "./contexts/ProfileStudentContext";
-import { ProfileTeacherProvider } from "./contexts/ProfileTeacherContext";
+import { ProfileProvider } from "./contexts/ProfileContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import SessionManager from "./components/common/SessionManager";
@@ -32,7 +31,9 @@ import MyThesis from "./pages/student/MyThesis.jsx";
 import AssignmentsDetail from "./pages/student/AssignmentsDetail.jsx";
 import SubmissionManagement from "./pages/student/SubmissionManagement.jsx";
 import FeedbackView from "./pages/student/FeedbackView.jsx";
-import StudentSettings from "./pages/student/Settings.jsx";
+import AdminSettings from "./pages/admin/AdminSettings";
+import LecturerSettings from "./pages/lecturer/LecturerSettings";
+import StudentSettings from "./pages/student/StudentSettings";
 import AdminRoute from "./routers/AdminRoute.jsx";
 import AdminLayout from "./components/layout/admin/AdminLayout.jsx";
 import GradingManagement from "./pages/lecturer/GradingManagement.jsx";
@@ -67,11 +68,11 @@ createRoot(document.getElementById("root")).render(
                 path="/lecturer"
                 element={
                   <LecturerRoute>
-                    <ProfileTeacherProvider>
+                    <ProfileProvider userType="teacher">
                       <NotificationProvider>
                         <LecturerLayout />
                       </NotificationProvider>
-                    </ProfileTeacherProvider>
+                    </ProfileProvider>
                   </LecturerRoute>
                 }
               >
@@ -117,15 +118,7 @@ createRoot(document.getElementById("root")).render(
                 />
                 <Route path="chat" element={<LecturerChat />} />
                 <Route path="notifications" element={<NotiOfTeacher />} />
-                <Route
-                  path="settings"
-                  element={
-                    <PlaceholderPage
-                      title="Cài đặt"
-                      description="Tính năng cài đặt dành cho giảng viên đang được phát triển."
-                    />
-                  }
-                />
+                <Route path="settings" element={<LecturerSettings />} />
               </Route>
 
               {/* Route yêu cầu xác thực - Student (chỉ cho USER role) */}
@@ -133,11 +126,11 @@ createRoot(document.getElementById("root")).render(
                 path="/student"
                 element={
                   <StudentRoute>
-                    <ProfileStudentProvider>
+                    <ProfileProvider userType="student">
                       <NotificationProvider>
                         <StudentLayout />
                       </NotificationProvider>
-                    </ProfileStudentProvider>
+                    </ProfileProvider>
                   </StudentRoute>
                 }
               >
@@ -167,7 +160,9 @@ createRoot(document.getElementById("root")).render(
                 path="/admin"
                 element={
                   <AdminRoute>
-                    <AdminLayout />
+                    <ProfileProvider userType="admin">
+                      <AdminLayout />
+                    </ProfileProvider>
                   </AdminRoute>
                 }
               >
@@ -213,15 +208,7 @@ createRoot(document.getElementById("root")).render(
                     />
                   }
                 />
-                <Route
-                  path="settings"
-                  element={
-                    <PlaceholderPage
-                      title="Cài đặt"
-                      description="Tính năng cài đặt đang được phát triển."
-                    />
-                  }
-                />
+                <Route path="settings" element={<AdminSettings />} />
                 <Route path="profile" element={<AdminProfile />} />
               </Route>
             </Routes>

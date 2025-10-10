@@ -6,7 +6,7 @@ import {
   getRefreshToken,
   getTeacherIdFromToken,
 } from "../../../auth/authUtils";
-import { useProfileTeacher } from "../../../contexts/ProfileTeacherContext";
+import { useProfileTeacher } from "../../../hooks/useProfile";
 import { useNotifications } from "../../../contexts/NotificationContext";
 import { WS_ENDPOINTS, APP_CONFIG } from "../../../config/api";
 import { showToast } from "../../../utils/toastHelper";

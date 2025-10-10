@@ -184,6 +184,8 @@ export const API_ENDPOINTS = {
 
   // Student Assignment
   ASSIGN_STUDENTS_TO_SESSIONS: "/api/eval-service/admin/student-assignment",
+  GET_ALL_STUDENT_ASSIGNMENTS:
+    "/api/eval-service/admin/sessions/student-assignments",
 
   // Student Period Management
   GET_STUDENTS_BY_PERIOD: "/api/thesis-service/student-period/{periodId}",

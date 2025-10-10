@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SidebarOfAdmin from "./SidebarOfAdmin.jsx";
 import { logout, getRefreshToken } from "../../../auth/authUtils";
 
 const AdminLayout = () => {
+  const { t } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -23,65 +25,64 @@ const AdminLayout = () => {
       case "/admin":
       case "/admin/dashboard":
         return {
-          title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý đồ án tốt nghiệp",
+          title: t("admin.pages.dashboard.title"),
+          subtitle: t("admin.pages.dashboard.subtitle"),
         };
       case "/admin/user-management":
         return {
-          title: "Quản lý người dùng",
-          subtitle: "Quản lý tài khoản sinh viên, giảng viên và admin",
+          title: t("admin.pages.userManagement.title"),
+          subtitle: t("admin.pages.userManagement.subtitle"),
         };
 
       case "/admin/assignments":
         return {
-          title: "Quản lý nhiệm vụ",
-          subtitle: "Phân công và theo dõi nhiệm vụ cho sinh viên",
+          title: t("admin.pages.assignments.title"),
+          subtitle: t("admin.pages.assignments.subtitle"),
         };
       case "/admin/academic-year":
         return {
-          title: "Quản lý năm học",
-          subtitle: "Quản lý và cấu hình các năm học trong hệ thống",
+          title: t("admin.pages.academicYear.title"),
+          subtitle: t("admin.pages.academicYear.subtitle"),
         };
       case "/admin/registration-period":
         return {
-          title: "Quản lý đợt đăng ký",
-          subtitle: "Quản lý các đợt đăng ký đề tài khóa luận tốt nghiệp",
+          title: t("admin.pages.registrationPeriod.title"),
+          subtitle: t("admin.pages.registrationPeriod.subtitle"),
         };
       case "/admin/student-period":
         return {
-          title: "Quản lý sinh viên theo đợt",
-          subtitle:
-            "Xem và quản lý danh sách sinh viên đăng ký đề tài theo từng đợt",
+          title: t("admin.pages.studentPeriod.title"),
+          subtitle: t("admin.pages.studentPeriod.subtitle"),
         };
       case "/admin/defense-schedule":
         return {
-          title: "Quản lý lịch bảo vệ",
-          subtitle: "Tạo và quản lý lịch trình bảo vệ khóa luận tốt nghiệp",
+          title: t("admin.pages.defenseSchedule.title"),
+          subtitle: t("admin.pages.defenseSchedule.subtitle"),
         };
       case "/admin/defense-sessions":
         return {
-          title: "Quản lý buổi bảo vệ",
-          subtitle: "Quản lý các buổi bảo vệ trong lịch trình",
+          title: t("admin.pages.defenseSessions.title"),
+          subtitle: t("admin.pages.defenseSessions.subtitle"),
         };
       case "/admin/statistics":
         return {
-          title: "Thống kê",
-          subtitle: "Xem báo cáo và thống kê tổng quan",
+          title: t("admin.pages.statistics.title"),
+          subtitle: t("admin.pages.statistics.subtitle"),
         };
       case "/admin/notifications":
         return {
-          title: "Thông báo",
-          subtitle: "Quản lý thông báo hệ thống",
+          title: t("admin.pages.notifications.title"),
+          subtitle: t("admin.pages.notifications.subtitle"),
         };
       case "/admin/settings":
         return {
-          title: "Cài đặt",
-          subtitle: "Cấu hình hệ thống và tài khoản",
+          title: t("admin.pages.settings.title"),
+          subtitle: t("admin.pages.settings.subtitle"),
         };
       default:
         return {
-          title: "Trang chủ",
-          subtitle: "Chào mừng bạn đến với hệ thống quản lý luận văn",
+          title: t("admin.pages.dashboard.title"),
+          subtitle: t("admin.pages.dashboard.subtitle"),
         };
     }
   };
@@ -177,7 +178,7 @@ const AdminLayout = () => {
       await logout(refreshToken);
       navigate("/login"); // Chuyển về trang đăng nhập
     } catch (error) {
-      console.error("Lỗi khi đăng xuất:", error);
+      console.error(t("common.errorLogout"), error);
     }
   };
 
@@ -185,23 +186,23 @@ const AdminLayout = () => {
   const notifications = [
     {
       id: 1,
-      title: "Giảng viên mới đăng ký",
-      message: "Giảng viên Nguyễn Văn A đã đăng ký tài khoản mới",
-      time: "2 giờ trước",
+      title: t("admin.notifications.newTeacher"),
+      message: t("admin.notifications.newTeacherMessage"),
+      time: t("admin.notifications.twoHoursAgo"),
       isRead: false,
     },
     {
       id: 2,
-      title: "Đề tài cần phê duyệt",
-      message: "Có 5 đề tài mới cần phê duyệt từ giảng viên",
-      time: "5 giờ trước",
+      title: t("admin.notifications.topicsNeedApproval"),
+      message: t("admin.notifications.topicsNeedApprovalMessage"),
+      time: t("admin.notifications.fiveHoursAgo"),
       isRead: false,
     },
     {
       id: 3,
-      title: "Báo cáo hệ thống",
-      message: "Báo cáo hoạt động hệ thống hàng ngày đã sẵn sàng",
-      time: "1 ngày trước",
+      title: t("admin.notifications.systemReport"),
+      message: t("admin.notifications.systemReportMessage"),
+      time: t("admin.notifications.oneDayAgo"),
       isRead: false,
     },
   ];
@@ -245,7 +246,7 @@ const AdminLayout = () => {
               <button
                 className="md:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 mr-2 sm:mr-3 md:mr-4 text-gray-600"
                 onClick={handleToggleSidebar}
-                aria-label="Mở/đóng menu"
+                aria-label={t("common.toggleMenu")}
               >
                 <svg
                   width="20"
@@ -281,7 +282,7 @@ const AdminLayout = () => {
                   type="button"
                   className="relative cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100 border-none bg-transparent"
                   onClick={handleToggleNotification}
-                  aria-label="Thông báo"
+                  aria-label={t("common.notifications")}
                 >
                   <svg
                     width="20"
@@ -303,16 +304,16 @@ const AdminLayout = () => {
                   <div className="fixed top-20 left-4 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 ring-1 ring-black/5 z-50 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:w-96 sm:mt-3 animate-fade-in-up">
                     <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                       <h3 className="text-sm sm:text-base font-semibold text-gray-900 m-0">
-                        Thông báo
+                        {t("common.notifications")}
                       </h3>
                       <button className="text-primary-500 text-xs sm:text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100">
-                        Đánh dấu tất cả đã đọc
+                        {t("common.markAllAsRead")}
                       </button>
                     </div>
                     <div className="max-h-[60vh] sm:max-h-[240px] overflow-y-auto thin-scrollbar divide-y divide-gray-100">
                       {notifications.length === 0 ? (
                         <div className="px-4 py-6 text-center text-gray-500">
-                          Không có thông báo nào
+                          {t("common.noNotifications")}
                         </div>
                       ) : (
                         notifications.map((notification) => (
@@ -342,7 +343,7 @@ const AdminLayout = () => {
                     </div>
                     <div className="px-4 py-3 border-t border-gray-100 text-center">
                       <button className="text-primary-500 text-xs sm:text-sm cursor-pointer px-3 sm:px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
-                        Xem tất cả thông báo
+                        {t("common.viewAllNotifications")}
                       </button>
                     </div>
                   </div>
@@ -355,7 +356,7 @@ const AdminLayout = () => {
                   type="button"
                   className="flex items-center gap-2 sm:gap-3 cursor-pointer p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:bg-gray-100 border-none bg-transparent"
                   onClick={handleToggleUserDropdown}
-                  aria-label="Menu người dùng"
+                  aria-label={t("common.userMenu")}
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-info to-info-dark rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     AD
@@ -393,7 +394,7 @@ const AdminLayout = () => {
                           Admin System
                         </h4>
                         <p className="text-xs sm:text-sm text-gray-600 m-0 mb-1">
-                          Quản trị viên
+                          {t("common.admin")}
                         </p>
                         <span className="text-[10px] sm:text-xs text-gray-500">
                           admin@phenikaa.edu.vn
@@ -414,7 +415,7 @@ const AdminLayout = () => {
                         >
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                         </svg>
-                        Hồ sơ cá nhân
+                        {t("common.profile")}
                       </button>
                       <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-gray-700 text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
                         <svg
@@ -426,7 +427,7 @@ const AdminLayout = () => {
                         >
                           <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
                         </svg>
-                        Cài đặt
+                        {t("common.settings")}
                       </button>
                       <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-none border-none text-gray-700 text-xs sm:text-sm cursor-pointer transition-colors duration-200 hover:bg-gray-100 text-left">
                         <svg
@@ -438,7 +439,7 @@ const AdminLayout = () => {
                         >
                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                         </svg>
-                        Trợ giúp
+                        {t("common.help")}
                       </button>
                       <div className="h-px bg-gray-200 my-2"></div>
                       <button
@@ -454,7 +455,7 @@ const AdminLayout = () => {
                         >
                           <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
                         </svg>
-                        Đăng xuất
+                        {t("common.logout")}
                       </button>
                     </div>
                   </div>

@@ -339,6 +339,21 @@ class EvalService {
   }
 
   /**
+   * Tự động sắp xếp sinh viên bằng AI (Gemini)
+   */
+  async autoAssignStudentsAi(payload) {
+    try {
+      // Gọi endpoint preview với query mode=gemini
+      const url = `${API_ENDPOINTS.AUTO_ASSIGN_PREVIEW}?mode=gemini`;
+      const response = await mainHttpClient.post(url, payload);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tự động sắp xếp sinh viên bằng AI:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Xác nhận phân chia sinh viên (gán thật)
    */
   async confirmAutoAssign(payload) {

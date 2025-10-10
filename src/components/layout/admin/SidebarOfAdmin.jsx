@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import PropTypes from "prop-types";
 
 const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
   const location = useLocation();
+  const { t } = useTranslation();
 
   const handleMenuClick = () => {
     if (onMenuItemClick) {
@@ -31,8 +33,8 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1A2.5 2.5 0 0 1 9.5 5h-3A2.5 2.5 0 0 1 4 2.5zM10 8a1 1 0 1 1 2 0v5a1 1 0 1 1-2 0zm-6 4a1 1 0 1 1 2 0v1a1 1 0 1 1-2 0zm4-3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0v-3a1 1 0 0 1 1-1" />
         </svg>
       ),
-      text: "Thống kê",
-      tooltip: "Thống kê",
+      text: t("admin.sidebar.statistics"),
+      tooltip: t("admin.sidebar.statistics"),
     },
     {
       path: "/admin/user-management",
@@ -48,8 +50,8 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0m-9 8c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4m9.886-3.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0" />
         </svg>
       ),
-      text: "Quản lý người dùng",
-      tooltip: "Quản lý người dùng",
+      text: t("admin.sidebar.userManagement"),
+      tooltip: t("admin.sidebar.userManagement"),
     },
 
     {
@@ -67,8 +69,8 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           <path d="M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466z" />
         </svg>
       ),
-      text: "Quản lý năm học",
-      tooltip: "Quản lý năm học",
+      text: t("admin.sidebar.academicYear"),
+      tooltip: t("admin.sidebar.academicYear"),
     },
 
     {
@@ -85,8 +87,8 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
         </svg>
       ),
-      text: "Quản lý sinh viên",
-      tooltip: "Quản lý sinh viên",
+      text: t("admin.sidebar.studentManagement"),
+      tooltip: t("admin.sidebar.studentManagement"),
     },
     {
       path: "/admin/notifications",
@@ -95,8 +97,8 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
         </svg>
       ),
-      text: "Thông báo",
-      tooltip: "Thông báo",
+      text: t("admin.sidebar.notifications"),
+      tooltip: t("admin.sidebar.notifications"),
     },
     {
       path: "/admin/settings",
@@ -105,8 +107,8 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
           <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
         </svg>
       ),
-      text: "Cài đặt",
-      tooltip: "Cài đặt",
+      text: t("admin.sidebar.settings"),
+      tooltip: t("admin.sidebar.settings"),
     },
   ];
 
@@ -151,7 +153,11 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
             isCollapsed ? "p-1.5" : "p-2"
           }`}
           onClick={onToggleCollapse}
-          aria-label={isCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+          aria-label={
+            isCollapsed
+              ? t("admin.sidebar.expandSidebar")
+              : t("admin.sidebar.collapseSidebar")
+          }
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
@@ -232,7 +238,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                   : "text-white/80 hover:text-white"
               }`}
               onClick={() => setIsRegistrationOpen((o) => !o)}
-              title="Quản lý đăng ký trực tuyến"
+              title={t("admin.sidebar.registrationManagement")}
             >
               <span className="flex-shrink-0">
                 <svg
@@ -252,7 +258,9 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                     : "opacity-100 translate-x-0 scale-100"
                 }`}
               >
-                <div className="block">Quản lý ĐKTT</div>
+                <div className="block">
+                  {t("admin.sidebar.registrationManagement")}
+                </div>
               </div>
               {!isCollapsed && (
                 <span className="ml-auto text-white/80">
@@ -285,7 +293,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                     onClick={handleMenuClick}
                   >
                     <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
-                    <span>Quản lý đợt đăng ký</span>
+                    <span>{t("admin.sidebar.registrationPeriod")}</span>
                   </NavLink>
                 </li>
                 <li>
@@ -299,7 +307,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                     onClick={handleMenuClick}
                   >
                     <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
-                    <span>Quản lý lịch bảo vệ</span>
+                    <span>{t("admin.sidebar.defenseSchedule")}</span>
                   </NavLink>
                 </li>
                 <li>
@@ -313,7 +321,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                     onClick={handleMenuClick}
                   >
                     <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
-                    <span>Quản lý buổi bảo vệ</span>
+                    <span>{t("admin.sidebar.defenseSessions")}</span>
                   </NavLink>
                 </li>
                 <li>
@@ -327,7 +335,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                     onClick={handleMenuClick}
                   >
                     <span className="w-2 h-2 rounded-full bg-white/70 -ml-2"></span>
-                    <span>Quản lý sinh viên</span>
+                    <span>{t("admin.sidebar.studentManagement")}</span>
                   </NavLink>
                 </li>
               </ul>
@@ -359,7 +367,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                       onClick={handleMenuClick}
                     >
                       <span className="w-2 h-2 rounded-full bg-white/70"></span>
-                      <span>Quản lý đợt đăng ký</span>
+                      <span>{t("admin.sidebar.registrationPeriod")}</span>
                     </NavLink>
                   </li>
                   <li>
@@ -373,7 +381,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                       onClick={handleMenuClick}
                     >
                       <span className="w-2 h-2 rounded-full bg-white/70"></span>
-                      <span>Quản lý lịch bảo vệ</span>
+                      <span>{t("admin.sidebar.defenseSchedule")}</span>
                     </NavLink>
                   </li>
                   <li>
@@ -387,7 +395,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                       onClick={handleMenuClick}
                     >
                       <span className="w-2 h-2 rounded-full bg-white/70"></span>
-                      <span>Quản lý buổi bảo vệ</span>
+                      <span>{t("admin.sidebar.defenseSessions")}</span>
                     </NavLink>
                   </li>
                   <li>
@@ -401,7 +409,7 @@ const SidebarOfAdmin = ({ isCollapsed, onToggleCollapse, onMenuItemClick }) => {
                       onClick={handleMenuClick}
                     >
                       <span className="w-2 h-2 rounded-full bg-white/70"></span>
-                      <span>Quản lý sinh viên</span>
+                      <span>{t("admin.sidebar.studentManagement")}</span>
                     </NavLink>
                   </li>
                 </ul>

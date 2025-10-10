@@ -361,6 +361,34 @@ const studentAssignmentService = {
   },
 
   /**
+   * Lấy tất cả buổi bảo vệ (kể cả đã đầy) để kiểm tra assignment
+   * @returns {Promise<Array>} Danh sách tất cả buổi bảo vệ
+   */
+  getAllSessions: async () => {
+    try {
+      const response = await apiGet(API_ENDPOINTS.GET_DEFENSE_SESSIONS);
+      return response || [];
+    } catch (error) {
+      console.error("Lỗi khi lấy tất cả buổi bảo vệ:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy tất cả assignments của sinh viên (tối ưu cho performance)
+   * @returns {Promise<Array>} Danh sách tất cả assignments
+   */
+  getAllStudentAssignments: async () => {
+    try {
+      const response = await apiGet(API_ENDPOINTS.GET_ALL_STUDENT_ASSIGNMENTS);
+      return response || [];
+    } catch (error) {
+      console.error("Lỗi khi lấy tất cả assignments:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Kiểm tra xem service có hoạt động bình thường không
    * @returns {Promise<boolean>} true nếu service hoạt động bình thường
    */

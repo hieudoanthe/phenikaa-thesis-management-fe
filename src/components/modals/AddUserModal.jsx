@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 
 import { showToast } from "../../utils/toastHelper";
 
-// Mapping role theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
-const roleOptions = [
-  { value: 1, label: "Sinh viên", role: "STUDENT" },
-  { value: 2, label: "Phòng ban", role: "ADMIN" },
-  { value: 3, label: "Giảng viên", role: "TEACHER" },
-];
-
 const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
+  const { t } = useTranslation();
+
+  // Mapping role theo yêu cầu: STUDENT(1) -> ADMIN(2) -> TEACHER(3)
+  const roleOptions = [
+    { value: 1, label: t("common.student"), role: "STUDENT" },
+    { value: 2, label: t("common.admin"), role: "ADMIN" },
+    { value: 3, label: t("common.teacher"), role: "TEACHER" },
+  ];
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -70,18 +72,18 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
         });
 
         // Hiển thị toast thành công và đóng modal ngay
-        showToast("Thêm người dùng thành công!");
+        showToast(t("common.userCreated"));
         onClose();
       } catch (error) {
         // Nếu có lỗi, không đóng modal và hiển thị toast lỗi
         console.error("Lỗi khi thêm người dùng:", error);
-        showToast("Có lỗi xảy ra khi thêm người dùng!");
+        showToast(t("common.errorCreatingUser"));
       } finally {
         setSubmitting(false);
       }
     } else {
       // Hiển thị thông báo lỗi nếu form không hợp lệ
-      showToast("Vui lòng điền đầy đủ thông tin!");
+      showToast(t("common.fillAllFields"));
     }
   };
 
@@ -116,7 +118,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-900 m-0">
-            Thêm người dùng mới
+            {t("common.addNewUser")}
           </h2>
         </div>
 
@@ -141,7 +143,8 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   htmlFor="fullName"
                   className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
                 >
-                  Họ và tên <span className="text-error-600">*</span>
+                  {t("common.fullName")}{" "}
+                  <span className="text-error-600">*</span>
                 </label>
               </div>
 
@@ -161,7 +164,8 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   htmlFor="username"
                   className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
                 >
-                  Tên đăng nhập <span className="text-error-600">*</span>
+                  {t("common.username")}{" "}
+                  <span className="text-error-600">*</span>
                 </label>
               </div>
             </div>
@@ -179,7 +183,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   closeMenuOnSelect={false}
                   blurInputOnSelect={false}
                   hideSelectedOptions={true}
-                  placeholder="Chọn vai trò..."
+                  placeholder={t("common.selectRoles")}
                   menuPortalTarget={document.body}
                   menuPosition="fixed"
                   menuPlacement="auto"
@@ -244,7 +248,8 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                   htmlFor="password"
                   className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
                 >
-                  Mật khẩu <span className="text-error-600">*</span>
+                  {t("common.password")}{" "}
+                  <span className="text-error-600">*</span>
                 </label>
                 <button
                   type="button"
@@ -256,7 +261,11 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
                       setShowPassword(!showPassword);
                     }
                   }}
-                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  aria-label={
+                    showPassword
+                      ? t("common.hidePassword")
+                      : t("common.showPassword")
+                  }
                 >
                   <svg
                     width="20"
@@ -293,7 +302,7 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               onClick={handleCancel}
               className="px-6 py-2.5 text-base font-medium text-gray-600 bg-gray-100 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:text-gray-700 min-w-[100px]"
             >
-              Hủy
+              {t("common.cancel")}
             </button>
             <button
               type="submit"
@@ -307,10 +316,10 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
               {submitting ? (
                 <span className="inline-flex items-center gap-2">
                   <span className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Đang thêm...
+                  {t("common.adding")}
                 </span>
               ) : (
-                "Thêm người dùng"
+                t("common.addUser")
               )}
             </button>
           </div>

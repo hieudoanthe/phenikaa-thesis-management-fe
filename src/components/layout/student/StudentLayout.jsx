@@ -6,7 +6,7 @@ import {
   getRefreshToken,
   getUserIdFromToken,
 } from "../../../auth/authUtils";
-import { useProfileStudent } from "../../../contexts/ProfileStudentContext";
+import { useProfileStudent } from "../../../hooks/useProfile";
 import { WS_ENDPOINTS } from "../../../config/api";
 import notificationService from "../../../services/notification.service";
 import { toast } from "react-toastify";
@@ -43,34 +43,8 @@ const StudentLayout = () => {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
 
-  // Apply theme & other persisted settings
-  useEffect(() => {
-    const applySettings = (s) => {
-      try {
-        const settings =
-          s || JSON.parse(localStorage.getItem("student_settings_v1")) || {};
-        const theme = settings?.appearance?.theme || "system";
-        const root = document.documentElement;
-        if (
-          theme === "dark" ||
-          (theme === "system" &&
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches)
-        ) {
-          root.classList.add("dark");
-        } else {
-          root.classList.remove("dark");
-        }
-        const lang = settings?.appearance?.language || "vi";
-        if (i18n.language !== lang) i18n.changeLanguage(lang);
-      } catch (_) {}
-    };
-
-    applySettings();
-    const handler = (evt) => applySettings(evt?.detail);
-    window.addEventListener("app:student-settings", handler);
-    return () => window.removeEventListener("app:student-settings", handler);
-  }, []);
+  // Theme and language are now handled by the global settings system
+  // No need to apply them here to avoid conflicts
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {

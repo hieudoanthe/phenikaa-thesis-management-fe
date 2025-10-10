@@ -1,10 +1,8 @@
 // Export tất cả contexts
 export { AuthProvider, useAuth } from "./AuthContext";
 export {
-  ProfileStudentProvider,
+  ProfileProvider,
+  useProfile,
   useProfileStudent,
-} from "./ProfileStudentContext";
-export {
-  ProfileTeacherProvider,
   useProfileTeacher,
-} from "./ProfileTeacherContext";
+} from "./ProfileContext";

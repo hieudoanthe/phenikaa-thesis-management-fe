@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { statisticsService } from "../../services/statistics.service";
 import registrationPeriodService from "../../services/registrationPeriod.service";
 import { showToast } from "../../utils/toastHelper";
+import { useTranslation } from "react-i18next";
 import {
   LineChart,
   Line,
@@ -20,6 +21,7 @@ import { PieChart, Pie, Cell } from "recharts";
 
 const StatisticsDashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [statistics, setStatistics] = useState(null);
   const [periods, setPeriods] = useState([]);
@@ -62,7 +64,7 @@ const StatisticsDashboard = () => {
       const data = await statisticsService.getUserStatistics();
       setStatistics(data);
     } catch (error) {
-      showToast("Lỗi khi tải dữ liệu thống kê", "error");
+      showToast(t("admin.statistics.errorLoadingData"), "error");
       console.error("Error loading statistics:", error);
     } finally {
       setLoading(false);
@@ -143,12 +145,12 @@ const StatisticsDashboard = () => {
       } else {
         console.error("Failed to load periods:", response.message);
         showToast(
-          response.message || "Lỗi khi tải danh sách đợt đăng ký",
+          response.message || t("admin.statistics.errorLoadingPeriods"),
           "error"
         );
       }
     } catch (error) {
-      showToast("Lỗi khi tải danh sách đợt đăng ký", "error");
+      showToast(t("admin.statistics.errorLoadingPeriods"), "error");
       console.error("Error loading periods:", error);
     }
   };
@@ -157,7 +159,7 @@ const StatisticsDashboard = () => {
     const startDate = dateRange.startDate || null;
     const endDate = dateRange.endDate || null;
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      showToast("Khoảng thời gian không hợp lệ", "error");
+      showToast(t("admin.statistics.invalidDateRange"), "error");
       return;
     }
     setSeriesLoading(true);
@@ -278,7 +280,9 @@ const StatisticsDashboard = () => {
       const value = point && point.value ? point.value : 0;
       return (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
-          <div className="text-sm font-medium text-gray-900 mb-1">{`Ngày ${label}`}</div>
+          <div className="text-sm font-medium text-gray-900 mb-1">{`${t(
+            "admin.statistics.overviewStats.dayPrefix"
+          )} ${label}`}</div>
           <div className="text-sm text-blue-600">
             Tổng: {formatNumber(value)}
           </div>
@@ -293,7 +297,7 @@ const StatisticsDashboard = () => {
       <div className="w-full bg-gray-50 p-3 sm:p-4 md:p-6">
         <div className="flex flex-col items-center justify-center h-96 text-gray-500">
           <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
-          <p>Đang tải dữ liệu thống kê...</p>
+          <p>{t("admin.statistics.loadingData")}</p>
         </div>
       </div>
     );
@@ -307,26 +311,26 @@ const StatisticsDashboard = () => {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-medium text-gray-900">
-                Bộ lọc thời gian
+                {t("admin.statistics.timeFilter.title")}
               </h3>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setQuickRangeDays(7)}
                   className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
                 >
-                  7 ngày
+                  {t("admin.statistics.timeFilter.quickFilters.days7")}
                 </button>
                 <button
                   onClick={() => setQuickRangeDays(14)}
                   className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
                 >
-                  14 ngày
+                  {t("admin.statistics.timeFilter.quickFilters.days14")}
                 </button>
                 <button
                   onClick={() => setQuickRangeDays(30)}
                   className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
                 >
-                  30 ngày
+                  {t("admin.statistics.timeFilter.quickFilters.days30")}
                 </button>
               </div>
             </div>
@@ -336,7 +340,7 @@ const StatisticsDashboard = () => {
                   htmlFor="stat-start-date"
                   className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
                 >
-                  Từ ngày
+                  {t("admin.statistics.timeFilter.fromDate")}
                 </label>
                 <input
                   type="date"
@@ -353,7 +357,7 @@ const StatisticsDashboard = () => {
                   htmlFor="stat-end-date"
                   className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
                 >
-                  Đến ngày
+                  {t("admin.statistics.timeFilter.toDate")}
                 </label>
                 <input
                   type="date"
@@ -375,7 +379,9 @@ const StatisticsDashboard = () => {
                       : "bg-primary-500 hover:bg-primary-600 text-white"
                   }`}
                 >
-                  {seriesLoading ? "Đang áp dụng..." : "Áp dụng"}
+                  {seriesLoading
+                    ? t("admin.statistics.applying")
+                    : t("admin.statistics.apply")}
                 </button>
               </div>
             </div>
@@ -389,7 +395,7 @@ const StatisticsDashboard = () => {
               {[
                 {
                   key: "overview",
-                  label: "Tổng quan",
+                  label: t("admin.statistics.overview"),
                   icon: (
                     <svg
                       width="18"
@@ -404,7 +410,7 @@ const StatisticsDashboard = () => {
                 },
                 {
                   key: "periods",
-                  label: "Đợt đăng ký",
+                  label: t("admin.statistics.registrationPeriods"),
                   icon: (
                     <svg
                       width="18"
@@ -419,7 +425,7 @@ const StatisticsDashboard = () => {
                 },
                 {
                   key: "defenses",
-                  label: "Buổi bảo vệ",
+                  label: t("admin.statistics.defenseSessions"),
                   icon: (
                     <svg
                       width="18"
@@ -434,7 +440,7 @@ const StatisticsDashboard = () => {
                 },
                 {
                   key: "evaluations",
-                  label: "Đánh giá",
+                  label: t("admin.statistics.evaluations"),
                   icon: (
                     <svg
                       width="18"
@@ -449,7 +455,7 @@ const StatisticsDashboard = () => {
                 },
                 {
                   key: "scores",
-                  label: "Điểm số",
+                  label: t("admin.statistics.grades"),
                   icon: (
                     <svg
                       width="18"
@@ -506,6 +512,7 @@ const StatisticsDashboard = () => {
               combined: combinedSeries.reduce((s, p) => s + (p?.count || 0), 0),
             }}
             totalSeries={totalSeries}
+            t={t}
           />
         )}
 
@@ -516,6 +523,7 @@ const StatisticsDashboard = () => {
             formatNumber={formatNumber}
             formatPercentage={formatPercentage}
             navigate={navigate}
+            t={t}
           />
         )}
 
@@ -524,6 +532,7 @@ const StatisticsDashboard = () => {
             data={statistics}
             formatNumber={formatNumber}
             loadDefenseStats={loadDefenseStats}
+            t={t}
           />
         )}
 
@@ -533,6 +542,7 @@ const StatisticsDashboard = () => {
             formatNumber={formatNumber}
             formatPercentage={formatPercentage}
             loadEvaluationStats={loadEvaluationStats}
+            t={t}
           />
         )}
 
@@ -542,6 +552,7 @@ const StatisticsDashboard = () => {
             formatNumber={formatNumber}
             formatPercentage={formatPercentage}
             loadScoreStats={loadScoreStats}
+            t={t}
           />
         )}
       </div>
@@ -556,15 +567,18 @@ const OverviewStats = ({
   formatPercentage,
   totalSeries,
   totalsInRange,
+  t,
 }) => {
   const TotalTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const value = payload[0]?.value || 0;
       return (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2">
-          <div className="text-sm font-medium text-gray-900 mb-1">{`Ngày ${label}`}</div>
+          <div className="text-sm font-medium text-gray-900 mb-1">{`${t(
+            "admin.statistics.overview"
+          )} ${label}`}</div>
           <div className="text-sm text-blue-600">
-            Tổng: {formatNumber(value)}
+            {t("admin.statistics.totalRegistrations")}: {formatNumber(value)}
           </div>
         </div>
       );
@@ -579,7 +593,7 @@ const OverviewStats = ({
           className="w-2.5 h-2.5 rounded-full"
           style={{ background: "#2563eb" }}
         ></span>
-        <span>Tổng (đăng ký + đề xuất)</span>
+        <span>{t("admin.statistics.totalRegistrations")}</span>
       </div>
     </div>
   );
@@ -605,7 +619,7 @@ const OverviewStats = ({
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">
-                Tổng người dùng
+                {t("admin.statistics.overviewStats.totalUsers")}
               </p>
               <p className="text-2xl font-semibold text-gray-900">
                 {formatNumber(data.totalUsers || 0)}
@@ -631,7 +645,7 @@ const OverviewStats = ({
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">
-                Tổng sinh viên
+                {t("admin.statistics.metrics.totalStudents")}
               </p>
               <p className="text-2xl font-semibold text-gray-900">
                 {formatNumber(data.students || 0)}
@@ -657,7 +671,7 @@ const OverviewStats = ({
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">
-                Tổng giảng viên
+                {t("admin.statistics.overviewStats.totalTeachers")}
               </p>
               <p className="text-2xl font-semibold text-gray-900">
                 {formatNumber(data.teachers || 0)}
@@ -671,7 +685,7 @@ const OverviewStats = ({
       <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">
-            Biểu đồ đăng ký và đề xuất theo ngày
+            {t("admin.statistics.overviewStats.chartTitle")}
           </h3>
         </div>
         <div className="w-full h-72">
@@ -706,7 +720,7 @@ const OverviewStats = ({
               <Area
                 type="monotone"
                 dataKey="count"
-                name="Tổng (đăng ký + đề xuất)"
+                name={t("admin.statistics.totalRegistrations")}
                 stroke="#3b82f6"
                 strokeWidth={2}
                 fillOpacity={1}
@@ -738,10 +752,12 @@ OverviewStats.propTypes = {
   formatNumber: PropTypes.func.isRequired,
   formatPercentage: PropTypes.func.isRequired,
   totalSeries: PropTypes.array,
+  totalsInRange: PropTypes.object,
+  t: PropTypes.func.isRequired,
 };
 
 // Defense Statistics Component
-const DefenseStats = ({ data, formatNumber, loadDefenseStats }) => {
+const DefenseStats = ({ data, formatNumber, loadDefenseStats, t }) => {
   const [defenseData, setDefenseData] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
 
@@ -764,7 +780,9 @@ const DefenseStats = ({ data, formatNumber, loadDefenseStats }) => {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="ml-4 text-gray-600">Đang tải dữ liệu...</p>
+        <p className="ml-4 text-gray-600">
+          {t("admin.statistics.periodStats.loadingData")}
+        </p>
       </div>
     );
   }
@@ -789,14 +807,13 @@ const DefenseStats = ({ data, formatNumber, loadDefenseStats }) => {
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Thống kê buổi bảo vệ
+            {t("admin.statistics.defenseStats.title")}
           </h3>
           <p className="text-gray-500 mb-4">
-            API thống kê buổi bảo vệ không có sẵn trong
-            InternalStatisticsController
+            {t("admin.statistics.defenseStats.notAvailable")}
           </p>
           <p className="text-sm text-gray-400">
-            Chỉ có thể xem thống kê người dùng từ user-service
+            {t("admin.statistics.defenseStats.onlyUserStats")}
           </p>
         </div>
       </div>
@@ -808,6 +825,7 @@ DefenseStats.propTypes = {
   data: PropTypes.object,
   formatNumber: PropTypes.func.isRequired,
   loadDefenseStats: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
 // Evaluation Statistics Component
@@ -816,6 +834,7 @@ const EvaluationStats = ({
   formatNumber,
   formatPercentage,
   loadEvaluationStats,
+  t,
 }) => {
   const [evaluationData, setEvaluationData] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
@@ -839,7 +858,9 @@ const EvaluationStats = ({
     return (
       <div className="flex justify-center items-center py-12">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="ml-4 text-gray-600">Đang tải dữ liệu...</p>
+        <p className="ml-4 text-gray-600">
+          {t("admin.statistics.periodStats.loadingData")}
+        </p>
       </div>
     );
   }
@@ -864,14 +885,13 @@ const EvaluationStats = ({
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Thống kê đánh giá
+            {t("admin.statistics.evaluationStats.title")}
           </h3>
           <p className="text-gray-500 mb-4">
-            API thống kê đánh giá không có sẵn trong
-            InternalStatisticsController
+            {t("admin.statistics.evaluationStats.notAvailable")}
           </p>
           <p className="text-sm text-gray-400">
-            Chỉ có thể xem thống kê người dùng từ user-service
+            {t("admin.statistics.evaluationStats.onlyUserStats")}
           </p>
         </div>
       </div>
@@ -884,6 +904,7 @@ EvaluationStats.propTypes = {
   formatNumber: PropTypes.func.isRequired,
   formatPercentage: PropTypes.func.isRequired,
   loadEvaluationStats: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
 // Score Statistics Component
@@ -892,6 +913,7 @@ const ScoreStats = ({
   formatNumber,
   formatPercentage,
   loadScoreStats,
+  t,
 }) => {
   const [scoreData, setScoreData] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
@@ -915,7 +937,9 @@ const ScoreStats = ({
     return (
       <div className="flex justify-center items-center py-12">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="ml-4 text-gray-600">Đang tải dữ liệu...</p>
+        <p className="ml-4 text-gray-600">
+          {t("admin.statistics.periodStats.loadingData")}
+        </p>
       </div>
     );
   }
@@ -940,13 +964,13 @@ const ScoreStats = ({
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Thống kê điểm số
+            {t("admin.statistics.scoreStats.title")}
           </h3>
           <p className="text-gray-500 mb-4">
-            API thống kê điểm số không có sẵn trong InternalStatisticsController
+            {t("admin.statistics.scoreStats.notAvailable")}
           </p>
           <p className="text-sm text-gray-400">
-            Chỉ có thể xem thống kê người dùng từ user-service
+            {t("admin.statistics.scoreStats.onlyUserStats")}
           </p>
         </div>
       </div>
@@ -959,6 +983,7 @@ ScoreStats.propTypes = {
   formatNumber: PropTypes.func.isRequired,
   formatPercentage: PropTypes.func.isRequired,
   loadScoreStats: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
 // Period Statistics Component
@@ -968,6 +993,7 @@ const PeriodStats = ({
   formatNumber,
   formatPercentage,
   navigate,
+  t,
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [periodStatistics, setPeriodStatistics] = useState(null);
@@ -977,6 +1003,52 @@ const PeriodStats = ({
     (sum, count) => sum + count,
     0
   );
+
+  // Helper functions for status text and colors
+  const getPeriodStatusText = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return `(${t("admin.statistics.status.open")})`;
+      case "CLOSED":
+        return `(${t("admin.statistics.status.closed")})`;
+      case "UPCOMING":
+        return `(${t("admin.statistics.status.upcoming")})`;
+      case "CANCELLED":
+        return `(${t("admin.statistics.status.cancelled")})`;
+      default:
+        return "";
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-gray-100 text-gray-800";
+      case "CLOSED":
+        return "bg-red-100 text-red-800";
+      case "UPCOMING":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return t("admin.statistics.status.open");
+      case "CANCELLED":
+        return t("admin.statistics.status.cancelled");
+      case "CLOSED":
+        return t("admin.statistics.status.closed");
+      case "UPCOMING":
+        return t("admin.statistics.status.upcoming");
+      default:
+        return t("admin.statistics.status.unknown");
+    }
+  };
 
   // Load statistics for selected period
   const loadPeriodStatistics = async (periodId) => {
@@ -1009,52 +1081,6 @@ const PeriodStats = ({
     }
   };
 
-  // Helper function to get period status text
-  const getPeriodStatusText = (status) => {
-    switch (status) {
-      case "ACTIVE":
-        return "(Đang mở)";
-      case "CLOSED":
-        return "(Đã đóng)";
-      case "UPCOMING":
-        return "(Sắp diễn ra)";
-      case "CANCELLED":
-        return "(Đã hủy)";
-      default:
-        return "";
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "ACTIVE":
-        return "bg-green-100 text-green-800";
-      case "CANCELLED":
-        return "bg-gray-100 text-gray-800";
-      case "CLOSED":
-        return "bg-red-100 text-red-800";
-      case "UPCOMING":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case "ACTIVE":
-        return "Đang mở";
-      case "CANCELLED":
-        return "Đã hủy";
-      case "CLOSED":
-        return "Đã đóng";
-      case "UPCOMING":
-        return "Sắp diễn ra";
-      default:
-        return "Không xác định";
-    }
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("vi-VN");
@@ -1069,13 +1095,13 @@ const PeriodStats = ({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return "Đã kết thúc";
+      return t("admin.statistics.status.ended");
     } else if (diffDays === 0) {
-      return "Hôm nay kết thúc";
+      return t("admin.statistics.status.endsToday");
     } else if (diffDays === 1) {
-      return "1 ngày";
+      return t("admin.statistics.status.oneDay");
     } else {
-      return `${diffDays} ngày`;
+      return t("admin.statistics.status.daysLeft", { count: diffDays });
     }
   };
 
@@ -1116,12 +1142,14 @@ const PeriodStats = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-blue-700 mb-1">
-                Tổng đợt đăng ký
+                {t("admin.statistics.periodStats.totalPeriods")}
               </p>
               <p className="text-2xl font-bold text-blue-900">
                 {formatNumber(periods.length)}
               </p>
-              <p className="text-xs text-blue-600">đợt trong hệ thống</p>
+              <p className="text-xs text-blue-600">
+                {t("admin.statistics.periodStats.labels.periods")}
+              </p>
             </div>
           </div>
           <div className="mt-4 flex items-center text-xs text-blue-600">
@@ -1136,7 +1164,7 @@ const PeriodStats = ({
                 clipRule="evenodd"
               />
             </svg>
-            Tất cả đợt đăng ký
+            {t("admin.statistics.periodStats.labels.allPeriods")}
           </div>
         </div>
 
@@ -1154,12 +1182,14 @@ const PeriodStats = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-green-700 mb-1">
-                Tổng sinh viên
+                {t("admin.statistics.periodStats.totalStudents")}
               </p>
               <p className="text-2xl font-bold text-green-900">
                 {formatNumber(totalStudents)}
               </p>
-              <p className="text-xs text-green-600">sinh viên tham gia</p>
+              <p className="text-xs text-green-600">
+                {t("admin.statistics.periodStats.labels.studentsParticipated")}
+              </p>
             </div>
           </div>
           <div className="mt-4 flex items-center text-xs text-green-600">
@@ -1170,7 +1200,7 @@ const PeriodStats = ({
             >
               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Đã đăng ký trong các đợt
+            {t("admin.statistics.periodStats.labels.registeredInPeriods")}
           </div>
         </div>
 
@@ -1188,14 +1218,16 @@ const PeriodStats = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-purple-700 mb-1">
-                Đợt đang mở
+                {t("admin.statistics.periodStats.activePeriods")}
               </p>
               <p className="text-2xl font-bold text-purple-900">
                 {formatNumber(
                   periods.filter((p) => p.status === "ACTIVE").length
                 )}
               </p>
-              <p className="text-xs text-purple-600">đợt hiện tại</p>
+              <p className="text-xs text-purple-600">
+                {t("admin.statistics.periodStats.labels.activePeriodsCount")}
+              </p>
             </div>
           </div>
           <div className="mt-4 flex items-center text-xs text-purple-600">
@@ -1210,7 +1242,7 @@ const PeriodStats = ({
                 clipRule="evenodd"
               />
             </svg>
-            Có thể đăng ký ngay
+            {t("admin.statistics.periodStats.labels.canRegisterNow")}
           </div>
         </div>
       </div>
@@ -1218,7 +1250,7 @@ const PeriodStats = ({
       {/* Period Selection Dropdown */}
       <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Chọn đợt đăng ký
+          {t("admin.statistics.periodStats.selectPeriod")}
         </h3>
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
@@ -1235,7 +1267,9 @@ const PeriodStats = ({
                   period: period,
                 };
               })}
-              placeholder="-- Chọn đợt đăng ký --"
+              placeholder={t(
+                "admin.statistics.periodStats.selectPeriodPlaceholder"
+              )}
               isClearable
               className="react-select-container"
               classNamePrefix="react-select"
@@ -1275,13 +1309,15 @@ const PeriodStats = ({
         <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">
             {selectedPeriod
-              ? `Chi tiết đợt: ${selectedPeriod.label}`
-              : "Đợt đăng ký gần đây"}
+              ? `${t("admin.statistics.periodStats.periodDetails")}: ${
+                  selectedPeriod.label
+                }`
+              : t("admin.statistics.periodStats.recentPeriods")}
           </h3>
           <p className="text-sm text-gray-500 mt-1">
             {selectedPeriod
-              ? "Thống kê chi tiết về đề xuất và đăng ký đề tài"
-              : "Hiển thị tối đa 3 đợt gần đây nhất"}
+              ? t("admin.statistics.periodStats.periodDetailsDesc")
+              : t("admin.statistics.periodStats.recentPeriodsDesc")}
           </p>
         </div>
         {selectedPeriod ? (
@@ -1289,14 +1325,16 @@ const PeriodStats = ({
             {loadingStatistics ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-2 text-gray-600">Đang tải dữ liệu...</span>
+                <span className="ml-2 text-gray-600">
+                  {t("admin.statistics.periodStats.loadingData")}
+                </span>
               </div>
             ) : periodStatistics ? (
               <div className="space-y-6">
                 {/* Donut: tổng (đăng ký + đề xuất) theo trạng thái */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <h4 className="text-base font-medium text-gray-900 mb-3">
-                    Trạng thái tổng (đăng ký + đề xuất)
+                    {t("admin.statistics.periodStats.pieChart.title")}
                   </h4>
                   <div className="w-full h-80">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1305,19 +1343,25 @@ const PeriodStats = ({
                           dataKey="value"
                           data={[
                             {
-                              name: "Đã duyệt",
+                              name: t(
+                                "admin.statistics.periodStats.pieChart.approved"
+                              ),
                               value:
                                 (periodStatistics.approvedRegistrations || 0) +
                                 (periodStatistics.approvedSuggestions || 0),
                             },
                             {
-                              name: "Chờ duyệt",
+                              name: t(
+                                "admin.statistics.periodStats.pieChart.pending"
+                              ),
                               value:
                                 (periodStatistics.pendingRegistrations || 0) +
                                 (periodStatistics.pendingSuggestions || 0),
                             },
                             {
-                              name: "Bị từ chối",
+                              name: t(
+                                "admin.statistics.periodStats.pieChart.rejected"
+                              ),
                               value:
                                 (periodStatistics.rejectedRegistrations || 0) +
                                 (periodStatistics.rejectedSuggestions || 0),
@@ -1366,10 +1410,14 @@ const PeriodStats = ({
                         </div>
                         <div className="ml-3 md:ml-4">
                           <h4 className="text-base md:text-lg font-medium text-green-900">
-                            Tổng sinh viên trong đợt
+                            {t(
+                              "admin.statistics.periodStats.cards.totalInPeriod"
+                            )}
                           </h4>
                           <p className="text-xs md:text-sm text-green-600">
-                            Tất cả sinh viên được phân vào đợt này
+                            {t(
+                              "admin.statistics.periodStats.cards.totalInPeriodDesc"
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1378,7 +1426,7 @@ const PeriodStats = ({
                           {formatNumber(periodStats[selectedPeriod.value] || 0)}
                         </p>
                         <p className="text-xs md:text-sm text-green-600">
-                          sinh viên
+                          {t("admin.statistics.periodStats.labels.students")}
                         </p>
                       </div>
                     </div>
@@ -1401,10 +1449,14 @@ const PeriodStats = ({
                         </div>
                         <div className="ml-3 md:ml-4">
                           <h4 className="text-base md:text-lg font-medium text-blue-900">
-                            Sinh viên tham gia
+                            {t(
+                              "admin.statistics.periodStats.cards.studentsParticipated"
+                            )}
                           </h4>
                           <p className="text-xs md:text-sm text-blue-600">
-                            Đã đề xuất hoặc đăng ký đề tài
+                            {t(
+                              "admin.statistics.periodStats.cards.studentsParticipatedDesc"
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1415,7 +1467,7 @@ const PeriodStats = ({
                           )}
                         </p>
                         <p className="text-xs md:text-sm text-blue-600">
-                          sinh viên
+                          {t("admin.statistics.periodStats.labels.students")}
                         </p>
                       </div>
                     </div>
@@ -1442,10 +1494,14 @@ const PeriodStats = ({
                         </div>
                         <div className="ml-3 md:ml-4">
                           <h4 className="text-base md:text-lg font-medium text-orange-900">
-                            Chưa hoàn thành
+                            {t(
+                              "admin.statistics.periodStats.cards.notCompleted"
+                            )}
                           </h4>
                           <p className="text-xs md:text-sm text-orange-600">
-                            Sinh viên chưa hoàn thành đăng ký đề tài
+                            {t(
+                              "admin.statistics.periodStats.cards.notCompletedDesc"
+                            )}
                           </p>
                         </div>
                       </div>
@@ -1460,7 +1516,7 @@ const PeriodStats = ({
                           )}
                         </p>
                         <p className="text-xs md:text-sm text-orange-600">
-                          sinh viên
+                          {t("admin.statistics.periodStats.labels.students")}
                         </p>
                       </div>
                     </div>
@@ -1482,7 +1538,7 @@ const PeriodStats = ({
                             clipRule="evenodd"
                           />
                         </svg>
-                        Xem chi tiết trong Quản lý đợt đăng ký
+                        {t("admin.statistics.periodStats.cards.viewDetails")}
                       </button>
                     </div>
                   </div>
@@ -1490,7 +1546,9 @@ const PeriodStats = ({
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="text-gray-500">Không có dữ liệu thống kê</div>
+                <div className="text-gray-500">
+                  {t("admin.statistics.periodStats.noData")}
+                </div>
               </div>
             )}
           </div>
@@ -1502,22 +1560,28 @@ const PeriodStats = ({
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tên đợt
+                      {t(
+                        "admin.statistics.periodStats.tableHeaders.periodName"
+                      )}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Trạng thái
+                      {t("admin.statistics.periodStats.tableHeaders.status")}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày bắt đầu
+                      {t("admin.statistics.periodStats.tableHeaders.startDate")}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày kết thúc
+                      {t("admin.statistics.periodStats.tableHeaders.endDate")}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Số sinh viên
+                      {t(
+                        "admin.statistics.periodStats.tableHeaders.studentCount"
+                      )}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày còn lại
+                      {t(
+                        "admin.statistics.periodStats.tableHeaders.daysRemaining"
+                      )}
                     </th>
                   </tr>
                 </thead>
@@ -1563,7 +1627,9 @@ const PeriodStats = ({
                                 {formatNumber(studentCount)}
                               </span>
                               <span className="ml-2 text-gray-500">
-                                sinh viên
+                                {t(
+                                  "admin.statistics.periodStats.labels.students"
+                                )}
                               </span>
                             </div>
                           </td>
@@ -1694,10 +1760,10 @@ const PeriodStats = ({
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Không có đợt đăng ký nào
+              {t("admin.statistics.periodStats.noPeriods")}
             </h3>
             <p className="text-gray-500">
-              Chưa có đợt đăng ký nào được tạo trong hệ thống.
+              {t("admin.statistics.periodStats.noPeriodsDesc")}
             </p>
           </div>
         )}
@@ -1712,6 +1778,7 @@ PeriodStats.propTypes = {
   formatNumber: PropTypes.func.isRequired,
   formatPercentage: PropTypes.func.isRequired,
   navigate: PropTypes.func.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
 export default StatisticsDashboard;

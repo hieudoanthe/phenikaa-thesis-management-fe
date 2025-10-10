@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { useProfileTeacher } from "../../contexts/ProfileTeacherContext";
+import { useProfileTeacher } from "../../hooks/useProfile";
 import TopicService from "../../services/topic.service";
 import dashboardService from "../../services/dashboard.service";
 import evaluationService from "../../services/evaluation.service";

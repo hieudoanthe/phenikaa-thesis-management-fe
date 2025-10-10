@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications } from "../../contexts/NotificationContext";
-import { useProfileStudent } from "../../contexts/ProfileStudentContext";
+import { useProfileStudent } from "../../hooks/useProfile";
 import { getUserIdFromToken } from "../../auth/authUtils";
 import scheduleService from "../../services/schedule.service";
 import submissionService from "../../services/submission.service";

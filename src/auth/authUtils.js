@@ -133,16 +133,10 @@ export const setToken = (token, persistent = false) => {
  * @param {string} refreshToken - Refresh token cần xóa khỏi database
  */
 export const logout = async (refreshToken) => {
-  console.log("logout() được gọi với refreshToken:", refreshToken);
-
   try {
     // Gọi API để xóa refreshToken khỏi database
     if (refreshToken) {
-      console.log("Gọi API logout với refreshToken:", refreshToken);
       const result = await authService.logout(refreshToken);
-      console.log("Kết quả API logout:", result);
-    } else {
-      console.log("Không có refreshToken để gửi");
     }
   } catch (error) {
     console.error("Lỗi khi gọi API logout:", error);
@@ -243,14 +237,10 @@ export const getCachedUserInfo = () => {
       userInfo = getCookie("userInfo");
     }
 
-    console.log("getCachedUserInfo - Raw userInfo from storage:", userInfo);
-
     if (userInfo) {
       const parsedUser = JSON.parse(userInfo);
-      console.log("getCachedUserInfo - Parsed user info:", parsedUser);
       return parsedUser;
     } else {
-      console.log("getCachedUserInfo - No userInfo found in storage");
       return null;
     }
   } catch (error) {
@@ -301,12 +291,8 @@ export const getUserIdFromToken = () => {
     // Decode JWT token (chỉ phần payload)
     const payload = JSON.parse(atob(token.split(".")[1]));
 
-    console.log("JWT Token payload:", payload);
-
     // Ưu tiên userId trước vì trong token có userId: 109
     const userId = payload.userId || payload.user_id || payload.sub;
-
-    console.log("UserId được tìm thấy:", userId);
 
     return userId ? String(userId) : null;
   } catch (error) {
@@ -320,7 +306,6 @@ export const getUserIdFromToken = () => {
  * @returns {string|null} - TeacherId hoặc null nếu không tìm thấy
  */
 export const getTeacherIdFromToken = () => {
-  // Sử dụng getUserIdFromToken để lấy userId chung
   return getUserIdFromToken();
 };
 
@@ -356,29 +341,16 @@ export const refreshToken = async () => {
  * @param {boolean} persistent - Có lưu vào cookie không
  */
 export const setRefreshToken = (refreshToken, persistent = false) => {
-  console.log("setRefreshToken() được gọi với:", {
-    refreshToken,
-    persistent,
-  });
-
   if (refreshToken) {
     const sessionKey = getSessionKey("refreshToken");
-    console.log("setRefreshToken() - sessionKey:", sessionKey);
 
     sessionStorage.setItem(sessionKey, refreshToken);
     localStorage.setItem("refreshToken", refreshToken);
 
-    console.log(
-      "setRefreshToken() - Đã lưu vào sessionStorage và localStorage"
-    );
-
     // Nếu persistent thì lưu vào cookie
     if (persistent) {
       setCookie("refreshToken", refreshToken, { expires: 30 });
-      console.log("setRefreshToken() - Đã lưu vào cookie");
     }
-  } else {
-    console.log("setRefreshToken() - refreshToken là null hoặc empty");
   }
 };
 
@@ -393,11 +365,6 @@ export const getRefreshToken = () => {
   const cookieToken = getCookie("refreshToken");
 
   const result = sessionToken || localToken || cookieToken;
-  console.log("getRefreshToken() - kết quả cuối:", result);
-
-  // Debug: Kiểm tra tất cả keys trong storage
-  console.log("Tất cả sessionStorage keys:", Object.keys(sessionStorage));
-  console.log("Tất cả localStorage keys:", Object.keys(localStorage));
 
   return result;
 };

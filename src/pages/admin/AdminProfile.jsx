@@ -1,12 +1,14 @@
 import React from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const AdminProfile = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const displayName = user?.fullName || "Admin System";
   const email = user?.username || "admin@phenikaa.edu.vn";
-  const roleLabel = "Quản trị viên";
+  const roleLabel = t("admin.profile.adminLabel");
   const initials = (displayName || "A")
     .split(" ")
     .map((w) => w.charAt(0))
@@ -34,7 +36,7 @@ const AdminProfile = () => {
 
               <div className="space-y-3">
                 <button className="w-full bg-primary-500 text-white py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors font-medium">
-                  Chỉnh sửa thông tin
+                  {t("admin.profile.editInfo")}
                 </button>
               </div>
             </div>
@@ -44,7 +46,7 @@ const AdminProfile = () => {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-card p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Thông tin tài khoản
+                {t("admin.profile.accountInfo")}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

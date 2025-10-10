@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
 
 /**
  * Modal xác nhận dùng chung
@@ -7,15 +8,16 @@ import PropTypes from "prop-types";
  */
 const ConfirmModal = ({
   isOpen,
-  title = "Xác nhận hành động",
-  message = "Bạn có chắc chắn muốn thực hiện hành động này?",
-  confirmText = "Đồng ý",
-  cancelText = "Hủy",
+  title,
+  message,
+  confirmText,
+  cancelText,
   confirmVariant = "success",
   onConfirm,
   onCancel,
   loading = false,
 }) => {
+  const { t } = useTranslation();
   // Đóng bằng phím Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -41,14 +43,14 @@ const ConfirmModal = ({
             id="confirm-modal-title"
             className="m-0 text-xl font-bold text-gray-900"
           >
-            {title}
+            {title || t("common.confirmAction")}
           </h3>
         </div>
 
         {/* Content */}
         <div className="px-6 py-5">
           <p className="m-0 text-gray-600 text-base leading-relaxed">
-            {message}
+            {message || t("common.confirmMessage")}
           </p>
         </div>
 
@@ -60,7 +62,7 @@ const ConfirmModal = ({
             onClick={onCancel}
             disabled={loading}
           >
-            {cancelText}
+            {cancelText || t("common.cancel")}
           </button>
           <button
             type="button"
@@ -73,7 +75,9 @@ const ConfirmModal = ({
             disabled={loading}
             aria-label={confirmText}
           >
-            {loading ? "Đang xử lý..." : confirmText}
+            {loading
+              ? t("common.processing")
+              : confirmText || t("common.confirm")}
           </button>
         </div>
       </div>

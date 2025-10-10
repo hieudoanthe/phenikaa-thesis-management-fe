@@ -16,7 +16,7 @@ import userService from "../../services/user.service";
 import TopicService from "../../services/topic.service";
 import useAuth from "../../hooks/useAuth";
 import { getUserIdFromToken, getToken } from "../../auth/authUtils";
-import { useProfileTeacher } from "../../contexts/ProfileTeacherContext";
+import { useProfileTeacher } from "../../hooks/useProfile";
 
 const TeacherProfile = () => {
   // Hook authentication
@@ -69,6 +69,7 @@ const TeacherProfile = () => {
 
   // Xử lý bắt đầu chỉnh sửa
   const handleStartEditing = () => {
+    setActiveTab("lecturer-info"); // Tự động chuyển về tab "Thông tin giảng viên"
     setTempFormData({ ...profileData });
     setIsEditing(true);
     setStatusMessage("Đang chỉnh sửa...");
@@ -435,7 +436,7 @@ const TeacherProfile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Profile Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-card p-6">
+            <div className="bg-white rounded-xl shadow-card p-6 sticky top-8">
               {/* Profile Photo */}
               <div className="flex flex-col items-center mb-6">
                 <div className="relative mb-4">
@@ -557,7 +558,7 @@ const TeacherProfile = () => {
 
           {/* Right Column - Profile Editing Form */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-card">
+            <div className="bg-white rounded-xl shadow-card sticky top-8 max-h-[calc(100vh-4rem)] flex flex-col">
               {/* Tabs Navigation */}
               <div className="border-b border-gray-200">
                 <nav className="flex space-x-8 px-6" aria-label="Tabs">
@@ -594,7 +595,7 @@ const TeacherProfile = () => {
               </div>
 
               {/* Tab Content */}
-              <div className="p-6">
+              <div className="p-6 flex-1 overflow-y-auto thin-scrollbar">
                 {activeTab === "lecturer-info" && (
                   <div className="space-y-6">
                     <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -872,7 +873,7 @@ const TeacherProfile = () => {
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-4 max-h-[600px] overflow-y-auto thin-scrollbar">
                         {guidanceTopics.map((topic) => (
                           <div
                             key={topic.id}
@@ -898,65 +899,31 @@ const TeacherProfile = () => {
                               </span>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  className="bi bi-person-fill-check text-gray-500"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m1.679-4.493-1.335 2.226a.75.75 0 0 1-1.174.144l-.774-.773a.5.5 0 0 1 .708-.708l.547.548 1.17-1.951a.5.5 0 1 1 .858.514M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
-                                  <path d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
-                                </svg>
-                                <span className="text-gray-600">
-                                  {(() => {
-                                    const profile =
-                                      studentProfiles[topic.suggestedBy];
-                                    if (
-                                      profile &&
-                                      profile.fullName !== "Không xác định"
-                                    ) {
-                                      return profile.fullName;
-                                    }
-                                    return topic.student;
-                                  })()}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  className="bi bi-calendar-week-fill text-gray-500"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M9.5 7h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m3 0h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5M2 10.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5" />
-                                </svg>
-                                <span className="text-gray-600">
-                                  {topic.startDate} - {topic.endDate}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  fill="currentColor"
-                                  className="bi bi-people-fill text-gray-500"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
-                                </svg>
-                                <span className="text-gray-600">
-                                  Còn {topic.remainingSlots} chỗ trống
-                                </span>
-                              </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                fill="currentColor"
+                                className="bi bi-person-fill-check text-gray-500"
+                                viewBox="0 0 16 16"
+                              >
+                                <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m1.679-4.493-1.335 2.226a.75.75 0 0 1-1.174.144l-.774-.773a.5.5 0 0 1 .708-.708l.547.548 1.17-1.951a.5.5 0 1 1 .858.514M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+                                <path d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                              </svg>
+                              <span className="text-gray-600">
+                                {(() => {
+                                  const profile =
+                                    studentProfiles[topic.suggestedBy];
+                                  if (
+                                    profile &&
+                                    profile.fullName !== "Không xác định"
+                                  ) {
+                                    return profile.fullName;
+                                  }
+                                  return topic.student;
+                                })()}
+                              </span>
                             </div>
                           </div>
                         ))}

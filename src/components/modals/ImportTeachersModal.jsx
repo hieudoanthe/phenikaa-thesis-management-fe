@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { importService } from "../../services";
 
 const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
+  const { t } = useTranslation();
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -14,7 +16,7 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
         selectedFile.type !== "text/csv" &&
         !selectedFile.name.endsWith(".csv")
       ) {
-        toast.error("Vui lòng chọn file CSV");
+        toast.error(t("common.selectCsvFile"));
         return;
       }
       setFile(selectedFile);
@@ -42,7 +44,7 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
         droppedFile.type !== "text/csv" &&
         !droppedFile.name.endsWith(".csv")
       ) {
-        toast.error("Vui lòng chọn file CSV");
+        toast.error(t("common.selectCsvFile"));
         return;
       }
       setFile(droppedFile);
@@ -63,16 +65,19 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
 
       if (response.success) {
         toast.success(
-          `Nhập dữ liệu thành công: ${response.successCount} giảng viên`
+          t("common.importSuccess", {
+            count: response.successCount,
+            type: t("common.teachers"),
+          })
         );
         onImportSuccess?.();
         handleClose();
       } else {
-        toast.error(response.message || "Nhập dữ liệu thất bại");
+        toast.error(response.message || t("common.importFailed"));
       }
     } catch (error) {
-      console.error("Lỗi khi nhập dữ liệu giảng viên:", error);
-      toast.error("Lỗi khi nhập dữ liệu giảng viên");
+      console.error(t("common.errorImportTeachers"), error);
+      toast.error(t("common.errorImportTeachers"));
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +114,7 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-900 m-0">
-            Nhập danh sách Giảng viên
+            {t("common.importTeachers")}
           </h2>
         </div>
 
@@ -119,16 +124,18 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
             {/* Download template */}
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div>
-                <p className="text-sm font-medium text-gray-700">Mẫu CSV</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {t("common.csvTemplate")}
+                </p>
                 <p className="text-xs text-gray-500">
-                  Tải file mẫu để tham khảo
+                  {t("common.downloadTemplateDesc")}
                 </p>
               </div>
               <button
                 onClick={downloadTemplate}
                 className="px-3 py-1.5 bg-primary-500 text-white text-sm rounded-lg hover:bg-primary-600 transition-colors"
               >
-                Tải mẫu
+                {t("common.downloadTemplate")}
               </button>
             </div>
 
@@ -170,12 +177,10 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
                     />
                   </svg>
                   <p className="text-sm text-primary-600">
-                    {file
-                      ? file.name
-                      : "Kéo thả file CSV vào đây hoặc nhấp để chọn"}
+                    {file ? file.name : t("common.dragDropOrClick")}
                   </p>
                   <p className="text-xs text-primary-500 mt-1">
-                    Chỉ chấp nhận file .csv
+                    {t("common.csvOnly")}
                   </p>
                 </label>
               </div>
@@ -225,14 +230,14 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
                   onClick={handleClose}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  Hủy
+                  {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={!file || isLoading}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isLoading ? "Đang nhập... " : "Nhập dữ liệu"}
+                  {isLoading ? t("common.importing") : t("common.importData")}
                 </button>
               </div>
             </form>

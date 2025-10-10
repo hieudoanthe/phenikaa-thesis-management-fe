@@ -4,8 +4,10 @@ import { showToast } from "../../utils/toastHelper";
 import academicYearService from "../../services/academicYear.service";
 import registrationPeriodService from "../../services/registrationPeriod.service";
 import Select from "react-select";
+import { useTranslation } from "react-i18next";
 
 const DefenseScheduleManagement = () => {
+  const { t } = useTranslation();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,8 +68,8 @@ const DefenseScheduleManagement = () => {
       const data = await evalService.getAllDefenseSchedules();
       setSchedules(data);
     } catch (error) {
-      showToast("Lỗi khi tải danh sách lịch bảo vệ");
-      console.error("Lỗi:", error);
+      showToast(t("admin.defenseSchedule.errorLoading"));
+      console.error(t("admin.defenseSchedule.error"), error);
     } finally {
       setLoading(false);
     }
@@ -127,17 +129,17 @@ const DefenseScheduleManagement = () => {
           editingSchedule.scheduleId,
           formData
         );
-        showToast("Cập nhật lịch bảo vệ thành công");
+        showToast(t("admin.defenseSchedule.updateSuccess"));
       } else {
         await evalService.createDefenseSchedule(formData);
-        showToast("Tạo lịch bảo vệ thành công");
+        showToast(t("admin.defenseSchedule.createSuccess"));
       }
 
       setIsModalOpen(false);
       loadSchedules();
     } catch (error) {
-      showToast("Lỗi khi lưu lịch bảo vệ");
-      console.error("Lỗi:", error);
+      showToast(t("admin.defenseSchedule.saveError"));
+      console.error(t("admin.defenseSchedule.error"), error);
     }
   };
 
@@ -157,14 +159,14 @@ const DefenseScheduleManagement = () => {
   };
 
   const handleDeleteSchedule = async (scheduleId) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa lịch bảo vệ này?")) {
+    if (window.confirm(t("admin.defenseSchedule.deleteConfirm"))) {
       try {
         await evalService.deleteDefenseSchedule(scheduleId);
-        showToast("Xóa lịch bảo vệ thành công");
+        showToast(t("admin.defenseSchedule.deleteSuccess"));
         loadSchedules();
       } catch (error) {
-        showToast("Lỗi khi xóa lịch bảo vệ");
-        console.error("Lỗi:", error);
+        showToast(t("admin.defenseSchedule.deleteError"));
+        console.error(t("admin.defenseSchedule.error"), error);
       }
     }
   };
