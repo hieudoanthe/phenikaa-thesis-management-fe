@@ -22,7 +22,6 @@ const AcademicYearManagement = () => {
       setLoading(true);
       const result = await academicYearService.getAllAcademicYears();
       if (result.success) {
-        console.log("Academic years data:", result.data); // Debug log
         setAcademicYears(result.data || []);
 
         // Tìm năm học đang active
@@ -44,18 +43,29 @@ const AcademicYearManagement = () => {
       if (newStatus === "active") {
         const result = await academicYearService.activateAcademicYear(yearId);
         if (result.success) {
-          showToast(t("admin.academicYear.activateSuccess"));
+          showToast(
+            `Kích hoạt năm học thành công! Tất cả năm học khác đã được tự động vô hiệu hóa.`
+          );
           loadAcademicYears(); // Reload để cập nhật trạng thái
         } else {
-          showToast(result.message || t("admin.academicYear.activateError"));
+          showToast(
+            result.message || t("admin.academicYear.activateError"),
+            "error"
+          );
         }
       } else {
-        // TODO: Implement deactivate nếu cần
-        showToast("Chức năng vô hiệu hóa năm học sẽ được thêm sau");
+        // Deactivate năm học
+        const result = await academicYearService.deactivateAcademicYear(yearId);
+        if (result.success) {
+          showToast("Vô hiệu hóa năm học thành công!");
+          loadAcademicYears(); // Reload để cập nhật trạng thái
+        } else {
+          showToast(result.message || "Không thể vô hiệu hóa năm học", "error");
+        }
       }
     } catch (error) {
       console.error("Lỗi khi cập nhật trạng thái:", error);
-      showToast("Lỗi khi cập nhật trạng thái!");
+      showToast("Lỗi khi cập nhật trạng thái!", "error");
     }
   };
 
@@ -67,19 +77,16 @@ const AcademicYearManagement = () => {
   const handleDelete = async (yearId) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa năm học này?")) {
       try {
-        // TODO: Gọi API để xóa
-        setAcademicYears((prev) =>
-          prev.filter((year) => year.academicYearId !== yearId)
-        );
-
-        if (window.addToast) {
-          window.addToast("Đã xóa năm học thành công!", "success");
+        const result = await academicYearService.deleteAcademicYear(yearId);
+        if (result.success) {
+          showToast(result.message || "Xóa năm học thành công");
+          loadAcademicYears(); // Reload danh sách
+        } else {
+          showToast(result.message || "Không thể xóa năm học", "error");
         }
       } catch (error) {
         console.error("Lỗi khi xóa năm học:", error);
-        if (window.addToast) {
-          window.addToast("Lỗi khi xóa năm học!", "error");
-        }
+        showToast("Lỗi khi xóa năm học!", "error");
       }
     }
   };
@@ -138,8 +145,8 @@ const AcademicYearManagement = () => {
 
   return (
     <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
-      {/* Thẻ năm học hiện tại */}
-      {currentYear && (
+      {/* Thẻ năm học hiện tại - chỉ hiển thị khi đã load xong và có currentYear */}
+      {!loading && currentYear && (
         <div className="bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
@@ -169,15 +176,27 @@ const AcademicYearManagement = () => {
           <h2 className="text-lg font-semibold text-gray-900 m-0">
             Danh sách năm học
           </h2>
-          <button
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-            </svg>
-            Thêm năm học
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+              <i className="bi bi-info-circle mr-1"></i>
+              <strong>Lưu ý:</strong> Chỉ có thể có 1 năm học hoạt động tại một
+              thời điểm
+            </div>
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+              </svg>
+              Thêm năm học
+            </button>
+          </div>
         </div>
 
         {/* Mobile cards */}
@@ -423,11 +442,44 @@ const AcademicYearManagement = () => {
             setEditingYear(null);
           }}
           editingYear={editingYear}
-          onSave={(yearData) => {
-            // TODO: Xử lý lưu năm học
-            setIsModalOpen(false);
-            setEditingYear(null);
-            loadAcademicYears();
+          onSave={async (yearData) => {
+            try {
+              let result;
+              if (editingYear) {
+                // Cập nhật năm học
+                result = await academicYearService.updateAcademicYear(
+                  editingYear.academicYearId,
+                  yearData
+                );
+                if (result.success) {
+                  showToast("Cập nhật năm học thành công!");
+                } else {
+                  showToast(
+                    result.message || "Không thể cập nhật năm học",
+                    "error"
+                  );
+                }
+              } else {
+                // Tạo năm học mới
+                result = await academicYearService.createAcademicYear(yearData);
+                if (result.success) {
+                  showToast(
+                    "Tạo năm học thành công! Năm học đã được tạo với trạng thái 'Không hoạt động'. Bạn có thể kích hoạt trong danh sách."
+                  );
+                } else {
+                  showToast(result.message || "Không thể tạo năm học", "error");
+                }
+              }
+
+              if (result.success) {
+                setIsModalOpen(false);
+                setEditingYear(null);
+                loadAcademicYears(); // Reload danh sách
+              }
+            } catch (error) {
+              console.error("Lỗi khi lưu năm học:", error);
+              showToast("Lỗi khi lưu năm học!", "error");
+            }
           }}
         />
       )}
@@ -441,7 +493,6 @@ const AcademicYearModal = ({ isOpen, onClose, editingYear, onSave }) => {
     yearName: "",
     startDate: "",
     endDate: "",
-    status: "active",
   });
 
   useEffect(() => {
@@ -452,21 +503,53 @@ const AcademicYearModal = ({ isOpen, onClose, editingYear, onSave }) => {
           ? editingYear.startDate.split("T")[0]
           : "",
         endDate: editingYear.endDate ? editingYear.endDate.split("T")[0] : "",
-        status: editingYear.status === 1 ? "active" : "inactive",
       });
     } else {
       setFormData({
         yearName: "",
         startDate: "",
         endDate: "",
-        status: "active",
       });
     }
   }, [editingYear]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+
+    // Validation cơ bản
+    if (!formData.yearName.trim()) {
+      showToast("Vui lòng nhập tên năm học", "error");
+      return;
+    }
+
+    if (!formData.startDate || !formData.endDate) {
+      showToast("Vui lòng chọn ngày bắt đầu và ngày kết thúc", "error");
+      return;
+    }
+
+    if (new Date(formData.startDate) > new Date(formData.endDate)) {
+      showToast("Ngày bắt đầu không được sau ngày kết thúc", "error");
+      return;
+    }
+
+    // Chuẩn bị dữ liệu để gửi API
+    const submitData = {
+      yearName: formData.yearName,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+    };
+
+    onSave(submitData);
+  };
+
+  // Kiểm tra form có hợp lệ không
+  const isFormValid = () => {
+    return (
+      formData.yearName.trim() &&
+      formData.startDate &&
+      formData.endDate &&
+      new Date(formData.startDate) <= new Date(formData.endDate)
+    );
   };
 
   if (!isOpen) return null;
@@ -496,54 +579,28 @@ const AcademicYearModal = ({ isOpen, onClose, editingYear, onSave }) => {
 
         {/* Form */}
         <form className="p-6 space-y-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column */}
-            <div className="space-y-5">
-              <div className="relative">
-                <input
-                  id="yearName"
-                  type="text"
-                  placeholder=" "
-                  value={formData.yearName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, yearName: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
-                />
-                <label
-                  htmlFor="yearName"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Tên năm học <span className="text-red-500">*</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-5">
-              <div className="relative">
-                <select
-                  id="status"
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
-                >
-                  <option value="active">Hoạt động</option>
-                  <option value="inactive">Không hoạt động</option>
-                </select>
-                <label
-                  htmlFor="status"
-                  className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
-                >
-                  Trạng thái
-                </label>
-              </div>
-            </div>
+          {/* Tên năm học - full width */}
+          <div className="relative">
+            <input
+              id="yearName"
+              type="text"
+              placeholder=" "
+              value={formData.yearName}
+              onChange={(e) =>
+                setFormData({ ...formData, yearName: e.target.value })
+              }
+              required
+              className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
+            />
+            <label
+              htmlFor="yearName"
+              className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
+            >
+              Tên năm học <span className="text-red-500">*</span>
+            </label>
           </div>
 
+          {/* Ngày tháng - 2 cột */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative">
               <input
@@ -586,6 +643,18 @@ const AcademicYearModal = ({ isOpen, onClose, editingYear, onSave }) => {
             </div>
           </div>
 
+          {/* Lưu ý */}
+          <div className="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">
+            <p>
+              <strong>Lưu ý:</strong> Năm học mới sẽ được tạo với trạng thái
+              "Không hoạt động".
+            </p>
+            <p>
+              Để kích hoạt năm học, hãy sử dụng checkbox trong danh sách sau khi
+              tạo.
+            </p>
+          </div>
+
           {/* Buttons */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button
@@ -597,9 +666,14 @@ const AcademicYearModal = ({ isOpen, onClose, editingYear, onSave }) => {
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 text-base font-medium text-white bg-primary-500 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-primary-400 min-w-[120px]"
+              disabled={!isFormValid()}
+              className={`px-6 py-2.5 text-base font-medium text-white bg-primary-500 rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[120px] ${
+                !isFormValid()
+                  ? "opacity-70 cursor-not-allowed"
+                  : "hover:bg-primary-400"
+              }`}
             >
-              {editingYear ? "Cập nhật" : "Thêm năm học"}
+              {editingYear ? "Cập nhật" : "Tạo năm học"}
             </button>
           </div>
         </form>

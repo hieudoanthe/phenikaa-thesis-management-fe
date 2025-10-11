@@ -97,6 +97,16 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
     onClose();
   };
 
+  // Kiểm tra form có hợp lệ không
+  const isFormValid = () => {
+    return (
+      formData.fullName.trim() &&
+      formData.username.trim() &&
+      formData.password.trim() &&
+      formData.roles.length > 0
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -306,9 +316,9 @@ const AddUserModal = ({ isOpen, onClose, onAddUser }) => {
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !isFormValid()}
               className={`px-6 py-2.5 text-base font-medium text-white bg-primary-500 rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[120px] ${
-                submitting
+                submitting || !isFormValid()
                   ? "opacity-70 cursor-not-allowed"
                   : "hover:bg-primary-400"
               }`}

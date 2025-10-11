@@ -155,6 +155,10 @@ export const API_ENDPOINTS = {
   GET_ACTIVE_ACADEMIC_YEAR: "/api/academic-config-service/active",
   GET_ACADEMIC_YEARS: "/api/academic-config-service/list-academic-year",
   ACTIVATE_ACADEMIC_YEAR: "/api/academic-config-service/{yearId}/activate",
+  DEACTIVATE_ACADEMIC_YEAR: "/api/academic-config-service/{yearId}/deactivate",
+  CREATE_ACADEMIC_YEAR: "/api/academic-config-service/create",
+  UPDATE_ACADEMIC_YEAR: "/api/academic-config-service/{yearId}",
+  DELETE_ACADEMIC_YEAR: "/api/academic-config-service/{yearId}",
 
   /**
    * Evaluation Service (Defense Schedule Management)

@@ -451,7 +451,7 @@ const resources = {
           },
           userManagement: {
             title: "Quản lý người dùng",
-            subtitle: "Quản lý tài khoản sinh viên, giảng viên và admin",
+            subtitle: "Quản lý tài khoản sinh viên, giảng viên và quản trị viên",
           },
           assignments: {
             title: "Quản lý nhiệm vụ",
@@ -684,7 +684,7 @@ const resources = {
           errorLoading: "Không thể tải danh sách năm học",
           errorLoadingMessage: "Lỗi khi tải danh sách năm học!",
           activateSuccess: "Đã kích hoạt năm học thành công!",
-          activateError: "Không thể kích hoạt năm học",
+          activateError: "Có năm học đang được kích hoạt",
         },
         profile: {
           title: "Hồ sơ quản trị",

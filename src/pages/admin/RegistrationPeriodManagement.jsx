@@ -12,10 +12,11 @@ import { useTranslation } from "react-i18next";
 const RegistrationPeriodManagement = () => {
   const { t } = useTranslation();
   const [periods, setPeriods] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState(null);
   const [activeAcademicYear, setActiveAcademicYear] = useState(null);
+  const [academicYearLoading, setAcademicYearLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,6 +46,7 @@ const RegistrationPeriodManagement = () => {
 
   const loadActiveAcademicYear = async () => {
     try {
+      setAcademicYearLoading(true);
       console.log("Đang gọi API lấy năm học active...");
       const result = await academicYearService.getActiveAcademicYear();
       console.log("Kết quả API năm học active:", result);
@@ -62,6 +64,8 @@ const RegistrationPeriodManagement = () => {
       }
     } catch (error) {
       console.error("Không thể lấy năm học active:", error);
+    } finally {
+      setAcademicYearLoading(false);
     }
   };
 
@@ -159,6 +163,18 @@ const RegistrationPeriodManagement = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Kiểm tra form có hợp lệ không
+  const isFormValid = () => {
+    return (
+      formData.periodName.trim() &&
+      formData.academicYearId &&
+      formData.startDate &&
+      formData.endDate &&
+      formData.maxStudentsPerLecturer > 0 &&
+      new Date(formData.startDate) <= new Date(formData.endDate)
+    );
   };
 
   const handleStartPeriod = async (periodId) => {
@@ -391,8 +407,8 @@ const RegistrationPeriodManagement = () => {
         </div>
       </div>
 
-      {/* Thông tin năm học hiện tại */}
-      {activeAcademicYear && (
+      {/* Thông tin năm học hiện tại - chỉ hiển thị khi đã load xong và có activeAcademicYear */}
+      {!academicYearLoading && activeAcademicYear && (
         <div className="bg-[#273C62] rounded-xl shadow-lg p-4 sm:p-6 mb-6">
           <div className="flex items-center">
             <svg
@@ -416,7 +432,8 @@ const RegistrationPeriodManagement = () => {
         </div>
       )}
 
-      {!activeAcademicYear && (
+      {/* Warning khi không có năm học - chỉ hiển thị khi đã load xong và không có activeAcademicYear */}
+      {!academicYearLoading && !activeAcademicYear && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-6 mb-6">
           <div className="flex items-center">
             <svg
@@ -877,9 +894,9 @@ const RegistrationPeriodManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !isFormValid()}
                   className={`px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[140px] ${
-                    submitting
+                    submitting || !isFormValid()
                       ? "bg-primary-300 cursor-not-allowed"
                       : "bg-primary-500 hover:bg-primary-400"
                   }`}

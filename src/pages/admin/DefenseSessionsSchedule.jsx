@@ -36,43 +36,12 @@ const DefenseSessionsSchedule = () => {
     useState(false);
   const [availableStudents, setAvailableStudents] = useState([]);
   const [assignedStudents, setAssignedStudents] = useState([]);
-  const [showBackToTop, setShowBackToTop] = useState(false);
   const [committeeMembers, setCommitteeMembers] = useState([]);
   const [reviewerMembers, setReviewerMembers] = useState([]);
   const [lecturerById, setLecturerById] = useState({});
   const didInitRef = useRef(false);
 
   const location = useLocation();
-
-  // Hiển thị nút quay về đầu trang khi scroll
-  useEffect(() => {
-    const mainEl = document.querySelector("main");
-    const container = mainEl || window;
-
-    const getScrollTop = () =>
-      container === window
-        ? window.pageYOffset || document.documentElement.scrollTop
-        : container.scrollTop;
-
-    const handleScroll = () => {
-      setShowBackToTop(getScrollTop() > 200);
-    };
-
-    const target = container === window ? window : container;
-    target.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => target.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const handleBackToTop = () => {
-    const mainEl = document.querySelector("main");
-    const container = mainEl || window;
-    if (container === window) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      container.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
 
   // Tạo time slots từ 8:00 AM đến 6:00 PM (chỉ giờ làm việc)
   const timeSlots = [
@@ -655,6 +624,36 @@ const DefenseSessionsSchedule = () => {
       const data = await evalService.exportAllDefenseSessions();
       const safe = Array.isArray(data) ? data : [];
 
+      // Load danh sách giảng viên để map ID thành tên
+      let lecturerMap = {};
+      try {
+        const teachers = await userService.getAllTeachers();
+        lecturerMap = Array.isArray(teachers)
+          ? teachers.reduce((acc, t) => {
+              acc[t.userId] = t.fullName || `Giảng viên ${t.userId}`;
+              return acc;
+            }, {})
+          : {};
+      } catch (error) {
+        console.warn("Không thể tải danh sách giảng viên:", error);
+      }
+
+      // Function để map role sang tiếng Việt
+      const getRoleInVietnamese = (role) => {
+        switch (role) {
+          case "CHAIRMAN":
+            return "Chủ tịch";
+          case "SECRETARY":
+            return "Thư ký";
+          case "MEMBER":
+            return "Thành viên";
+          case "REVIEWER":
+            return "Phản biện";
+          default:
+            return role || "";
+        }
+      };
+
       // Thu thập sinh viên: sessionId, studentName, topicTitle
       const studentsRows = [];
       for (const s of safe) {
@@ -682,22 +681,48 @@ const DefenseSessionsSchedule = () => {
         );
         const XLSX = XLSXMod.default || XLSXMod;
         const wb = XLSX.utils.book_new();
-        const sessionSheetData = safe.map((s) => ({
-          SessionId: s.sessionId,
-          "Tên buổi bảo vệ": s.sessionName || "",
-          Trường: s.universityName || "",
-          Ngày: s.defenseDate || "",
-          Giờ: s.startTimeFormatted || "",
-          Phòng: s.location || "",
-          "Trạng thái": s.status || "",
-          "Số SV đã gán": s.assignedCount ?? "",
-          "Số SV tối đa": s.maxStudents ?? "",
-          "Hội đồng (id:role)": Array.isArray(s.committee)
-            ? s.committee
-                .map((c) => `${c.lecturerId}:${(c.role || "").toString()}`)
-                .join(" | ")
-            : "",
-        }));
+        const sessionSheetData = safe.map((s) => {
+          // Tách committee thành các role riêng biệt
+          let chairman = "";
+          let secretary = "";
+          let member = "";
+          let reviewer = "";
+
+          if (Array.isArray(s.committee)) {
+            s.committee.forEach((c) => {
+              const lecturerName =
+                lecturerMap[c.lecturerId] || `Giảng viên ${c.lecturerId}`;
+              switch (c.role) {
+                case "CHAIRMAN":
+                  chairman = lecturerName;
+                  break;
+                case "SECRETARY":
+                  secretary = lecturerName;
+                  break;
+                case "MEMBER":
+                  member = lecturerName;
+                  break;
+                case "REVIEWER":
+                  reviewer = lecturerName;
+                  break;
+              }
+            });
+          }
+
+          return {
+            SessionId: s.sessionId,
+            "Tên buổi bảo vệ": s.sessionName || "",
+            Trường: s.universityName || "",
+            Ngày: s.defenseDate || "",
+            Giờ: s.startTimeFormatted || "",
+            Phòng: s.location || "",
+            "Sinh viên tham gia": s.assignedCount ?? "",
+            "Chủ tịch": chairman,
+            "Thư ký": secretary,
+            "Thành viên hội đồng": member,
+            "Phản biện": reviewer,
+          };
+        });
         const ws1 = XLSX.utils.json_to_sheet(sessionSheetData);
         XLSX.utils.book_append_sheet(wb, ws1, "Sessions");
 
@@ -711,7 +736,22 @@ const DefenseSessionsSchedule = () => {
         )}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(
           ts.getMinutes()
         )}${pad(ts.getSeconds())}.xlsx`;
-        XLSX.writeFile(wb, name);
+
+        // Sử dụng cách download an toàn hơn để tránh lỗi permission
+        const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([wbout], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+
         showToast("Đã xuất XLSX (2 sheet)", "success");
         return;
       } catch (e) {
@@ -726,10 +766,11 @@ const DefenseSessionsSchedule = () => {
         "Ngày",
         "Giờ",
         "Phòng",
-        "Trạng thái",
-        "Số SV đã gán",
-        "Số SV tối đa",
-        "Hội đồng (lecturerId:role)",
+        "Sinh viên tham gia",
+        "Chủ tịch",
+        "Thư ký",
+        "Thành viên hội đồng",
+        "Phản biện",
       ];
       const escapeCsv = (v) => {
         if (v === null || v === undefined) return "";
@@ -737,17 +778,48 @@ const DefenseSessionsSchedule = () => {
         return /[",\n]/.test(s) ? `"${s}"` : s;
       };
       const rows = safe
-        .map((s) => [
-          s.sessionId,
-          s.sessionName || "",
-          s.universityName || "",
-          s.defenseDate || "",
-          s.startTimeFormatted || "",
-          s.location || "",
-          s.status || "",
-          s.assignedCount ?? "",
-          s.maxStudents ?? "",
-        ])
+        .map((s) => {
+          // Tách committee thành các role riêng biệt
+          let chairman = "";
+          let secretary = "";
+          let member = "";
+          let reviewer = "";
+
+          if (Array.isArray(s.committee)) {
+            s.committee.forEach((c) => {
+              const lecturerName =
+                lecturerMap[c.lecturerId] || `Giảng viên ${c.lecturerId}`;
+              switch (c.role) {
+                case "CHAIRMAN":
+                  chairman = lecturerName;
+                  break;
+                case "SECRETARY":
+                  secretary = lecturerName;
+                  break;
+                case "MEMBER":
+                  member = lecturerName;
+                  break;
+                case "REVIEWER":
+                  reviewer = lecturerName;
+                  break;
+              }
+            });
+          }
+
+          return [
+            s.sessionId,
+            s.sessionName || "",
+            s.universityName || "",
+            s.defenseDate || "",
+            s.startTimeFormatted || "",
+            s.location || "",
+            s.assignedCount ?? "",
+            chairman,
+            secretary,
+            member,
+            reviewer,
+          ];
+        })
         .map((r) => r.map(escapeCsv).join(","));
       const csv = [headers.join(","), ...rows].join("\n");
       const blob = new Blob(["\uFEFF" + csv], {
@@ -1088,7 +1160,9 @@ const DefenseSessionsSchedule = () => {
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
-                    className="h-5 w-5 text-gray-400"
+                    className={`h-5 w-5 ${
+                      viewMode === "grid" ? "text-gray-300" : "text-gray-400"
+                    }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1103,10 +1177,24 @@ const DefenseSessionsSchedule = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Tìm kiếm buổi bảo vệ..."
+                  placeholder={
+                    viewMode === "grid"
+                      ? "Tìm kiếm chỉ có trong danh sách"
+                      : "Tìm kiếm buổi bảo vệ..."
+                  }
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
+                  disabled={viewMode === "grid"}
+                  title={
+                    viewMode === "grid"
+                      ? "Tìm kiếm chỉ hoạt động trong chế độ danh sách. Vui lòng chuyển sang chế độ danh sách để sử dụng tính năng tìm kiếm."
+                      : "Tìm kiếm theo tên buổi bảo vệ và phòng"
+                  }
+                  className={`pl-10 pr-4 py-2 border rounded-lg outline-none transition-all duration-200 ${
+                    viewMode === "grid"
+                      ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                      : "border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
+                  }`}
                 />
               </div>
 
@@ -1239,7 +1327,7 @@ const DefenseSessionsSchedule = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-6 gap-0 overflow-x-auto">
+          <div className="grid grid-cols-6 gap-0 overflow-x-auto pb-4">
             {/* Time column */}
             <div className="sticky left-0 bg-gray-50">
               <div className="h-16 flex items-center justify-center font-medium text-gray-700 bg-gray-100 border-b border-r border-gray-300">
@@ -1248,7 +1336,7 @@ const DefenseSessionsSchedule = () => {
               {timeSlots.map((time, index) => (
                 <div
                   key={index}
-                  className="h-24 flex items-center justify-center text-sm text-gray-600 bg-gray-50 border-b border-r border-gray-300 px-2"
+                  className="h-28 flex items-center justify-center text-sm text-gray-600 bg-gray-50 border-b border-r border-gray-300 px-2"
                 >
                   {time}
                 </div>
@@ -1266,10 +1354,16 @@ const DefenseSessionsSchedule = () => {
                   return (
                     <div
                       key={`${day}-${time}`}
-                      className="h-24 border-b border-gray-300 p-1"
+                      className="h-28 border-b border-gray-300 p-1"
                     >
                       {slotSessions.length > 0 && (
-                        <div className="flex flex-col gap-1 h-full overflow-y-auto pr-1 thin-scrollbar">
+                        <div
+                          className={`flex flex-col gap-3 h-full pr-1 ${
+                            slotSessions.length > 1
+                              ? "overflow-y-auto thin-scrollbar"
+                              : "justify-center"
+                          }`}
+                        >
                           {slotSessions.map((session) => (
                             <div
                               key={session.sessionId}
@@ -1451,27 +1545,6 @@ const DefenseSessionsSchedule = () => {
 
       {/* Summary Footer removed per request */}
 
-      {showBackToTop && (
-        <button
-          type="button"
-          onClick={handleBackToTop}
-          className="fixed bottom-6 right-6 z-50 p-3 rounded-lg bg-primary-500 text-white shadow-lg hover:bg-primary-400 transition-colors"
-          aria-label="Quay về đầu trang"
-        >
-          <svg
-            className="w-5 h-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="18 15 12 9 6 15"></polyline>
-          </svg>
-        </button>
-      )}
-
       {/* Create Schedule Modal */}
       <CreateScheduleModal
         isOpen={isModalOpen}
@@ -1630,6 +1703,18 @@ const CreateScheduleModal = ({
     { value: "COMPLETED", label: "Hoàn thành" },
   ];
 
+  // Validation function
+  const isFormValid = () => {
+    return (
+      formData.date.trim() !== "" &&
+      formData.time.trim() !== "" &&
+      formData.room.trim() !== "" &&
+      formData.topic.trim() !== "" &&
+      selectedTeachers.length > 0 &&
+      selectedReviewers.length > 0
+    );
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -1697,28 +1782,10 @@ const CreateScheduleModal = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200">
           <h3 className="text-xl font-semibold text-gray-900">
-            Tạo Buổi Bảo Vệ Mới
+            Tạo buổi bảo vệ mới
           </h3>
-          <button
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-            onClick={handleClose}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -1961,7 +2028,7 @@ const CreateScheduleModal = ({
               isSearchable={true}
               isLoading={loadingTeachers}
               menuPlacement="auto"
-              maxMenuHeight={80}
+              maxMenuHeight={200}
               styles={{
                 control: (base, state) => ({
                   ...base,
@@ -1974,7 +2041,7 @@ const CreateScheduleModal = ({
                 }),
                 menuList: (base) => ({
                   ...base,
-                  maxHeight: 80,
+                  maxHeight: 200,
                   overflowY: "auto",
                 }),
               }}
@@ -2046,7 +2113,12 @@ const CreateScheduleModal = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary-500 hover:bg-primary-400 text-white rounded-lg font-medium transition-colors duration-200"
+              disabled={!isFormValid()}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                isFormValid()
+                  ? "bg-primary-500 hover:bg-primary-400 text-white"
+                  : "bg-primary-300 cursor-not-allowed text-white"
+              }`}
             >
               Tạo buổi bảo vệ
             </button>
@@ -2087,237 +2159,217 @@ const SessionDetailModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+      <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white rounded-t-2xl">
           <h3 className="text-xl font-semibold text-gray-900">
-            Chi tiết Buổi Bảo Vệ: {session.sessionName}
+            Chi tiết buổi bảo vệ: {session.sessionName}
           </h3>
-          <button
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-            onClick={onClose}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Session Information */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-700">
-                Tên buổi bảo vệ:
-              </p>
-              <p className="text-lg font-bold text-gray-900">
-                {session.sessionName}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Ngày bảo vệ:</p>
-              <p className="text-lg font-bold text-gray-900">
-                {session.defenseDate}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Thời gian:</p>
-              <p className="text-lg font-bold text-gray-900">
-                {session.startTime
-                  ? new Date(session.startTime).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "N/A"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Phòng:</p>
-              <p className="text-lg font-bold text-gray-900">
-                {session.location}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Trạng thái:</p>
-              <p
-                className={`text-lg font-bold ${
-                  session.status === "PLANNING"
-                    ? "text-purple-600"
-                    : session.status === "SCHEDULED"
-                    ? "text-blue-600"
-                    : session.status === "IN_PROGRESS"
-                    ? "text-orange-600"
-                    : "text-green-600"
-                }`}
-              >
-                {getStatusLabel(session.status)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">
-                Số sinh viên tối đa:
-              </p>
-              <p className="text-lg font-bold text-gray-900">
-                {session.maxStudents}
-              </p>
-            </div>
-          </div>
-
-          {/* Committee & Reviewers */}
-          <div className="border-t border-gray-200 pt-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">
-              Hội đồng & Phản biện
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex-1 overflow-y-auto thin-scrollbar">
+          <div className="p-6 space-y-6">
+            {/* Session Information */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <h5 className="text-md font-medium text-gray-900 mb-2">
-                  Thành viên hội đồng
-                </h5>
-                {!committeeMembers || committeeMembers.length === 0 ? (
-                  <p className="text-gray-600 italic">
-                    Chưa có dữ liệu hội đồng.
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {committeeMembers.map((m) => (
-                      <li
-                        key={`board-${m.lecturerId}-${m.role}`}
-                        className="p-2 bg-purple-50 rounded border border-purple-200 text-sm text-gray-800"
-                      >
-                        <span className="font-semibold">
-                          {m.displayedName || `Giảng viên ${m.lecturerId}`}
-                        </span>
-                        <span className="ml-2 text-purple-700">
-                          {m.role === "CHAIRMAN"
-                            ? "Chủ tịch hội đồng"
-                            : m.role === "SECRETARY"
-                            ? "Thư ký"
-                            : "Thành viên hội đồng"}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <p className="text-sm font-medium text-gray-700">
+                  Tên buổi bảo vệ:
+                </p>
+                <p className="text-lg font-bold text-gray-900">
+                  {session.sessionName}
+                </p>
               </div>
               <div>
-                <h5 className="text-md font-medium text-gray-900 mb-2">
-                  Giảng viên phản biện
-                </h5>
-                {!reviewerMembers || reviewerMembers.length === 0 ? (
-                  <p className="text-gray-600 italic">
-                    Chưa có dữ liệu phản biện.
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {reviewerMembers.map((m) => (
-                      <li
-                        key={`review-${m.lecturerId}-${m.role}`}
-                        className="p-2 bg-indigo-50 rounded border border-indigo-200 text-sm text-gray-800"
-                      >
-                        <span className="font-semibold">
-                          {m.displayedName || `Giảng viên ${m.lecturerId}`}
-                        </span>
-                        {/* Reviewer: ẩn nhãn (REVIEWER) theo yêu cầu */}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <p className="text-sm font-medium text-gray-700">
+                  Ngày bảo vệ:
+                </p>
+                <p className="text-lg font-bold text-gray-900">
+                  {session.defenseDate}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Thời gian:</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {session.startTime
+                    ? new Date(session.startTime).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Phòng:</p>
+                <p className="text-lg font-bold text-gray-900">
+                  {session.location}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Trạng thái:</p>
+                <p
+                  className={`text-lg font-bold ${
+                    session.status === "PLANNING"
+                      ? "text-purple-600"
+                      : session.status === "SCHEDULED"
+                      ? "text-blue-600"
+                      : session.status === "IN_PROGRESS"
+                      ? "text-orange-600"
+                      : "text-green-600"
+                  }`}
+                >
+                  {getStatusLabel(session.status)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Số sinh viên tối đa:
+                </p>
+                <p className="text-lg font-bold text-gray-900">
+                  {session.maxStudents}
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Student Management Section */}
-          <div className="border-t border-gray-200 pt-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">
-              Quản lý Sinh viên
-            </h4>
-
-            <div className="grid grid-cols-1 gap-6">
-              {/* Assigned Students */}
-              <div>
-                <h5 className="text-md font-medium text-gray-900 mb-3">
-                  Sinh viên đã gán ({assignedStudents.length}/
-                  {session.maxStudents})
-                </h5>
-                {assignedStudents.length === 0 ? (
-                  <p className="text-gray-600 italic">
-                    Chưa có sinh viên nào được gán.
-                  </p>
-                ) : (
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {assignedStudents.map((student) => (
-                      <div
-                        key={student.studentId}
-                        className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                              Thứ tự: {student.defenseOrder || "N/A"}
-                            </span>
-                            {student.registrationType && (
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full border ${getRegistrationTypeColor(
-                                  student.registrationType
-                                )}`}
-                              >
-                                {getRegistrationTypeLabel(
-                                  student.registrationType
-                                )}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {student.studentName}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            MSSV: {student.studentCode}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            Chuyên ngành: {student.major}
-                          </p>
-                          <p className="text-xs text-gray-700 font-medium">
-                            {student.topicTitle}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => onUnassignStudent(student.studentId)}
-                          className="text-red-600 hover:text-red-700 transition-colors duration-200 ml-2"
-                          title="Hủy gán sinh viên"
+            {/* Committee & Reviewers */}
+            <div className="border-t border-gray-200 pt-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                Hội đồng & Phản biện
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h5 className="text-md font-medium text-gray-900 mb-2">
+                    Thành viên hội đồng
+                  </h5>
+                  {!committeeMembers || committeeMembers.length === 0 ? (
+                    <p className="text-gray-600 italic">
+                      Chưa có dữ liệu hội đồng.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {committeeMembers.map((m) => (
+                        <li
+                          key={`board-${m.lecturerId}-${m.role}`}
+                          className="p-2 bg-purple-50 rounded border border-purple-200 text-sm text-gray-800"
                         >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                          <span className="font-semibold">
+                            {m.displayedName || `Giảng viên ${m.lecturerId}`}
+                          </span>
+                          <span className="ml-2 text-purple-700">
+                            {m.role === "CHAIRMAN"
+                              ? "Chủ tịch hội đồng"
+                              : m.role === "SECRETARY"
+                              ? "Thư ký"
+                              : "Thành viên hội đồng"}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <h5 className="text-md font-medium text-gray-900 mb-2">
+                    Giảng viên phản biện
+                  </h5>
+                  {!reviewerMembers || reviewerMembers.length === 0 ? (
+                    <p className="text-gray-600 italic">
+                      Chưa có dữ liệu phản biện.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {reviewerMembers.map((m) => (
+                        <li
+                          key={`review-${m.lecturerId}-${m.role}`}
+                          className="p-2 bg-indigo-50 rounded border border-indigo-200 text-sm text-gray-800"
+                        >
+                          <span className="font-semibold">
+                            {m.displayedName || `Giảng viên ${m.lecturerId}`}
+                          </span>
+                          {/* Reviewer: ẩn nhãn (REVIEWER) theo yêu cầu */}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Student Management Section */}
+            <div className="border-t border-gray-200 pt-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                Quản lý sinh viên
+              </h4>
+
+              <div className="grid grid-cols-1 gap-6">
+                {/* Assigned Students */}
+                <div>
+                  <h5 className="text-md font-medium text-gray-900 mb-3">
+                    Sinh viên trong buổi bảo vệ ({assignedStudents.length}/
+                    {session.maxStudents})
+                  </h5>
+                  {assignedStudents.length === 0 ? (
+                    <p className="text-gray-600 italic">
+                      Chưa có sinh viên nào được thêm vào buổi bảo vệ này.
+                    </p>
+                  ) : (
+                    <div className="space-y-3 max-h-64 overflow-y-auto thin-scrollbar">
+                      {assignedStudents.map((student) => (
+                        <div
+                          key={student.studentId}
+                          className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="bg-primary-500 text-white text-xs px-2 py-1 rounded-full">
+                                Thứ tự: {student.defenseOrder || "N/A"}
+                              </span>
+                              {student.registrationType && (
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full border ${getRegistrationTypeColor(
+                                    student.registrationType
+                                  )}`}
+                                >
+                                  {getRegistrationTypeLabel(
+                                    student.registrationType
+                                  )}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {student.studentName}
+                            </p>
+                            <p className="text-xs text-gray-700 font-medium">
+                              {student.topicTitle}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => onUnassignStudent(student.studentId)}
+                            className="text-red-600 hover:text-red-700 transition-colors duration-200 ml-2"
+                            title="Hủy gán sinh viên"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-white rounded-b-2xl">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors duration-200"

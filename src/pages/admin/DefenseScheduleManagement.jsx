@@ -12,7 +12,6 @@ const DefenseScheduleManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
-  const [showBackToTop, setShowBackToTop] = useState(false);
   const rootRef = useRef(null);
   const didInitRef = useRef(false);
   const [formData, setFormData] = useState({
@@ -143,6 +142,18 @@ const DefenseScheduleManagement = () => {
     }
   };
 
+  // Kiểm tra form có hợp lệ không
+  const isFormValid = () => {
+    return (
+      formData.scheduleName.trim() &&
+      formData.academicYearId &&
+      formData.startDate &&
+      formData.endDate &&
+      formData.location.trim() &&
+      new Date(formData.startDate) <= new Date(formData.endDate)
+    );
+  };
+
   const getLatestRegistrationEndDate = () => {
     if (!Array.isArray(registrationPeriods) || registrationPeriods.length === 0)
       return null;
@@ -213,36 +224,6 @@ const DefenseScheduleManagement = () => {
         {config.text}
       </span>
     );
-  };
-
-  // Hiển thị nút quay về đầu trang khi scroll
-  useEffect(() => {
-    const mainEl = document.querySelector("main");
-    const container = mainEl || window;
-
-    const getScrollTop = () =>
-      container === window
-        ? window.pageYOffset || document.documentElement.scrollTop
-        : container.scrollTop;
-
-    const handleScroll = () => {
-      setShowBackToTop(getScrollTop() > 10);
-    };
-
-    const target = container === window ? window : container;
-    target.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => target.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const handleBackToTop = () => {
-    const mainEl = document.querySelector("main");
-    const container = mainEl || window;
-    if (container === window) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      container.scrollTo({ top: 0, behavior: "smooth" });
-    }
   };
 
   if (loading) {
@@ -436,27 +417,6 @@ const DefenseScheduleManagement = () => {
         )}
       </div>
 
-      {showBackToTop && (
-        <button
-          type="button"
-          onClick={handleBackToTop}
-          className="fixed bottom-6 right-6 z-50 p-3 rounded-lg bg-[#ea580c] text-white shadow-lg hover:brightness-95 transition-colors"
-          aria-label="Quay về đầu trang"
-        >
-          <svg
-            className="w-5 h-5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="18 15 12 9 6 15"></polyline>
-          </svg>
-        </button>
-      )}
-
       {/* Modal */}
       {isModalOpen && (
         <ScheduleModal
@@ -467,6 +427,7 @@ const DefenseScheduleManagement = () => {
           setFormData={setFormData}
           editingSchedule={editingSchedule}
           latestRegistrationEndDate={latestRegistrationEndDate}
+          isFormValid={isFormValid}
         />
       )}
     </div>
@@ -482,6 +443,7 @@ const ScheduleModal = ({
   setFormData,
   editingSchedule,
   latestRegistrationEndDate,
+  isFormValid,
 }) => {
   if (!isOpen) return null;
 
@@ -708,7 +670,6 @@ const ScheduleModal = ({
               <textarea
                 id="description"
                 placeholder=" "
-                required
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -720,7 +681,7 @@ const ScheduleModal = ({
                 htmlFor="description"
                 className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
               >
-                Mô tả <span className="text-red-500">*</span>
+                Mô tả
               </label>
             </div>
           </div>
@@ -735,7 +696,12 @@ const ScheduleModal = ({
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 text-base font-medium text-white bg-primary-500 rounded-lg border-none cursor-pointer transition-all duration-200 hover:bg-primary-400 min-w-[120px]"
+              disabled={!isFormValid()}
+              className={`px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[120px] ${
+                !isFormValid()
+                  ? "bg-primary-300 cursor-not-allowed"
+                  : "bg-primary-500 hover:bg-primary-400"
+              }`}
             >
               {editingSchedule ? "Cập nhật" : "Tạo lịch bảo vệ"}
             </button>

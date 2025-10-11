@@ -60,7 +60,7 @@ const UserManagement = () => {
   const [statusLoadingId, setStatusLoadingId] = useState(null);
   // Phân trang phía server
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(7);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -216,11 +216,8 @@ const UserManagement = () => {
     searchTerm,
   ]);
 
-  // Debug log để kiểm tra dữ liệu
-  // Reset về trang đầu tiên khi filter thay đổi
   useEffect(() => {
     setCurrentPage(0);
-    // Gọi API để lấy dữ liệu trang đầu tiên với filter mới
     fetchUsers(0);
   }, [selectedRole.value, searchTerm]);
 
@@ -380,7 +377,7 @@ const UserManagement = () => {
 
   if (isInitialLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="bg-gray-50">
         <div className="flex flex-col items-center justify-center h-96 text-gray-500">
           <div className="w-10 h-10 border-4 border-gray-200 border-t-primary-500 rounded-full animate-spin mb-4"></div>
           <p>{t("admin.userManagement.loadingData")}</p>
@@ -391,7 +388,7 @@ const UserManagement = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="bg-gray-50">
         <div className="text-center py-12">
           <p className="text-error-500 mb-4">{error}</p>
           <button
@@ -406,15 +403,15 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="bg-gray-50">
       {/* Toolbar */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mb-2">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           {/* Left side - Add button and role filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex flex-col sm:flex-row gap-2">
               <button
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
                 onClick={() => setIsModalOpen(true)}
               >
                 <svg
@@ -434,7 +431,7 @@ const UserManagement = () => {
               </button>
 
               <button
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+                className="inline-flex items-center gap-2 px-3 py-2 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-400 transition-colors duration-200 shadow-sm"
                 onClick={() => setIsImportTeachersModalOpen(true)}
               >
                 <span className="hidden sm:inline">
@@ -457,8 +454,8 @@ const UserManagement = () => {
                   control: (base, state) => ({
                     ...base,
                     borderRadius: "8px",
-                    minHeight: "42px",
-                    height: "44px",
+                    minHeight: "36px",
+                    height: "38px",
                     fontSize: "0.95rem",
                     borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
                     boxShadow: state.isFocused ? "0 0 0 1px #ff6600" : "none",
@@ -516,7 +513,7 @@ const UserManagement = () => {
               placeholder={t("admin.userManagement.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400 transition-colors duration-200"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400 transition-colors duration-200"
             />
           </div>
         </div>
@@ -934,9 +931,8 @@ const UserManagement = () => {
       </div>
 
       {/* Footer */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mt-6 mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Page size selector - always visible */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mt-2 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2 w-full sm:w-auto justify-start">
             <span className="text-sm text-gray-600">
               {t("admin.userManagement.showRecords")}
@@ -945,15 +941,16 @@ const UserManagement = () => {
               <Select
                 value={{ value: pageSize, label: String(pageSize) }}
                 onChange={async (opt) => {
-                  const newSize = parseInt(opt?.value ?? 6, 10);
+                  const newSize = parseInt(opt?.value ?? 7, 10);
                   setPageSize(newSize);
                   setCurrentPage(0);
                   await fetchUsers(0, { size: newSize });
                 }}
-                options={[6, 10, 20, 50].map((n) => ({
+                options={[7, 10, 20, 50].map((n) => ({
                   value: n,
                   label: String(n),
                 }))}
+                menuPlacement="top"
                 isSearchable={false}
                 className="custom-select"
                 styles={{
@@ -990,10 +987,10 @@ const UserManagement = () => {
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-2">
             {/* Pagination - only show when multiple pages */}
             {Math.ceil(totalElements / pageSize) > 1 ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {(() => {
                   const totalPageCount = Math.max(
                     1,
