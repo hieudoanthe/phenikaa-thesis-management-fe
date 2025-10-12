@@ -30,7 +30,7 @@ const PhenikaaLogin = () => {
   const [rememberMe, setRememberMe] = useState(false);
 
   const BASE_URL =
-    import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080";
+    import.meta.env.VITE_MAIN_API_BASE_URL;
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
@@ -263,7 +263,7 @@ const PhenikaaLogin = () => {
         className="hidden lg:flex flex-1 bg-secondary text-white flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12 lg:py-16 min-h-screen lg:min-w-[380px] relative order-2 lg:order-1"
         aria-label="Introduction and illustration"
       >
-        <h2 className="m-0 font-bold text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl leading-tight sm:leading-tight md:leading-tight lg:leading-tight xl:leading-tight tracking-wide max-w-none mb-6 sm:mb-8 lg:mb-12 outline-none px-2">
+        <h2 className="m-0 font-bold text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl leading-tight sm:leading-tight md:leading-tight lg:leading-tight xl:leading-tight tracking-wide max-w-none mb-6 sm:mb-8 lg:mb-12 outline-none px-2">
           Hệ thống quản lý đồ án tốt nghiệp
         </h2>
         <img
@@ -302,12 +302,12 @@ const PhenikaaLogin = () => {
             id="loginTitle"
             style={{ animationDelay: "0.15s" }}
           >
-            Thesis Management System
+            PHENIKAAHUB
           </h1>
 
           {/* Info Text */}
           <p
-            className="text-xs sm:text-sm text-error italic text-center mb-4 sm:mb-6 outline-none fade-in px-2"
+            className="text-xs sm:text-sm text-red-500 italic text-center mb-4 sm:mb-6 outline-none fade-in px-2"
             aria-live="polite"
             aria-atomic="true"
             style={{ animationDelay: "0.2s" }}
@@ -379,7 +379,7 @@ const PhenikaaLogin = () => {
                 htmlFor="usernameInput"
                 className="absolute top-2.5 sm:top-3 left-3 sm:left-4 text-sm sm:text-base text-gray-600 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:-top-2 peer-focus:text-xs peer-focus:text-gray-600 peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-gray-600 peer-[:not(:placeholder-shown)]:font-semibold"
               >
-                Tên đăng nhập *
+                Tên đăng nhập <span className="text-red-500">*</span>
               </label>
             </div>
 
@@ -451,7 +451,7 @@ const PhenikaaLogin = () => {
                   htmlFor="passwordInput"
                   className="absolute top-2.5 sm:top-3 left-3 sm:left-4 text-sm sm:text-base text-gray-600 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:-top-2 peer-focus:text-xs peer-focus:text-gray-600 peer-focus:font-semibold peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-gray-600 peer-[:not(:placeholder-shown)]:font-semibold"
                 >
-                  Mật khẩu *
+                  Mật khẩu <span className="text-red-500">*</span>
                 </label>
               </div>
             </div>
