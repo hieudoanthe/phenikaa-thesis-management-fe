@@ -27,7 +27,7 @@
 @media (max-width: 640px) {
   .Toastify__toast-container {
     width: auto !important;
-    max-width: min(320px, 90vw) !important; 
+    max-width: min(320px, 90vw) !important;
     padding: 0 !important;
     right: 8px !important;
     left: auto !important;
@@ -57,8 +57,11 @@
 
   /* Smaller close button */
   .Toastify__close-button {
-    width: 28px !important;
-    height: 28px !important;
+    display: none !important;
+  }
+
+  .Toastify__toast-body {
+    padding-right: 8px !important;
   }
 }
 

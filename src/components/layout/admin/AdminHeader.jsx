@@ -11,6 +11,7 @@ const AdminHeader = ({
   onToggleNotification,
   onToggleUserDropdown,
   onLogout,
+  onMarkAllAsRead,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -51,6 +52,10 @@ const AdminHeader = ({
     onToggleNotification,
     onToggleUserDropdown,
   ]);
+
+  const unreadCount = Array.isArray(notifications)
+    ? notifications.filter((n) => !n?.isRead).length
+    : 0;
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 sticky top-0 z-30">
@@ -110,10 +115,11 @@ const AdminHeader = ({
               >
                 <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
               </svg>
-              {/* Ẩn badge nếu không có unread (demo dùng số cứng 3 -> giữ điều kiện true) */}
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1 sm:px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
-                3
-              </span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold px-1 sm:px-1.5 py-0.5 rounded-full min-w-[16px] sm:min-w-[18px] text-center">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Notification Dropdown Menu */}
@@ -123,7 +129,14 @@ const AdminHeader = ({
                   <h3 className="text-sm sm:text-base font-semibold text-gray-900 m-0">
                     {t("common.notifications")}
                   </h3>
-                  <button className="text-primary-500 text-xs sm:text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100">
+                  <button
+                    className="text-primary-500 text-xs sm:text-sm cursor-pointer px-2 py-1 rounded-md transition-colors duration-200 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (typeof onMarkAllAsRead === "function")
+                        onMarkAllAsRead();
+                    }}
+                  >
                     {t("common.markAllAsRead")}
                   </button>
                 </div>
@@ -159,7 +172,19 @@ const AdminHeader = ({
                   )}
                 </div>
                 <div className="px-4 py-3 border-t border-gray-100 text-center">
-                  <button className="text-primary-500 text-xs sm:text-sm cursor-pointer px-3 sm:px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100">
+                  <button
+                    className="text-primary-500 text-xs sm:text-sm cursor-pointer px-3 sm:px-4 py-2 rounded-lg transition-colors duration-200 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      try {
+                        window?.location?.assign?.("/admin/notifications");
+                      } catch {
+                        try {
+                          window.location.href = "/admin/notifications";
+                        } catch {}
+                      }
+                    }}
+                  >
                     {t("common.viewAllNotifications")}
                   </button>
                 </div>

@@ -16,6 +16,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Legend,
+  Brush,
 } from "recharts";
 import { PieChart, Pie, Cell } from "recharts";
 
@@ -306,84 +307,60 @@ const StatisticsDashboard = () => {
   return (
     <div className="w-full bg-gray-50 p-3 sm:p-4 md:p-6">
       <div className="w-full">
-        {/* Date Range Filter */}
-        <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6 mb-6">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">
-                {t("admin.statistics.timeFilter.title")}
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setQuickRangeDays(7)}
-                  className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
-                >
-                  {t("admin.statistics.timeFilter.quickFilters.days7")}
-                </button>
-                <button
-                  onClick={() => setQuickRangeDays(14)}
-                  className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
-                >
-                  {t("admin.statistics.timeFilter.quickFilters.days14")}
-                </button>
-                <button
-                  onClick={() => setQuickRangeDays(30)}
-                  className="px-3 py-1.5 text-xs sm:text-sm rounded-full border border-gray-300 hover:border-blue-500 hover:text-blue-600"
-                >
-                  {t("admin.statistics.timeFilter.quickFilters.days30")}
-                </button>
-              </div>
+        {/* Date Range Filter - compact */}
+        <div className="bg-[#273C62] rounded-lg shadow px-3 py-3 sm:px-4 sm:py-3 mb-6 border border-transparent">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+            <div className="inline-flex rounded-full border border-white/30 overflow-hidden self-start">
+              <button
+                onClick={() => setQuickRangeDays(7)}
+                className="px-3 py-1.5 text-xs sm:text-sm text-white/90 hover:bg-white/10"
+              >
+                {t("admin.statistics.timeFilter.quickFilters.days7")}
+              </button>
+              <button
+                onClick={() => setQuickRangeDays(14)}
+                className="px-3 py-1.5 text-xs sm:text-sm text-white/90 border-l border-white/30 hover:bg-white/10"
+              >
+                {t("admin.statistics.timeFilter.quickFilters.days14")}
+              </button>
+              <button
+                onClick={() => setQuickRangeDays(30)}
+                className="px-3 py-1.5 text-xs sm:text-sm text-white/90 border-l border-white/30 hover:bg-white/10"
+              >
+                {t("admin.statistics.timeFilter.quickFilters.days30")}
+              </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-              <div className="w-full lg:col-span-2">
-                <label
-                  htmlFor="stat-start-date"
-                  className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("admin.statistics.timeFilter.fromDate")}
-                </label>
-                <input
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) =>
-                    setDateRange({ ...dateRange, startDate: e.target.value })
-                  }
-                  id="stat-start-date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="w-full lg:col-span-2">
-                <label
-                  htmlFor="stat-end-date"
-                  className="block text-xs sm:text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("admin.statistics.timeFilter.toDate")}
-                </label>
-                <input
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) =>
-                    setDateRange({ ...dateRange, endDate: e.target.value })
-                  }
-                  id="stat-end-date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="flex items-end lg:col-span-1">
-                <button
-                  onClick={handleDateRangeChange}
-                  disabled={seriesLoading}
-                  className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 rounded-md transition-colors ${
-                    seriesLoading
-                      ? "bg-primary-300 cursor-not-allowed"
-                      : "bg-primary-500 hover:bg-primary-600 text-white"
-                  }`}
-                >
-                  {seriesLoading
-                    ? t("admin.statistics.applying")
-                    : t("admin.statistics.apply")}
-                </button>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, startDate: e.target.value })
+                }
+                className="px-2 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="hidden sm:inline text-gray-400">—</span>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, endDate: e.target.value })
+                }
+                className="px-2 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={handleDateRangeChange}
+                disabled={seriesLoading}
+                className={`inline-flex items-center justify-center px-3 sm:px-4 py-2 text-sm rounded-md transition-colors ${
+                  seriesLoading
+                    ? "bg-primary-300 cursor-not-allowed"
+                    : "bg-primary-500 hover:bg-primary-600 text-white"
+                }`}
+              >
+                {seriesLoading
+                  ? t("admin.statistics.applying")
+                  : t("admin.statistics.apply")}
+              </button>
             </div>
           </div>
         </div>
@@ -586,8 +563,19 @@ const OverviewStats = ({
     return null;
   };
 
+  const formatDateTick = (tick) => {
+    try {
+      return new Date(tick).toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+    } catch {
+      return tick;
+    }
+  };
+
   const renderLegend = () => (
-    <div className="flex justify-end pr-2">
+    <div className="flex justify-end pr-2 -mt-5">
       <div className="text-xs flex items-center gap-2 text-gray-700">
         <span
           className="w-2.5 h-2.5 rounded-full"
@@ -601,17 +589,17 @@ const OverviewStats = ({
   return (
     <div className="space-y-6">
       {/* Key Metrics - reflect date-range where meaningful */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-6">
+        <div className="bg-blue-100 rounded-xl shadow-sm border border-blue-200 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
                 <svg
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
                   fill="currentColor"
-                  className="text-blue-600"
+                  className="text-white"
                 >
                   <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V20h14v-3.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V20h6v-3.5c0-2.33-4.67-3.5-7-3.5z" />
                 </svg>
@@ -621,23 +609,27 @@ const OverviewStats = ({
               <p className="text-sm font-medium text-gray-500">
                 {t("admin.statistics.overviewStats.totalUsers")}
               </p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-3xl font-semibold text-blue-900 leading-tight">
                 {formatNumber(data.totalUsers || 0)}
               </p>
+              <div className="mt-1 text-xs text-blue-800/80 inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>
+                <span>người dùng trong hệ thống</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
+        <div className="bg-green-100 rounded-xl shadow-sm border border-green-200 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center shadow-sm">
                 <svg
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
                   fill="currentColor"
-                  className="text-green-600"
+                  className="text-white"
                 >
                   <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 13L3.74 11 12 6.82 20.26 11 12 16zm-6 2h12v2H6z" />
                 </svg>
@@ -647,23 +639,27 @@ const OverviewStats = ({
               <p className="text-sm font-medium text-gray-500">
                 {t("admin.statistics.metrics.totalStudents")}
               </p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-3xl font-semibold text-green-900 leading-tight">
                 {formatNumber(data.students || 0)}
               </p>
+              <div className="mt-1 text-xs text-green-800/80 inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+                <span>sinh viên tham gia</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
+        <div className="bg-purple-100 rounded-xl shadow-sm border border-purple-200 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center shadow-sm">
                 <svg
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
                   fill="currentColor"
-                  className="text-purple-600"
+                  className="text-white"
                 >
                   <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                 </svg>
@@ -673,9 +669,13 @@ const OverviewStats = ({
               <p className="text-sm font-medium text-gray-500">
                 {t("admin.statistics.overviewStats.totalTeachers")}
               </p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-3xl font-semibold text-purple-900 leading-tight">
                 {formatNumber(data.teachers || 0)}
               </p>
+              <div className="mt-1 text-xs text-purple-800/80 inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
+                <span>giảng viên trong hệ thống</span>
+              </div>
             </div>
           </div>
         </div>
@@ -683,28 +683,38 @@ const OverviewStats = ({
 
       {/* Registrations Time Series */}
       <div className="bg-white rounded-lg shadow p-4 sm:p-5 md:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            {t("admin.statistics.overviewStats.chartTitle")}
-          </h3>
+        <div className="mb-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-1.5 h-5 bg-primary-500 rounded"></span>
+            <h3 className="text-lg font-semibold text-gray-900 tracking-tight m-0">
+              {t("admin.statistics.overviewStats.chartTitle")}
+            </h3>
+          </div>
+          <div className="mt-2 h-0.5 bg-gradient-to-r from-primary-500/70 via-primary-500/30 to-transparent rounded"></div>
         </div>
-        <div className="w-full h-72">
+        <div className="w-full h-96 md:h-[22rem]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={totalSeries}
-              margin={{ top: 6, right: 16, left: 0, bottom: 8 }}
+              margin={{ top: 12, right: 24, left: 8, bottom: 12 }}
             >
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid
+                strokeDasharray="4 8"
+                stroke="#e2e8f0"
+                fill="#fff7ed"
+                fillOpacity={0.7}
+              />
               <XAxis
                 dataKey="date"
+                tickFormatter={formatDateTick}
                 tick={{ fontSize: 12, fill: "#6b7280" }}
-                tickMargin={8}
+                tickMargin={10}
               />
               <YAxis
                 tick={{ fontSize: 12, fill: "#6b7280" }}
@@ -725,7 +735,7 @@ const OverviewStats = ({
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#colorTotal)"
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 5, stroke: "#2563eb", strokeWidth: 2 }}
                 connectNulls
               />
               <Line
@@ -733,11 +743,17 @@ const OverviewStats = ({
                 dataKey="count"
                 name=""
                 stroke="#2563eb"
-                strokeWidth={2.5}
-                dot={false}
+                strokeWidth={2.75}
+                dot={{ r: 2.5, stroke: "#2563eb" }}
                 activeDot={{ r: 0 }}
                 connectNulls
                 strokeLinecap="round"
+              />
+              <Brush
+                height={20}
+                travellerWidth={8}
+                stroke="#cbd5e1"
+                tickFormatter={formatDateTick}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -1276,22 +1292,22 @@ const PeriodStats = ({
               styles={{
                 control: (provided, state) => ({
                   ...provided,
-                  borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
-                  boxShadow: state.isFocused ? "0 0 0 1px #3b82f6" : "none",
+                  borderColor: state.isFocused ? "#ff6600" : "#d1d5db",
+                  boxShadow: state.isFocused ? "0 0 0 2px #ea580c33" : "none",
                   "&:hover": {
-                    borderColor: "#3b82f6",
+                    borderColor: "#ea580c",
                   },
                 }),
                 option: (provided, state) => ({
                   ...provided,
                   backgroundColor: state.isSelected
-                    ? "#3b82f6"
+                    ? "#ff6600"
                     : state.isFocused
-                    ? "#dbeafe"
+                    ? "#fb923c33"
                     : "white",
-                  color: state.isSelected ? "white" : "#374151",
+                  color: state.isSelected ? "white" : "#1f2937",
                   "&:hover": {
-                    backgroundColor: state.isSelected ? "#3b82f6" : "#dbeafe",
+                    backgroundColor: state.isSelected ? "#ff6600" : "#fb923c33",
                   },
                 }),
                 singleValue: (provided) => ({

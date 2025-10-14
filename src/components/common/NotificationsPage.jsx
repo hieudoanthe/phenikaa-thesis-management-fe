@@ -1,127 +1,101 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Select from "react-select";
+import { useNotifications } from "../../contexts/NotificationContext";
 
-const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const NotificationsPage = ({ receiverId }) => {
+  const { notifications, loadNotifications, markAllAsRead, markAsRead } =
+    useNotifications();
+
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isMarkingAll, setIsMarkingAll] = useState(false);
-  const [timeTick, setTimeTick] = useState(0);
+  const [effectiveList, setEffectiveList] = useState([]);
 
   useEffect(() => {
-    try {
-      const initial = Array.isArray(window.__studentNotifications)
-        ? window.__studentNotifications
-        : [];
-      setNotifications(initial);
-      setLoading(false);
-    } catch (_) {
-      setLoading(false);
+    loadNotifications(receiverId, {}, { summarize: false });
+  }, [receiverId]);
+
+  // Fallback hiển thị danh sách từ WS (student/lecturer) nếu context chưa có dữ liệu
+  useEffect(() => {
+    const getWindowList = () => {
+      try {
+        if (Array.isArray(window.__studentNotifications))
+          return window.__studentNotifications;
+      } catch {}
+      try {
+        if (Array.isArray(window.__lecturerNotifications))
+          return window.__lecturerNotifications;
+      } catch {}
+      return [];
+    };
+
+    if (Array.isArray(notifications) && notifications.length > 0) {
+      setEffectiveList(notifications);
+    } else {
+      setEffectiveList(getWindowList());
     }
 
-    const handler = (evt) => {
+    const onStudent = (evt) => {
       const list = evt?.detail;
-      if (Array.isArray(list)) setNotifications(list);
+      if (
+        Array.isArray(list) &&
+        (!notifications || notifications.length === 0)
+      ) {
+        setEffectiveList(list);
+      }
     };
-    window.addEventListener("app:student-notifications", handler);
-    return () =>
-      window.removeEventListener("app:student-notifications", handler);
-  }, []);
+    const onLecturer = (evt) => {
+      const list = evt?.detail;
+      if (
+        Array.isArray(list) &&
+        (!notifications || notifications.length === 0)
+      ) {
+        setEffectiveList(list);
+      }
+    };
 
-  useEffect(() => {
-    const id = setInterval(() => setTimeTick((t) => t + 1), 60000);
-    return () => clearInterval(id);
-  }, []);
-
-  const formatRelativeTime = (createdAtMs) => {
-    if (!createdAtMs) return "Vừa xong";
-    const diff = Math.max(0, Date.now() - createdAtMs);
-    const sec = Math.floor(diff / 1000);
-    if (sec < 60) return "Vừa xong";
-    const min = Math.floor(sec / 60);
-    if (min < 60) return `${min} phút trước`;
-    const hr = Math.floor(min / 60);
-    if (hr < 24) return `${hr} giờ trước`;
-    const day = Math.floor(hr / 24);
-    if (day < 7) return `${day} ngày trước`;
-    const week = Math.floor(day / 7);
-    if (week < 4) return `${week} tuần trước`;
-    const month = Math.floor(day / 30);
-    if (month < 12) return `${month} tháng trước`;
-    const year = Math.floor(day / 365);
-    return `${year} năm trước`;
-  };
+    window.addEventListener("app:student-notifications", onStudent);
+    window.addEventListener("app:lecturer-notifications", onLecturer);
+    return () => {
+      window.removeEventListener("app:student-notifications", onStudent);
+      window.removeEventListener("app:lecturer-notifications", onLecturer);
+    };
+  }, [notifications]);
 
   const filtered = useMemo(() => {
-    let list = notifications;
-    if (filterStatus === "unread") list = list.filter((n) => !n.isRead);
-    if (filterStatus === "read") list = list.filter((n) => n.isRead);
+    let list =
+      Array.isArray(notifications) && notifications.length > 0
+        ? notifications
+        : effectiveList || [];
+    if (filterStatus === "unread") list = list.filter((n) => !n?.isRead);
+    if (filterStatus === "read") list = list.filter((n) => n?.isRead);
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       list = list.filter(
         (n) =>
-          n.title?.toLowerCase().includes(q) ||
-          n.message?.toLowerCase().includes(q)
+          n?.title?.toLowerCase().includes(q) ||
+          n?.message?.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [notifications, filterStatus, searchTerm]);
+  }, [notifications, effectiveList, filterStatus, searchTerm]);
 
-  const handleMarkAllAsRead = async () => {
-    if (isMarkingAll) return;
+  const unreadCount = (
+    Array.isArray(notifications) && notifications.length > 0
+      ? notifications
+      : effectiveList || []
+  ).filter((n) => !n?.isRead).length;
+
+  const handleMarkAll = async () => {
+    if (isMarkingAll || unreadCount === 0) return;
     try {
       setIsMarkingAll(true);
-      // Không gọi API, phát sự kiện để StudentLayout xử lý nếu cần; ở đây chỉ cập nhật local
-      setNotifications((prev) => {
-        const updated = prev.map((n) => ({ ...n, isRead: true }));
-        try {
-          window.__studentNotifications = updated;
-          window.dispatchEvent(
-            new CustomEvent("app:student-notifications", { detail: updated })
-          );
-        } catch (_) {}
-        if (typeof window !== "undefined" && window.addToast) {
-          window.addToast("Đã đánh dấu tất cả thông báo là đã đọc", "success");
-        }
-        return updated;
-      });
+      await markAllAsRead(receiverId);
+      setEffectiveList((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } finally {
       setIsMarkingAll(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-          <p className="mt-4 text-gray-600">Đang tải danh sách thông báo...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-        <div className="text-center py-12">
-          <p className="text-error-500 mb-4">
-            Không thể tải danh sách thông báo
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-hover transition-colors duration-200"
-          >
-            Thử lại
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <div className="p-6">
@@ -191,7 +165,7 @@ const Notifications = () => {
               />
             </div>
             <button
-              onClick={handleMarkAllAsRead}
+              onClick={handleMarkAll}
               disabled={isMarkingAll || unreadCount === 0}
               className="px-3 py-2 bg-secondary text-white rounded-lg disabled:opacity-50"
             >
@@ -218,14 +192,14 @@ const Notifications = () => {
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex-1">
                     <div className="text-sm font-semibold text-gray-900 mb-1">
-                      {n.title}
+                      {n.title || "Thông báo"}
                     </div>
                     <div className="text-sm text-gray-700 leading-relaxed">
                       {n.message}
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 whitespace-nowrap">
-                    {formatRelativeTime(n.createdAt, timeTick)}
+                    {n.time}
                   </div>
                 </div>
               </div>
@@ -237,4 +211,4 @@ const Notifications = () => {
   );
 };
 
-export default Notifications;
+export default NotificationsPage;

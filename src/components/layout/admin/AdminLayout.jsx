@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SidebarOfAdmin from "./SidebarOfAdmin.jsx";
@@ -6,6 +6,8 @@ import AdminHeader from "./AdminHeader.jsx";
 import AdminFooter from "./AdminFooter.jsx";
 import BackToTopButton from "../../common/BackToTopButton.jsx";
 import { logout, getRefreshToken } from "../../../auth/authUtils";
+import { useNotifications } from "../../../contexts/NotificationContext";
+import { WS_ENDPOINTS } from "../../../config/api";
 
 const AdminLayout = () => {
   const { t } = useTranslation();
@@ -15,8 +17,25 @@ const AdminLayout = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
+  const {
+    notifications,
+    loadNotifications,
+    markAllAsRead,
+    markAsRead,
+    addNotification,
+  } = useNotifications();
+
   const location = useLocation();
   const navigate = useNavigate();
+
+  // WebSocket refs/state
+  const wsRef = useRef(null);
+  const heartbeatTimerRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const connectTimeRef = useRef(0);
+  const bufferedCountRef = useRef(0);
+  const bufferToastTimerRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
 
   // Hàm lấy tiêu đề dựa trên route hiện tại
   const getPageTitle = () => {
@@ -124,9 +143,16 @@ const AdminLayout = () => {
   };
 
   // Toggle notification dropdown
-  const handleToggleNotification = () => {
-    setIsNotificationOpen(!isNotificationOpen);
+  const handleToggleNotification = async () => {
+    const next = !isNotificationOpen;
+    setIsNotificationOpen(next);
     setIsUserDropdownOpen(false); // Đóng user dropdown nếu đang mở
+    if (next) {
+      // refresh list when opening
+      try {
+        await loadNotifications(1, {}, { summarize: false });
+      } catch (_) {}
+    }
   };
 
   // Toggle user dropdown
@@ -160,30 +186,196 @@ const AdminLayout = () => {
     }
   };
 
-  // Mock data cho notifications
-  const notifications = [
-    {
-      id: 1,
-      title: t("admin.notifications.newTeacher"),
-      message: t("admin.notifications.newTeacherMessage"),
-      time: t("admin.notifications.twoHoursAgo"),
-      isRead: false,
-    },
-    {
-      id: 2,
-      title: t("admin.notifications.topicsNeedApproval"),
-      message: t("admin.notifications.topicsNeedApprovalMessage"),
-      time: t("admin.notifications.fiveHoursAgo"),
-      isRead: false,
-    },
-    {
-      id: 3,
-      title: t("admin.notifications.systemReport"),
-      message: t("admin.notifications.systemReportMessage"),
-      time: t("admin.notifications.oneDayAgo"),
-      isRead: false,
-    },
-  ];
+  // Load notifications lần đầu
+  useEffect(() => {
+    loadNotifications(1, {}, { summarize: true });
+  }, []);
+
+  // --- WebSocket helpers (the same behavior as student/lecturer) ---
+  const normalizeWsBaseUrl = (base) => {
+    try {
+      const url = new URL(base, window.location.origin);
+      const isHttps = window.location.protocol === "https:";
+      url.protocol = isHttps ? "wss:" : "ws:";
+      return url.toString().replace(/\/$/, "");
+    } catch (_) {
+      if (typeof base === "string") {
+        const scheme =
+          window.location.protocol === "https:" ? "wss://" : "ws://";
+        return base.replace(/^ws(s)?:\/\//, scheme).replace(/\/$/, "");
+      }
+      return base;
+    }
+  };
+
+  const buildNotificationsWsUrl = (receiverId) => {
+    const base = normalizeWsBaseUrl(WS_ENDPOINTS.NOTIFICATIONS);
+    return `${base}?receiverId=${encodeURIComponent(receiverId)}`;
+  };
+
+  const clearHeartbeatTimer = () => {
+    if (heartbeatTimerRef.current) {
+      clearInterval(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+  };
+
+  const startHeartbeat = () => {
+    clearHeartbeatTimer();
+    heartbeatTimerRef.current = setInterval(() => {
+      try {
+        const ws = wsRef.current;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send("ping");
+        }
+      } catch (_) {}
+    }, 25000);
+  };
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  };
+
+  const scheduleReconnect = () => {
+    const attempt = reconnectAttemptsRef.current + 1;
+    reconnectAttemptsRef.current = attempt;
+    const delay = Math.min(8000, 1000 * Math.pow(2, attempt));
+    clearReconnectTimer();
+    reconnectTimerRef.current = setTimeout(() => {
+      connectWebSocket();
+    }, delay);
+  };
+
+  const handleIncomingMessage = (evt) => {
+    try {
+      const raw = evt?.data;
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw || {};
+
+      const handleOne = (dataObj) => {
+        if (!dataObj || typeof dataObj !== "object") return;
+
+        const notifId =
+          dataObj.id ||
+          `${dataObj.senderId || ""}-${dataObj.createdAt || Date.now()}`;
+
+        const messageText =
+          dataObj.message ||
+          dataObj.content ||
+          dataObj.text ||
+          "Bạn có thông báo mới";
+
+        const createdAtMs =
+          typeof dataObj.createdAt === "number"
+            ? dataObj.createdAt
+            : Date.now();
+
+        const newNotification = {
+          id: notifId,
+          title: "Thông báo",
+          message: messageText,
+          time: new Date(createdAtMs).toLocaleString(),
+          createdAt: createdAtMs,
+          isRead: dataObj.read === true ? true : false,
+        };
+
+        // Đẩy vào context để UI cập nhật + toast theo quy tắc đã định
+        addNotification(newNotification);
+
+        // Buffer tổng hợp trong giai đoạn đầu (tuỳ chọn): nếu cần giống sinh viên
+        const inInitialBuffer = Date.now() - connectTimeRef.current <= 800;
+        if (inInitialBuffer && !newNotification.isRead) {
+          bufferedCountRef.current += 1;
+          if (bufferToastTimerRef.current) {
+            clearTimeout(bufferToastTimerRef.current);
+          }
+          bufferToastTimerRef.current = setTimeout(() => {
+            bufferedCountRef.current = 0;
+            bufferToastTimerRef.current = null;
+          }, 1000);
+        }
+      };
+
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item) => handleOne(item));
+      } else {
+        handleOne(parsed);
+      }
+    } catch (_) {}
+  };
+
+  const connectWebSocket = () => {
+    try {
+      const receiverId = 1; // Admin ID cố định
+      if (!receiverId) return;
+
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+        try {
+          wsRef.current.close();
+        } catch (_) {}
+      }
+
+      const url = buildNotificationsWsUrl(receiverId);
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        reconnectAttemptsRef.current = 0;
+        clearReconnectTimer();
+        connectTimeRef.current = Date.now();
+        bufferedCountRef.current = 0;
+        if (bufferToastTimerRef.current) {
+          clearTimeout(bufferToastTimerRef.current);
+          bufferToastTimerRef.current = null;
+        }
+        startHeartbeat();
+      };
+
+      ws.onmessage = (evt) => {
+        handleIncomingMessage(evt);
+      };
+
+      ws.onerror = () => {};
+
+      ws.onclose = () => {
+        scheduleReconnect();
+        connectTimeRef.current = 0;
+        clearHeartbeatTimer();
+        if (bufferToastTimerRef.current) {
+          clearTimeout(bufferToastTimerRef.current);
+          bufferToastTimerRef.current = null;
+        }
+      };
+    } catch (_) {
+      scheduleReconnect();
+    }
+  };
+
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      try {
+        if (wsRef.current) {
+          wsRef.current.onopen = null;
+          wsRef.current.onmessage = null;
+          wsRef.current.onerror = null;
+          wsRef.current.onclose = null;
+          wsRef.current.close();
+        }
+        if (bufferToastTimerRef.current) {
+          clearTimeout(bufferToastTimerRef.current);
+          bufferToastTimerRef.current = null;
+        }
+        if (heartbeatTimerRef.current) {
+          clearInterval(heartbeatTimerRef.current);
+          heartbeatTimerRef.current = null;
+        }
+        clearReconnectTimer();
+      } catch (_) {}
+    };
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -226,6 +418,9 @@ const AdminLayout = () => {
           onToggleNotification={handleToggleNotification}
           onToggleUserDropdown={handleToggleUserDropdown}
           onLogout={handleLogout}
+          onRefreshNotifications={() => loadNotifications(1)}
+          onMarkAllAsRead={() => markAllAsRead(1)}
+          onMarkAsRead={markAsRead}
         />
 
         {/* Main content */}

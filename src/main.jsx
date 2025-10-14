@@ -8,7 +8,6 @@ import LecturerDashboard from "./pages/lecturer/Dashboard.jsx";
 import ThesisManagement from "./pages/lecturer/ThesisManagement.jsx";
 import AssignmentManagement from "./pages/lecturer/AssignmentManagement.jsx";
 import TeacherProfile from "./pages/lecturer/TeacherProfile.jsx";
-import NotiOfTeacher from "./pages/lecturer/NotiOfTeacher.jsx";
 import LecturerLayout from "./components/layout/lecturer/LecturerLayout.jsx";
 import LecturerRoute from "./routers/LecturerRoute.jsx";
 import StudentRoute from "./routers/StudentRoute.jsx";
@@ -24,7 +23,6 @@ import ThesisRegister from "./pages/student/ThesisRegister.jsx";
 import TopicRegistration from "./pages/student/TopicRegistration.jsx";
 import StudentHome from "./pages/student/Home.jsx";
 import StudentSchedule from "./pages/student/Schedule.jsx";
-import StudentNotifications from "./pages/student/Notifications.jsx";
 import StudentChat from "./pages/student/Chat.jsx";
 import LecturerChat from "./pages/lecturer/Chat.jsx";
 import StudentProfile from "./pages/student/StudentProfile.jsx";
@@ -48,6 +46,8 @@ import RegistrationPeriodManagement from "./pages/admin/RegistrationPeriodManage
 import StudentPeriodManagement from "./pages/admin/StudentPeriodManagement.jsx";
 import StatisticsDashboard from "./pages/admin/StatisticsDashboard.jsx";
 import AdminProfile from "./pages/admin/AdminProfile.jsx";
+import NotificationsPage from "./components/common/NotificationsPage.jsx";
+import { getUserIdFromToken } from "./auth/authUtils";
 // Import CSS
 import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
@@ -119,7 +119,12 @@ createRoot(document.getElementById("root")).render(
                   }
                 />
                 <Route path="chat" element={<LecturerChat />} />
-                <Route path="notifications" element={<NotiOfTeacher />} />
+                <Route
+                  path="notifications"
+                  element={
+                    <NotificationsPage receiverId={getUserIdFromToken()} />
+                  }
+                />
                 <Route path="settings" element={<LecturerSettings />} />
               </Route>
 
@@ -147,7 +152,9 @@ createRoot(document.getElementById("root")).render(
                 <Route path="chat" element={<StudentChat />} />
                 <Route
                   path="notifications"
-                  element={<StudentNotifications />}
+                  element={
+                    <NotificationsPage receiverId={getUserIdFromToken()} />
+                  }
                 />
                 <Route path="my-thesis" element={<MyThesis />} />
                 <Route path="assignments" element={<AssignmentsDetail />} />
@@ -163,7 +170,9 @@ createRoot(document.getElementById("root")).render(
                 element={
                   <AdminRoute>
                     <ProfileProvider userType="admin">
-                      <AdminLayout />
+                      <NotificationProvider>
+                        <AdminLayout />
+                      </NotificationProvider>
                     </ProfileProvider>
                   </AdminRoute>
                 }
@@ -203,12 +212,7 @@ createRoot(document.getElementById("root")).render(
                 <Route path="statistics" element={<StatisticsDashboard />} />
                 <Route
                   path="notifications"
-                  element={
-                    <PlaceholderPage
-                      title="Thông báo"
-                      description="Tính năng quản lý thông báo đang được phát triển."
-                    />
-                  }
+                  element={<NotificationsPage receiverId={1} />}
                 />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="profile" element={<AdminProfile />} />

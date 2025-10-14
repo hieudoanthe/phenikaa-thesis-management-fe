@@ -97,6 +97,9 @@ export const NotificationProvider = ({ children }) => {
 
       if (isSuccess) {
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        try {
+          toast.success("Đã đánh dấu tất cả là đã đọc");
+        } catch {}
         return true;
       } else {
         if (
@@ -105,17 +108,26 @@ export const NotificationProvider = ({ children }) => {
           response?.statusCode === 200
         ) {
           setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+          try {
+            toast.success("Đã đánh dấu tất cả là đã đọc");
+          } catch {}
           return true;
         }
 
         setError(
           response?.message || "Không thể đánh dấu tất cả thông báo đã đọc"
         );
+        try {
+          toast.error("Không thể đánh dấu tất cả là đã đọc");
+        } catch {}
         return false;
       }
     } catch (error) {
       console.error("Lỗi khi đánh dấu tất cả thông báo đã đọc:", error);
       setError("Đã xảy ra lỗi khi đánh dấu thông báo đã đọc");
+      try {
+        toast.error("Đã xảy ra lỗi khi đánh dấu tất cả là đã đọc");
+      } catch {}
       return false;
     } finally {
       setLoading(false);

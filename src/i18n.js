@@ -513,7 +513,7 @@ const resources = {
           grades: "Điểm số",
           apply: "Áp dụng",
           applying: "Đang áp dụng...",
-          totalRegistrations: "Tổng (đăng ký + đề xuất)",
+          totalRegistrations: "Tổng đăng ký và đề xuất",
           errorLoadingData: "Lỗi khi tải dữ liệu thống kê",
           errorLoadingPeriods: "Lỗi khi tải danh sách đợt đăng ký",
           invalidDateRange: "Khoảng thời gian không hợp lệ",
@@ -531,7 +531,7 @@ const resources = {
           overviewStats: {
             totalUsers: "Tổng người dùng",
             totalTeachers: "Tổng giảng viên",
-            chartTitle: "Biểu đồ đăng ký và đề xuất theo ngày",
+            chartTitle: "Xu hướng đăng ký",
             dayPrefix: "Ngày",
           },
           periodStats: {
