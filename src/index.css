@@ -23,6 +23,45 @@
   color: white !important;
 }
 
+/* Mobile-friendly toast sizing */
+@media (max-width: 640px) {
+  .Toastify__toast-container {
+    width: auto !important;
+    max-width: min(320px, 90vw) !important; 
+    padding: 0 !important;
+    right: 8px !important;
+    left: auto !important;
+  }
+
+  /* Compact toast card */
+  .Toastify__toast {
+    min-height: 42px !important;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    margin: 6px 0 !important;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  /* Compact body spacing */
+  .Toastify__toast-body {
+    margin: 0 !important;
+  }
+
+  /* Smaller icon */
+  .Toastify__toast-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Smaller close button */
+  .Toastify__close-button {
+    width: 28px !important;
+    height: 28px !important;
+  }
+}
+
 /* Default toast base (neutral). Use per-type colors below */
 .Toastify__toast {
   background: #ffffff !important;
