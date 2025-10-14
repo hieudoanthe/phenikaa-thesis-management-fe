@@ -6,8 +6,7 @@ export const APP_CONFIG = {
 };
 
 // Base URLs from environment
-const HTTP_BASE_URL =
-  import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080";
+const HTTP_BASE_URL = import.meta.env.VITE_MAIN_API_BASE_URL;
 const WS_BASE_URL_ENV = import.meta.env.VITE_WS_BASE_URL || null;
 
 // Derive WS base from HTTP base if not explicitly provided

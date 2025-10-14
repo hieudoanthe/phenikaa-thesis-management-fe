@@ -464,7 +464,7 @@ const AcademicYearManagement = () => {
                 result = await academicYearService.createAcademicYear(yearData);
                 if (result.success) {
                   showToast(
-                    "Tạo năm học thành công! Năm học đã được tạo với trạng thái 'Không hoạt động'. Bạn có thể kích hoạt trong danh sách."
+                    "Tạo năm học thành công! Hãy kích hoạt năm học trong danh sách."
                   );
                 } else {
                   showToast(result.message || "Không thể tạo năm học", "error");

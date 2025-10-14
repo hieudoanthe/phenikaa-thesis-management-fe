@@ -7,7 +7,7 @@ import {
 } from "../auth/authUtils";
 
 const MAIN_API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_MAIN_API_BASE_URL || "http://localhost:8080",
+  BASE_URL: import.meta.env.VITE_MAIN_API_BASE_URL,
   TIMEOUT: 300000, // 5 phút để phù hợp với server timeout
 };
 

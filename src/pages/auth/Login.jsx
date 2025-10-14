@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import useAuthHook from "../../hooks/useAuth";
 import Select from "react-select";
 import { toast } from "react-toastify";
+import ForgotPasswordModal from "../../components/modals/ForgotPasswordModal";
+import ChangePasswordModal from "../../components/modals/ChangePasswordModal";
 
 // Helper hiển thị toast sử dụng react-toastify
 const showToast = (message, type = "success") => {
@@ -28,6 +30,8 @@ const PhenikaaLogin = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const BASE_URL = import.meta.env.VITE_MAIN_API_BASE_URL;
 
@@ -196,11 +200,11 @@ const PhenikaaLogin = () => {
   };
 
   const handleChangePassword = () => {
-    alert("Chức năng Đổi mật khẩu chưa được lập trình.");
+    setShowChangePasswordModal(true);
   };
 
   const handleForgotPassword = () => {
-    alert("Chức năng Quên mật khẩu chưa được lập trình.");
+    setShowForgotPasswordModal(true);
   };
 
   const handleKeyDown = (e, action) => {
@@ -217,7 +221,7 @@ const PhenikaaLogin = () => {
       borderRadius: 8,
       minHeight: 44,
       fontWeight: 600,
-      fontSize: "1rem",
+      fontSize: "16px",
     }),
     option: (base, state) => ({
       ...base,
@@ -265,6 +269,34 @@ const PhenikaaLogin = () => {
           input:-webkit-autofill:active {
             -webkit-box-shadow: 0 0 0 30px #f9fafb inset !important;
             -webkit-text-fill-color: #374151 !important;
+          }
+          
+          /* Ngăn zoom trên iOS Safari */
+          input[type="email"],
+          input[type="password"],
+          input[type="text"],
+          select,
+          textarea {
+            font-size: 16px !important;
+            -webkit-text-size-adjust: 100%;
+            -webkit-appearance: none;
+          }
+          
+          /* Đảm bảo Select component không bị zoom */
+          .react-select__control {
+            font-size: 16px !important;
+          }
+          
+          .react-select__input {
+            font-size: 16px !important;
+          }
+          
+          .react-select__single-value {
+            font-size: 16px !important;
+          }
+          
+          .react-select__placeholder {
+            font-size: 16px !important;
           }
         `}
       </style>
@@ -357,7 +389,7 @@ const PhenikaaLogin = () => {
                       minHeight: "44px",
                       height: "44px",
                       fontWeight: 600,
-                      fontSize: "0.875rem",
+                      fontSize: "16px",
                     }),
                   }}
                 />
@@ -384,7 +416,8 @@ const PhenikaaLogin = () => {
                   autoComplete="username"
                   spellCheck="false"
                   placeholder=" "
-                  className="w-full h-11 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-gray-50 peer autofill:bg-gray-50"
+                  className="w-full h-11 px-3 sm:px-4 py-2.5 sm:py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-gray-50 peer autofill:bg-gray-50"
+                  style={{ fontSize: "16px" }}
                 />
                 <label
                   htmlFor="usernameInput"
@@ -411,7 +444,8 @@ const PhenikaaLogin = () => {
                     spellCheck="false"
                     aria-describedby="passwordToggleDesc"
                     placeholder=" "
-                    className="w-full h-11 px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 text-sm sm:text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-white peer autofill:bg-white"
+                    className="w-full h-11 px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-info focus:shadow-focus bg-white peer autofill:bg-white"
+                    style={{ fontSize: "16px" }}
                   />
                   <button
                     type="button"
@@ -591,6 +625,17 @@ const PhenikaaLogin = () => {
 
         {/* Toasts hiển thị qua ToastContainer (global) */}
       </main>
+
+      {/* Modals */}
+      <ForgotPasswordModal
+        isOpen={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
+
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+      />
     </>
   );
 };

@@ -71,20 +71,24 @@ const ImportStudentsToPeriodModal = ({
 
     setIsLoading(true);
     try {
-      const response = await importService.importStudentsFromCSV(
+      const result = await importService.importStudentsFromCSV(
         file,
         periodId,
         academicYearId
       );
 
-      if (response.success) {
+      if (result.success) {
+        const successCount = result?.data?.successCount ?? 0;
+        const errorCount = result?.data?.errorCount ?? 0;
         toast.success(
-          `Nhập danh sách sinh viên thành công: ${response.successCount} sinh viên đã được thêm vào đợt "${periodName}"`
+          `Nhập danh sách sinh viên thành công: ${successCount} sinh viên được thêm vào đợt "${periodName}"${
+            errorCount ? `, ${errorCount} lỗi` : ""
+          }`
         );
         onImportSuccess?.();
         handleClose();
       } else {
-        toast.error(response.message || "Nhập danh sách sinh viên thất bại");
+        toast.error(result.message || "Nhập danh sách sinh viên thất bại!");
       }
     } catch (error) {
       console.error("Lỗi khi nhập danh sách sinh viên:", error);

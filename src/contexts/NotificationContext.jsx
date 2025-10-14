@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useRef } from "react";
+import { toast } from "react-toastify";
 import { getUserIdFromToken } from "../auth/authUtils";
 import notificationService from "../services/notification.service";
 
@@ -18,9 +19,15 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // tránh spam toast trên dev/StrictMode
+  const summarizedRef = useRef(false);
 
   // Load thông báo từ API
-  const loadNotifications = async (receiverId, params = {}) => {
+  const loadNotifications = async (
+    receiverId,
+    params = {},
+    options = { summarize: false }
+  ) => {
     try {
       setLoading(true);
       setError(null);
@@ -36,6 +43,25 @@ export const NotificationProvider = ({ children }) => {
         response?.data || response?.content || response || [];
 
       setNotifications(notifications);
+
+      // Tùy chọn: hiển thị tóm tắt số lượng chưa đọc
+      if (options?.summarize && !summarizedRef.current) {
+        summarizedRef.current = true;
+        try {
+          const unread = notifications.filter((n) => !n?.isRead);
+          const unreadCount = unread.length;
+
+          if (unreadCount === 1) {
+            const n = unread[0];
+            const message = n?.message || n?.title || "Bạn có 1 thông báo mới";
+            toast.info(message, { toastId: `notif-single-${n?.id || "x"}` });
+          } else if (unreadCount > 1) {
+            toast.info(`Bạn có ${unreadCount} thông báo chưa đọc`, {
+              toastId: `notif-summary-${unreadCount}`,
+            });
+          }
+        } catch {}
+      }
       return {
         success: true,
         data: notifications,
@@ -70,12 +96,9 @@ export const NotificationProvider = ({ children }) => {
         response?.message?.toLowerCase().includes("thành công");
 
       if (isSuccess) {
-        // Cập nhật state local
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
         return true;
       } else {
-        // Kiểm tra xem có phải do backend trả về success: false mặc dù DB đã cập nhật không
-        // Nếu response có data hoặc status 200, coi như thành công
         if (
           response?.data ||
           response?.status === 200 ||
@@ -105,10 +128,8 @@ export const NotificationProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Gọi API để đánh dấu đã đọc
       const response = await notificationService.markAsRead(notificationId);
 
-      // Kiểm tra response
       const isSuccess =
         response?.success === true ||
         response?.status === 200 ||
@@ -123,8 +144,6 @@ export const NotificationProvider = ({ children }) => {
         );
         return true;
       } else {
-        // Kiểm tra xem có phải do backend trả về success: false mặc dù DB đã cập nhật không
-        // Nếu response có data hoặc status 200, coi như thành công
         if (
           response?.data ||
           response?.status === 200 ||
@@ -147,9 +166,24 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  // Thêm thông báo mới (từ WebSocket)
+  // Thêm thông báo mới (từ WebSocket) + quy tắc toast:
+  // Luôn ưu tiên hiển thị chi tiết thông báo mới tới, bất kể có bao nhiêu chưa đọc.
   const addNotification = (notification) => {
-    setNotifications((prev) => [notification, ...prev]);
+    setNotifications((prev) => {
+      const next = [notification, ...prev];
+      try {
+        if (!notification?.isRead) {
+          const message =
+            notification?.message ||
+            notification?.title ||
+            "Bạn có 1 thông báo mới";
+          toast.info(message, {
+            toastId: `notif-single-${notification?.id || Date.now()}`,
+          });
+        }
+      } catch {}
+      return next;
+    });
   };
 
   // Cập nhật thông báo
@@ -164,7 +198,6 @@ export const NotificationProvider = ({ children }) => {
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
   };
 
-  // Clear error
   const clearError = () => {
     setError(null);
   };

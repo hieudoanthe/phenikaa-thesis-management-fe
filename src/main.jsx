@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ToastContainer } from "react-toastify";
 import App from "./App.jsx";
+import ResetPassword from "./pages/auth/ResetPassword.jsx";
 import UserManagement from "./pages/admin/UserManagement.jsx";
 import LecturerDashboard from "./pages/lecturer/Dashboard.jsx";
 import ThesisManagement from "./pages/lecturer/ThesisManagement.jsx";
@@ -62,6 +63,7 @@ createRoot(document.getElementById("root")).render(
               {/* Route công khai - trang đăng nhập */}
               <Route path="/" element={<App />} />
               <Route path="/login" element={<App />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Route yêu cầu xác thực - Lecturer (chỉ cho TEACHER role) */}
               <Route
