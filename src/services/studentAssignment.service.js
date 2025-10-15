@@ -95,6 +95,31 @@ const studentAssignmentService = {
   },
 
   /**
+   * Lấy danh sách sinh viên chưa hoàn thiện (chưa đăng ký/đề xuất) theo đợt đăng ký
+   */
+  getIncompleteStudentsByPeriod: async (periodId, page = 0, size = 6) => {
+    try {
+      if (!periodId) {
+        console.warn("periodId không được cung cấp, trả về mảng rỗng");
+        return [];
+      }
+      const response = await apiGet(
+        API_ENDPOINTS.GET_INCOMPLETE_STUDENTS_BY_PERIOD.replace(
+          "{periodId}",
+          periodId
+        ) + `?page=${page}&size=${size}`
+      );
+      return response;
+    } catch (error) {
+      console.error(
+        "Lỗi khi lấy danh sách sinh viên chưa hoàn thiện theo đợt:",
+        error
+      );
+      throw error;
+    }
+  },
+
+  /**
    * Lấy danh sách đề tài được đề xuất và đã duyệt
    * @returns {Promise<Array>} Danh sách đề tài được đề xuất
    */

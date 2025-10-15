@@ -29,9 +29,11 @@ export const AdminSettingsSection = ({ settings, updateSettings }) => {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-lg font-semibold">Admin Settings</h3>
+            <h3 className="text-lg font-semibold">
+              {t("settingsPage.admin.title")}
+            </h3>
             <p className="text-sm opacity-90">
-              Advanced system configuration and management
+              {t("settingsPage.admin.subtitle")}
             </p>
           </div>
         </div>
@@ -166,16 +168,16 @@ export const AdminSettingsSection = ({ settings, updateSettings }) => {
               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
             />
           </svg>
-          Advanced Admin Features
+          {t("settingsPage.admin.advancedFeatures")}
         </h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <label className="text-sm font-medium text-red-700">
-                System Maintenance Mode
+                {t("settingsPage.admin.maintenanceMode")}
               </label>
               <p className="text-xs text-red-600">
-                Enable maintenance mode to restrict access
+                {t("settingsPage.admin.maintenanceModeDesc")}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -194,10 +196,10 @@ export const AdminSettingsSection = ({ settings, updateSettings }) => {
           <div className="flex items-center justify-between">
             <div>
               <label className="text-sm font-medium text-red-700">
-                Debug Mode
+                {t("settingsPage.admin.debugMode")}
               </label>
               <p className="text-xs text-red-600">
-                Enable detailed logging and error reporting
+                {t("settingsPage.admin.debugModeDesc")}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">

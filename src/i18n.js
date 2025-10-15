@@ -247,11 +247,28 @@ const resources = {
           logRetentionDays: "Số ngày lưu log",
           maxFileSize: "Kích thước file tối đa",
         },
+        admin: {
+          title: "Cài đặt Quản trị viên",
+          subtitle: "Cấu hình và quản lý hệ thống nâng cao",
+          advancedFeatures: "Tính năng Quản trị viên nâng cao",
+          maintenanceMode: "Chế độ bảo trì hệ thống",
+          maintenanceModeDesc: "Bật chế độ bảo trì để hạn chế truy cập",
+          debugMode: "Chế độ debug",
+          debugModeDesc: "Bật ghi log chi tiết và báo cáo lỗi",
+        },
+        student: {
+          title: "Cài đặt Sinh viên",
+          subtitle: "Tùy chỉnh học tập và học thuật",
+        },
+        teacher: {
+          title: "Cài đặt Giảng viên",
+          subtitle: "Tùy chỉnh chấm điểm và giảng dạy",
+        },
         security: {
           title: "Bảo mật",
           twoFactorAuth: "Xác thực 2 yếu tố",
           twoFactorAuthDesc: "Bật xác thực 2 yếu tố",
-          sessionTimeout: "Thời gian timeout session",
+          sessionTimeout: "Thời gian phiên làm việc",
           sessionTimeoutDesc: "Thời gian tự động đăng xuất",
           minutes: "phút",
           requireStrongPassword: "Yêu cầu mật khẩu mạnh",
@@ -434,7 +451,7 @@ const resources = {
           statistics: "Thống kê",
           userManagement: "Quản lý người dùng",
           academicYear: "Quản lý năm học",
-          studentManagement: "Quản lý sinh viên",
+          studentManagement: "Phân chia sinh viên",
           notifications: "Thông báo",
           settings: "Cài đặt",
           registrationManagement: "Quản lý ĐKTT",
@@ -451,7 +468,8 @@ const resources = {
           },
           userManagement: {
             title: "Quản lý người dùng",
-            subtitle: "Quản lý tài khoản sinh viên, giảng viên và quản trị viên",
+            subtitle:
+              "Quản lý tài khoản sinh viên, giảng viên và quản trị viên",
           },
           assignments: {
             title: "Quản lý nhiệm vụ",

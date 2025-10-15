@@ -3,6 +3,7 @@ import { showToast } from "../../utils/toastHelper";
 import { apiPost } from "../../services/mainHttpClient";
 import importService from "../../services/import.service";
 import ConfirmModal from "./ConfirmModal";
+import studentAssignmentService from "../../services/studentAssignment.service";
 
 const ManageStudentsModal = ({
   isOpen,
@@ -21,9 +22,12 @@ const ManageStudentsModal = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6);
+  const [viewMode, setViewMode] = useState("imported"); // imported | incomplete
 
   useEffect(() => {
     if (isOpen && periodId) {
+      // mặc định hiển thị danh sách đã nhập
+      setViewMode("imported");
       loadStudents();
     }
   }, [isOpen, periodId]);
@@ -74,7 +78,11 @@ const ManageStudentsModal = ({
 
       const response = await apiPost(
         "/api/communication-service/admin/send-period-email",
-        requestData
+        {
+          ...requestData,
+          type: viewMode === "incomplete" ? "REMINDER" : "ANNOUNCEMENT",
+          reminderOnlyIncomplete: viewMode === "incomplete",
+        }
       );
 
       // Debug logging
@@ -225,6 +233,48 @@ const ManageStudentsModal = ({
   const endIndex = startIndex + itemsPerPage;
   const currentStudents = filteredStudents.slice(startIndex, endIndex);
 
+  const loadIncompleteStudents = async () => {
+    if (!periodId) return;
+    setLoading(true);
+    try {
+      const res = await studentAssignmentService.getIncompleteStudentsByPeriod(
+        periodId,
+        0,
+        1000
+      );
+      const content = res?.content || res || [];
+      // Map về shape giống danh sách đã nhập để tái sử dụng UI
+      const mapped = content.map((s) => {
+        const studentCode =
+          s.studentCode ||
+          (s.username &&
+          typeof s.username === "string" &&
+          !s.username.includes("@")
+            ? s.username
+            : "");
+        const email =
+          s.username && s.username.includes("@")
+            ? s.username
+            : studentCode
+            ? `${studentCode}@st.phenikaa-uni.edu.vn`
+            : "";
+        return {
+          userId: s.studentId,
+          fullName: s.fullName || `Sinh viên ${s.studentId}`,
+          email,
+          createdAt: null,
+        };
+      });
+      setStudents(mapped);
+      setViewMode("incomplete");
+      setCurrentPage(1);
+    } catch (e) {
+      showToast("Không thể tải danh sách sinh viên chưa hoàn thiện", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -235,59 +285,71 @@ const ManageStudentsModal = ({
           <h2 className="text-xl font-semibold text-gray-900 m-0">
             Quản lý sinh viên - {periodName}
           </h2>
-          <button
-            onClick={openConfirmAndSend}
-            disabled={
-              sendingEmail || periodStatus === "CLOSED" || students.length === 0
-            }
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {sendingEmail ? (
-              <>
-                <svg
-                  className="w-4 h-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Đang gửi...
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-                {periodStatus === "CLOSED"
-                  ? "Đợt đã kết thúc"
-                  : students.length === 0
-                  ? "Chưa có sinh viên"
-                  : "Gửi thông báo"}
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setViewMode("imported");
+                loadStudents();
+              }}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                viewMode === "imported"
+                  ? "bg-primary-500 text-white hover:bg-primary-400"
+                  : "bg-gray-200 text-gray-900 hover:bg-gray-300"
+              }`}
+              title="Xem tất cả sinh viên đã nhập"
+            >
+              Tất cả sinh viên
+            </button>
+            <button
+              onClick={loadIncompleteStudents}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                viewMode === "imported"
+                  ? "bg-gray-200 text-gray-900 hover:bg-gray-300"
+                  : "bg-primary-500 text-white hover:bg-primary-400"
+              }`}
+              title="Xem sinh viên chưa hoàn thiện"
+            >
+              Sinh viên chưa hoàn thiện
+            </button>
+            <button
+              onClick={openConfirmAndSend}
+              disabled={
+                sendingEmail ||
+                periodStatus === "CLOSED" ||
+                students.length === 0
+              }
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sendingEmail ? (
+                <>
+                  <svg
+                    className="w-4 h-4 animate-spin"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Đang gửi...
+                </>
+              ) : viewMode === "incomplete" ? (
+                "Nhắc nhở"
+              ) : (
+                "Gửi thông báo"
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -348,9 +410,11 @@ const ManageStudentsModal = ({
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ngày thêm
-                    </th>
+                    {viewMode !== "incomplete" && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngày thêm
+                      </th>
+                    )}
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Thao tác
                     </th>
@@ -368,9 +432,11 @@ const ManageStudentsModal = ({
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {student.email}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(student.createdAt)}
-                      </td>
+                      {viewMode !== "incomplete" && (
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(student.createdAt)}
+                        </td>
+                      )}
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button
                           onClick={() => openRemoveConfirm(student)}

@@ -35,9 +35,11 @@ export const StudentSettingsSection = ({ settings, updateSettings }) => {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-lg font-semibold">Student Settings</h3>
+            <h3 className="text-lg font-semibold">
+              {t("settingsPage.student.title")}
+            </h3>
             <p className="text-sm opacity-90">
-              Academic and learning preferences
+              {t("settingsPage.student.subtitle")}
             </p>
           </div>
         </div>

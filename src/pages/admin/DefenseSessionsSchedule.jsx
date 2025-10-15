@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import LoadingButton from "../../components/common/LoadingButton";
 import Select from "react-select";
 import { evalService } from "../../services/evalService";
 import studentAssignmentService from "../../services/studentAssignment.service";
@@ -1591,6 +1592,8 @@ const CreateScheduleModal = ({
   const [selectedReviewers, setSelectedReviewers] = useState([]);
   const [teacherOptions, setTeacherOptions] = useState([]);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const loadTeachers = async () => {
@@ -1715,7 +1718,7 @@ const CreateScheduleModal = ({
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Kiểm tra giới hạn theo lịch bảo vệ
@@ -1754,12 +1757,29 @@ const CreateScheduleModal = ({
       return;
     }
 
-    onSubmit({
-      ...formData,
-      committeeMembers: selectedTeachers,
-      reviewerMembers: selectedReviewers,
-    });
-    onClose();
+    const nextErrors = {};
+    if (!formData.date) nextErrors.date = "Vui lòng chọn ngày";
+    if (!formData.time) nextErrors.time = "Vui lòng chọn thời gian";
+    if (!formData.room) nextErrors.room = "Vui lòng chọn phòng";
+    if (!formData.topic.trim()) nextErrors.topic = "Vui lòng nhập chủ đề";
+    if (selectedTeachers.length === 0)
+      nextErrors.committeeMembers = "Vui lòng chọn thành viên hội đồng";
+    if (selectedReviewers.length === 0)
+      nextErrors.reviewerMembers = "Vui lòng chọn giảng viên phản biện";
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    try {
+      setSubmitting(true);
+      await onSubmit({
+        ...formData,
+        committeeMembers: selectedTeachers,
+        reviewerMembers: selectedReviewers,
+      });
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -1801,14 +1821,19 @@ const CreateScheduleModal = ({
                 id="date-input"
                 type="date"
                 value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, date: e.target.value });
+                  if (fieldErrors.date)
+                    setFieldErrors({ ...fieldErrors, date: "" });
+                }}
                 className="w-full h-12 px-4 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-[#ff6600] focus:ring-2 focus:ring-[rgba(255,102,0,0.1)] bg-white"
                 required
                 min={minDateStr || undefined}
                 max={maxDateStr || undefined}
               />
+              {fieldErrors.date && (
+                <p className="mt-2 text-sm text-red-600">{fieldErrors.date}</p>
+              )}
               {formData.date && (
                 <div
                   className={`mt-2 text-sm px-3 py-2 rounded-lg border ${
@@ -1848,9 +1873,11 @@ const CreateScheduleModal = ({
                 value={timeOptions.find(
                   (option) => option.value === formData.time
                 )}
-                onChange={(option) =>
-                  setFormData({ ...formData, time: option.value })
-                }
+                onChange={(option) => {
+                  setFormData({ ...formData, time: option.value });
+                  if (fieldErrors.time)
+                    setFieldErrors({ ...fieldErrors, time: "" });
+                }}
                 options={timeOptions}
                 className="react-select-container"
                 classNamePrefix="react-select"
@@ -1878,6 +1905,9 @@ const CreateScheduleModal = ({
                   }),
                 }}
               />
+              {fieldErrors.time && (
+                <p className="mt-2 text-sm text-red-600">{fieldErrors.time}</p>
+              )}
             </div>
           </div>
 
@@ -1894,9 +1924,11 @@ const CreateScheduleModal = ({
                 value={roomOptions.find(
                   (option) => option.value === formData.room
                 )}
-                onChange={(option) =>
-                  setFormData({ ...formData, room: option.value })
-                }
+                onChange={(option) => {
+                  setFormData({ ...formData, room: option.value });
+                  if (fieldErrors.room)
+                    setFieldErrors({ ...fieldErrors, room: "" });
+                }}
                 options={roomOptions}
                 className="react-select-container"
                 classNamePrefix="react-select"
@@ -1924,6 +1956,9 @@ const CreateScheduleModal = ({
                   }),
                 }}
               />
+              {fieldErrors.room && (
+                <p className="mt-2 text-sm text-red-600">{fieldErrors.room}</p>
+              )}
             </div>
 
             <div>
@@ -1938,9 +1973,9 @@ const CreateScheduleModal = ({
                 value={statusOptions.find(
                   (option) => option.value === formData.status
                 )}
-                onChange={(option) =>
-                  setFormData({ ...formData, status: option.value })
-                }
+                onChange={(option) => {
+                  setFormData({ ...formData, status: option.value });
+                }}
                 options={statusOptions}
                 className="react-select-container"
                 classNamePrefix="react-select"
@@ -1977,9 +2012,11 @@ const CreateScheduleModal = ({
                 id="topic-textarea"
                 placeholder=" "
                 value={formData.topic}
-                onChange={(e) =>
-                  setFormData({ ...formData, topic: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, topic: e.target.value });
+                  if (fieldErrors.topic)
+                    setFieldErrors({ ...fieldErrors, topic: "" });
+                }}
                 className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-[#ff6600] focus:ring-2 focus:ring-[rgba(255,102,0,0.1)] bg-white peer"
                 rows="3"
                 required
@@ -2015,6 +2052,8 @@ const CreateScheduleModal = ({
                   return;
                 }
                 setSelectedTeachers(selected || []);
+                if (fieldErrors.committeeMembers)
+                  setFieldErrors({ ...fieldErrors, committeeMembers: "" });
               }}
               options={teacherOptions}
               className="react-select-container"
@@ -2046,6 +2085,11 @@ const CreateScheduleModal = ({
                 }),
               }}
             />
+            {fieldErrors.committeeMembers && (
+              <p className="mt-2 text-sm text-red-600">
+                {fieldErrors.committeeMembers}
+              </p>
+            )}
           </div>
 
           <div>
@@ -2070,6 +2114,8 @@ const CreateScheduleModal = ({
                   return;
                 }
                 setSelectedReviewers(selected || []);
+                if (fieldErrors.reviewerMembers)
+                  setFieldErrors({ ...fieldErrors, reviewerMembers: "" });
               }}
               options={teacherOptions}
               className="react-select-container"
@@ -2101,6 +2147,11 @@ const CreateScheduleModal = ({
                 }),
               }}
             />
+            {fieldErrors.reviewerMembers && (
+              <p className="mt-2 text-sm text-red-600">
+                {fieldErrors.reviewerMembers}
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
@@ -2111,17 +2162,19 @@ const CreateScheduleModal = ({
             >
               Hủy
             </button>
-            <button
+            <LoadingButton
               type="submit"
+              isLoading={submitting}
               disabled={!isFormValid()}
+              loadingText="Đang tạo..."
               className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                isFormValid()
+                isFormValid() && !submitting
                   ? "bg-primary-500 hover:bg-primary-400 text-white"
-                  : "bg-primary-300 cursor-not-allowed text-white"
+                  : "bg-primary-300 text-white"
               }`}
             >
               Tạo buổi bảo vệ
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>

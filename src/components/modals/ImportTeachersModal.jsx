@@ -98,11 +98,11 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={() => {
+        if (!isLoading) onClose();
+      }}
       onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          onClose();
-        }
+        if (e.key === "Escape" && !isLoading) onClose();
       }}
       role="button"
       tabIndex={0}
@@ -228,7 +228,8 @@ const ImportTeachersModal = ({ isOpen, onClose, onImportSuccess }) => {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={isLoading}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t("common.cancel")}
                 </button>

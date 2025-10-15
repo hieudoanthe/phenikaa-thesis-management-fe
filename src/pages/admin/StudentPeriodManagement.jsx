@@ -276,6 +276,12 @@ const StudentPeriodManagement = () => {
               effectivePage,
               effectiveSize
             );
+          case "incomplete":
+            return studentAssignmentService.getIncompleteStudentsByPeriod(
+              periodId,
+              effectivePage,
+              effectiveSize
+            );
           case "all":
           default:
             return studentAssignmentService.getAllStudentsByPeriod(
@@ -520,6 +526,7 @@ const StudentPeriodManagement = () => {
     { value: "all", label: "Tất cả sinh viên" },
     { value: "registered", label: "Sinh viên đăng ký" },
     { value: "suggested", label: "Sinh viên đề xuất" },
+    { value: "incomplete", label: "Sinh viên chưa hoàn thiện" },
   ];
 
   const statusFilterOptions = [
@@ -1348,16 +1355,6 @@ const StudentPeriodManagement = () => {
                 {autoAssigning || previewLoading
                   ? "Đang xử lý..."
                   : "Phân chia sinh viên"}
-              </button>
-              <button
-                onClick={() => {
-                  showToast("Tính năng đang được phát triển", "info");
-                }}
-                className="px-3 py-2 text-sm rounded-md text-white bg-orange-500 hover:bg-orange-400 transition-colors duration-200 flex items-center gap-1"
-                disabled={!selectedPeriod?.value}
-                title="Xem sinh viên chưa hoàn thiện đăng ký đề tài"
-              >
-                Sinh viên chưa hoàn thiện
               </button>
             </div>
           </div>

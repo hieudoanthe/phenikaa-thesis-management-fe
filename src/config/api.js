@@ -198,6 +198,8 @@ export const API_ENDPOINTS = {
     "/api/thesis-service/student-period/suggested/{periodId}",
   GET_ALL_STUDENTS_BY_PERIOD:
     "/api/thesis-service/student-period/all/{periodId}",
+  GET_INCOMPLETE_STUDENTS_BY_PERIOD:
+    "/api/thesis-service/student-period/incomplete/{periodId}",
 
   // Student Assignment to Defense Sessions
   ASSIGN_STUDENT_TO_SESSION:

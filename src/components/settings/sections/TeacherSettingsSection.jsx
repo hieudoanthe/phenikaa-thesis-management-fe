@@ -29,9 +29,11 @@ export const TeacherSettingsSection = ({ settings, updateSettings }) => {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-lg font-semibold">Teacher Settings</h3>
+            <h3 className="text-lg font-semibold">
+              {t("settingsPage.teacher.title")}
+            </h3>
             <p className="text-sm opacity-90">
-              Grading and teaching preferences
+              {t("settingsPage.teacher.subtitle")}
             </p>
           </div>
         </div>

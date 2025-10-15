@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import LoadingButton from "../../components/common/LoadingButton";
 import { evalService } from "../../services/evalService";
 import { showToast } from "../../utils/toastHelper";
 import academicYearService from "../../services/academicYear.service";
@@ -12,6 +13,7 @@ const DefenseScheduleManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const rootRef = useRef(null);
   const didInitRef = useRef(false);
   const [formData, setFormData] = useState({
@@ -23,6 +25,7 @@ const DefenseScheduleManagement = () => {
     description: "",
     createdBy: 1,
   });
+  const [fieldErrors, setFieldErrors] = useState({});
   const [registrationPeriods, setRegistrationPeriods] = useState([]);
   const latestRegistrationEndDate = useMemo(() => {
     if (!Array.isArray(registrationPeriods) || registrationPeriods.length === 0)
@@ -111,18 +114,21 @@ const DefenseScheduleManagement = () => {
         const start = formData.startDate ? new Date(formData.startDate) : null;
         if (!start || start <= latestEnd) {
           const d = new Date(latestEnd.getTime() + 24 * 60 * 60 * 1000);
-          showToast(
-            `Ngày bắt đầu lịch bảo vệ phải sau ${latestEnd.toLocaleDateString(
+          setFieldErrors((prev) => ({
+            ...prev,
+            startDate: `Ngày bắt đầu phải sau ${latestEnd.toLocaleDateString(
               "vi-VN"
             )} (chọn từ ${d.toLocaleDateString("vi-VN")})`,
-            "error"
-          );
+          }));
           return;
+        } else {
+          setFieldErrors((prev) => ({ ...prev, startDate: "" }));
         }
       }
     } catch (_) {}
 
     try {
+      setSubmitting(true);
       if (editingSchedule) {
         await evalService.updateDefenseSchedule(
           editingSchedule.scheduleId,
@@ -139,6 +145,8 @@ const DefenseScheduleManagement = () => {
     } catch (error) {
       showToast(t("admin.defenseSchedule.saveError"));
       console.error(t("admin.defenseSchedule.error"), error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -428,6 +436,9 @@ const DefenseScheduleManagement = () => {
           editingSchedule={editingSchedule}
           latestRegistrationEndDate={latestRegistrationEndDate}
           isFormValid={isFormValid}
+          fieldErrors={fieldErrors}
+          setFieldErrors={setFieldErrors}
+          submitting={submitting}
         />
       )}
     </div>
@@ -444,6 +455,9 @@ const ScheduleModal = ({
   editingSchedule,
   latestRegistrationEndDate,
   isFormValid,
+  fieldErrors,
+  setFieldErrors,
+  submitting,
 }) => {
   if (!isOpen) return null;
 
@@ -485,39 +499,21 @@ const ScheduleModal = ({
               now.getMonth(),
               now.getDate()
             );
-
-            if (!name) {
-              alert("Vui lòng nhập tên lịch bảo vệ");
-              return;
-            }
-            if (!yearId && yearId !== 0) {
-              alert("Vui lòng chọn năm học");
-              return;
-            }
-            if (!start) {
-              alert("Vui lòng chọn ngày bắt đầu");
-              return;
-            }
-            if (!end) {
-              alert("Vui lòng chọn ngày kết thúc");
-              return;
-            }
-            if (!location) {
-              alert("Vui lòng nhập địa điểm");
-              return;
-            }
-            if (!description) {
-              alert("Vui lòng nhập mô tả");
-              return;
-            }
-            if (start < today) {
-              alert("Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại");
-              return;
-            }
-            if (end <= start) {
-              alert("Ngày kết thúc phải lớn hơn ngày bắt đầu");
-              return;
-            }
+            const nextErrors = {};
+            if (!name)
+              nextErrors.scheduleName = "Vui lòng nhập tên lịch bảo vệ";
+            if (!yearId && yearId !== 0)
+              nextErrors.academicYearId = "Vui lòng chọn năm học";
+            if (!start) nextErrors.startDate = "Vui lòng chọn ngày bắt đầu";
+            if (!end) nextErrors.endDate = "Vui lòng chọn ngày kết thúc";
+            if (!location) nextErrors.location = "Vui lòng nhập địa điểm";
+            if (start && start < today)
+              nextErrors.startDate =
+                "Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại";
+            if (start && end && end <= start)
+              nextErrors.endDate = "Ngày kết thúc phải lớn hơn ngày bắt đầu";
+            setFieldErrors(nextErrors);
+            if (Object.keys(nextErrors).length > 0) return;
 
             onSubmit(e);
           }}
@@ -536,6 +532,11 @@ const ScheduleModal = ({
                 }
                 className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
               />
+              {fieldErrors.scheduleName && (
+                <p className="mt-1 text-sm text-red-600">
+                  {fieldErrors.scheduleName}
+                </p>
+              )}
               <label
                 htmlFor="scheduleName"
                 className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
@@ -559,6 +560,11 @@ const ScheduleModal = ({
                 setFormData({ ...formData, academicYearId: val })
               }
             />
+            {fieldErrors.academicYearId && (
+              <p className="mt-1 text-sm text-red-600">
+                {fieldErrors.academicYearId}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -584,19 +590,22 @@ const ScheduleModal = ({
                   const newStart = e.target.value;
                   if (!newStart) {
                     setFormData({ ...formData, startDate: "" });
+                    setFieldErrors((prev) => ({ ...prev, startDate: "" }));
                     return;
                   }
                   const start = new Date(newStart);
                   const latest = latestRegistrationEndDate;
                   if (latest && start <= latest) {
                     const d = new Date(latest.getTime() + 24 * 60 * 60 * 1000);
-                    alert(
-                      `Ngày bắt đầu phải sau ${latest.toLocaleDateString(
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      startDate: `Ngày bắt đầu phải sau ${latest.toLocaleDateString(
                         "vi-VN"
-                      )} (chọn từ ${d.toLocaleDateString("vi-VN")})`
-                    );
+                      )} (chọn từ ${d.toLocaleDateString("vi-VN")})`,
+                    }));
                     return;
                   }
+                  setFieldErrors((prev) => ({ ...prev, startDate: "" }));
                   const autoEnd = new Date(start);
                   autoEnd.setDate(autoEnd.getDate() + 1);
                   const autoEndStr = autoEnd.toISOString().split("T")[0];
@@ -611,6 +620,11 @@ const ScheduleModal = ({
                 }}
                 className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white"
               />
+              {fieldErrors.startDate && (
+                <p className="mt-1 text-sm text-red-600">
+                  {fieldErrors.startDate}
+                </p>
+              )}
             </div>
 
             <div>
@@ -633,13 +647,22 @@ const ScheduleModal = ({
                     : null;
                   const end = new Date(newEnd);
                   if (start && end <= start) {
-                    alert("Ngày kết thúc phải lớn hơn ngày bắt đầu");
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      endDate: "Ngày kết thúc phải lớn hơn ngày bắt đầu",
+                    }));
                     return;
                   }
+                  setFieldErrors((prev) => ({ ...prev, endDate: "" }));
                   setFormData({ ...formData, endDate: newEnd });
                 }}
                 className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white"
               />
+              {fieldErrors.endDate && (
+                <p className="mt-1 text-sm text-red-600">
+                  {fieldErrors.endDate}
+                </p>
+              )}
             </div>
           </div>
 
@@ -651,11 +674,21 @@ const ScheduleModal = ({
                 placeholder=" "
                 required
                 value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setFormData({ ...formData, location: v });
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    location: v.trim() ? "" : "Vui lòng nhập địa điểm",
+                  }));
+                }}
                 className="w-full px-4 py-3 text-base border-2 border-gray-300 rounded-lg outline-none transition-all duration-200 focus:border-primary-500 focus:shadow-lg bg-white peer"
               />
+              {fieldErrors.location && (
+                <p className="mt-1 text-sm text-red-600">
+                  {fieldErrors.location}
+                </p>
+              )}
               <label
                 htmlFor="location"
                 className="absolute top-3 left-4 text-base text-gray-500 transition-all duration-200 pointer-events-none bg-white px-1 peer-focus:text-primary-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:font-medium peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:text-sm peer-[:not(:placeholder-shown)]:font-medium"
@@ -694,17 +727,19 @@ const ScheduleModal = ({
             >
               Hủy
             </button>
-            <button
+            <LoadingButton
               type="submit"
+              isLoading={submitting}
               disabled={!isFormValid()}
-              className={`px-6 py-2.5 text-base font-medium text-white rounded-lg border-none cursor-pointer transition-all duration-200 min-w-[120px] ${
-                !isFormValid()
-                  ? "bg-primary-300 cursor-not-allowed"
+              loadingText="Đang lưu..."
+              className={`px-6 py-2.5 text-base font-medium text-white rounded-lg border-none transition-all duration-200 min-w-[120px] ${
+                !isFormValid() || submitting
+                  ? "bg-primary-300"
                   : "bg-primary-500 hover:bg-primary-400"
               }`}
             >
               {editingSchedule ? "Cập nhật" : "Tạo lịch bảo vệ"}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>

@@ -198,8 +198,22 @@ const NotificationsPage = ({ receiverId }) => {
                       {n.message}
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500 whitespace-nowrap">
-                    {n.time}
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-gray-500 whitespace-nowrap">
+                      {n.time}
+                    </div>
+                    {!n.isRead && (
+                      <button
+                        className="text-xs px-2 py-1 rounded-md bg-primary-500 text-white hover:opacity-90"
+                        onClick={async () => {
+                          try {
+                            await markAsRead(n.id);
+                          } catch (_) {}
+                        }}
+                      >
+                        Đánh dấu đã đọc
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

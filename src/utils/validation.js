@@ -193,3 +193,20 @@ export const formatFileSize = (bytes) => {
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
+
+// Validators with error-message outputs for form live validation
+export const validateEmailBasic = (email) => {
+  if (!email) return "Vui lòng nhập email";
+  const simpleEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+  if (!simpleEmailRegex.test(email)) return "Email không hợp lệ";
+  return "";
+};
+
+export const validatePasswordLogin = (password) => {
+  if (!password) return "Vui lòng nhập mật khẩu";
+  if (password.length < 8) return "Mật khẩu phải có ít nhất 8 ký tự";
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return "Mật khẩu phải chứa chữ và số";
+  }
+  return "";
+};

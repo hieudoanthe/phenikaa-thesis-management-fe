@@ -4,10 +4,7 @@ import {
   SettingsProvider,
   useSettings,
 } from "../../components/settings/SettingsProvider";
-import {
-  NotificationsSection,
-  AppearanceSection,
-} from "../../components/settings/sections/CommonSettingsSection";
+import { AppearanceSection } from "../../components/settings/sections/CommonSettingsSection";
 import { TeacherSettingsSection } from "../../components/settings/sections/TeacherSettingsSection";
 
 const LecturerSettingsContent = () => {
@@ -53,14 +50,9 @@ const LecturerSettingsContent = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
+        {/* Teacher Badge */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {t("settingsPage.title")}
-          </h1>
-          <p className="mt-2 text-gray-600">{t("settingsPage.subtitle")}</p>
-
-          {/* Teacher Badge */}
-          <div className="mt-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg shadow-lg">
+          <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg shadow-lg">
             <svg
               className="w-5 h-5 mr-2"
               fill="currentColor"
@@ -72,16 +64,13 @@ const LecturerSettingsContent = () => {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-semibold">Teacher Settings</span>
+            <span className="font-semibold">
+              {t("settingsPage.teacher.title")}
+            </span>
           </div>
         </div>
 
         <div className="space-y-6">
-          <NotificationsSection
-            settings={settings}
-            updateSettings={handleSettingsChange}
-          />
-
           <AppearanceSection
             settings={settings}
             updateSettings={handleSettingsChange}

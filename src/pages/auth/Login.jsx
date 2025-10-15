@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import {
+  validateEmailBasic,
+  validatePasswordLogin,
+} from "../../utils/validation";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import useAuthHook from "../../hooks/useAuth";
@@ -33,9 +37,17 @@ const PhenikaaLogin = () => {
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
+  // Live validation states
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   const BASE_URL = import.meta.env.VITE_MAIN_API_BASE_URL;
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
+
+  // Validators
+  const validateEmail = validateEmailBasic;
+  const validatePassword = validatePasswordLogin;
 
   // Helper function để chuyển đổi role thành tên hiển thị
   const getRoleDisplayName = (role) => {
@@ -53,6 +65,16 @@ const PhenikaaLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Final validate before submit
+    const emailErr = validateEmail(username);
+    const passErr = validatePassword(password);
+    setEmailError(emailErr);
+    setPasswordError(passErr);
+    if (emailErr || passErr) {
+      setError("Vui lòng kiểm tra lại thông tin đăng nhập");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -412,7 +434,11 @@ const PhenikaaLogin = () => {
                   name="username"
                   aria-required="true"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setUsername(value);
+                    setEmailError(validateEmail(value));
+                  }}
                   autoComplete="username"
                   spellCheck="false"
                   placeholder=" "
@@ -425,6 +451,11 @@ const PhenikaaLogin = () => {
                 >
                   Tên đăng nhập <span className="text-red-500">*</span>
                 </label>
+                {emailError && (
+                  <p className="mt-1 text-xs sm:text-sm text-red-500">
+                    {emailError}
+                  </p>
+                )}
               </div>
 
               {/* Password Input */}
@@ -439,7 +470,11 @@ const PhenikaaLogin = () => {
                     name="password"
                     aria-required="true"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setPassword(value);
+                      setPasswordError(validatePassword(value));
+                    }}
                     autoComplete="current-password"
                     spellCheck="false"
                     aria-describedby="passwordToggleDesc"
@@ -499,6 +534,11 @@ const PhenikaaLogin = () => {
                     Mật khẩu <span className="text-red-500">*</span>
                   </label>
                 </div>
+                {passwordError && (
+                  <p className="mt-1 text-xs sm:text-sm text-red-500">
+                    {passwordError}
+                  </p>
+                )}
               </div>
 
               {/* Error Message */}
@@ -532,7 +572,13 @@ const PhenikaaLogin = () => {
                 aria-label="Đăng nhập"
                 className="w-full bg-secondary hover:bg-secondary-hover text-white font-bold py-2.5 sm:py-3 text-sm sm:text-base rounded-lg cursor-pointer transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed fade-in relative"
                 style={{ animationDelay: "0.4s" }}
-                disabled={loading}
+                disabled={
+                  loading ||
+                  !!emailError ||
+                  !!passwordError ||
+                  !username ||
+                  !password
+                }
               >
                 {loading ? "Đang xử lý..." : "Đăng nhập"}
                 {loading && (
