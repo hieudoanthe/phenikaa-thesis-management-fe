@@ -207,7 +207,14 @@ const NotificationsPage = ({ receiverId }) => {
                         className="text-xs px-2 py-1 rounded-md bg-primary-500 text-white hover:opacity-90"
                         onClick={async () => {
                           try {
-                            await markAsRead(n.id);
+                            const ok = await markAsRead(n.id);
+                            if (ok) {
+                              setEffectiveList((prev) =>
+                                (Array.isArray(prev) ? prev : []).map((it) =>
+                                  it.id === n.id ? { ...it, isRead: true } : it
+                                )
+                              );
+                            }
                           } catch (_) {}
                         }}
                       >

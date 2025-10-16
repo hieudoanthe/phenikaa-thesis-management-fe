@@ -599,7 +599,7 @@ const LecturerDashboard = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8 relative -mt-16 z-10 px-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8 relative mt-4 md:-mt-16 z-10 px-4 md:px-6">
         {summaryItems.map((item, index) => (
           <div
             key={item.key}

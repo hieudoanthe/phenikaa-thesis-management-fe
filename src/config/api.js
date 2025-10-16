@@ -223,6 +223,7 @@ export const API_ENDPOINTS = {
   GET_CONVERSATION_HISTORY: "/chat/conversation/{userId1}/{userId2}",
   GET_USER_CONVERSATIONS: "/chat/conversations/{userId}",
   GET_RECENT_MESSAGES: "/chat/recent-messages/{userId}",
+  GET_CHAT_PARTNERS: "/chat/partners/{userId}",
 
   /**
    * Statistics APIs - Internal Services

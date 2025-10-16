@@ -294,7 +294,7 @@ const resources = {
         actionSubmitReport: "Nộp báo cáo",
         actionViewFeedback: "Xem phản hồi",
         actionCheckSchedule: "Kiểm tra lịch",
-        upcomingDeadlines: "Deadline sắp tới",
+        upcomingDeadlines: "Hạn sắp tới",
         due: "Hạn:",
         priorityHigh: "Cao",
         priorityMedium: "Trung bình",

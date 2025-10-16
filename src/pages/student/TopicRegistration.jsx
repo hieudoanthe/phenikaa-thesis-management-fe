@@ -285,6 +285,13 @@ const TopicRegistration = () => {
     }),
   };
 
+  // Styles cho Select trong banner, đảm bảo menu không bị che khuất
+  const periodSelectStyles = {
+    ...customSelectStyles,
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    menu: (base) => ({ ...base, zIndex: 9999 }),
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -300,21 +307,97 @@ const TopicRegistration = () => {
     <div className="max-w-full mx-auto p-3">
       {/* Chọn đợt đăng ký (nhiều đợt song song) */}
       {activePeriods.length > 0 && (
-        <div className="bg-gradient-to-r from-accent-50 to-accent-100 border border-accent-200 rounded-xl shadow-lg p-4 sm:p-6 mb-6">
-          <label className="block text-sm font-semibold text-accent-700 mb-2">
-            {t("topics.selectPeriod")}
-          </label>
-          <Select
-            value={
-              periodOptions.find((o) => o.value === selectedPeriodId) || null
-            }
-            onChange={(opt) => setSelectedPeriodId(opt?.value || null)}
-            options={periodOptions}
-            styles={customSelectStyles}
-            placeholder={t("topics.selectPeriodPlaceholder")}
-            isClearable={false}
-            className="text-sm"
+        <div className="relative mb-6">
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              background: "linear-gradient(135deg, #223A5B 0%, #2D4B78 100%)",
+            }}
           />
+          <div className="relative rounded-2xl p-4 sm:p-6 text-white ring-1 ring-white/10 shadow-lg">
+            <div className="pointer-events-none absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center shadow ring-1 ring-white/30">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="m-0 text-base sm:text-lg font-semibold text-white">
+                    {t("topics.selectPeriod")}
+                  </h3>
+                  {currentPeriod && (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                      <span className="text-white/90">
+                        {currentPeriod.periodName} •{" "}
+                        {new Date(currentPeriod.startDate).toLocaleDateString()}{" "}
+                        - {new Date(currentPeriod.endDate).toLocaleDateString()}
+                      </span>
+                      {(() => {
+                        try {
+                          const end = new Date(currentPeriod.endDate);
+                          const now = new Date();
+                          const days = Math.ceil(
+                            (end - now) / (1000 * 60 * 60 * 24)
+                          );
+                          const label =
+                            days > 0 ? `${days} ngày còn lại` : `Đã kết thúc`;
+                          const cls =
+                            days > 7
+                              ? "bg-white/15 text-white"
+                              : days > 0
+                              ? "bg-amber-400/20 text-amber-100 ring-1 ring-amber-300/40"
+                              : "bg-white/10 text-white/80 ring-1 ring-white/20";
+                          return (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[11px] sm:text-xs ${cls}`}
+                            >
+                              {label}
+                            </span>
+                          );
+                        } catch (_) {
+                          return null;
+                        }
+                      })()}
+                      <span className="px-2 py-0.5 rounded-full text-[11px] sm:text-xs bg-white/10 text-white/90 ring-1 ring-white/20">
+                        {activePeriods.length} đợt đang mở
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="min-w-[240px] lg:min-w-[340px] bg-white/95 rounded-xl p-1 shadow ring-1 ring-white/10">
+                <Select
+                  value={
+                    periodOptions.find((o) => o.value === selectedPeriodId) ||
+                    null
+                  }
+                  onChange={(opt) => setSelectedPeriodId(opt?.value || null)}
+                  options={periodOptions}
+                  styles={periodSelectStyles}
+                  menuPortalTarget={
+                    typeof window !== "undefined" ? document.body : null
+                  }
+                  menuPosition="fixed"
+                  menuPlacement="auto"
+                  placeholder={t("topics.selectPeriodPlaceholder")}
+                  isClearable={false}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+            <div className="mt-3 text-[11px] sm:text-xs text-white/80">
+              {t("topics.tipSelectPeriod", {
+                defaultValue:
+                  "Chọn đợt để lọc danh sách đề tài đang nhận đăng ký",
+              })}
+            </div>
+          </div>
         </div>
       )}
 

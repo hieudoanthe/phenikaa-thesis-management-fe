@@ -92,13 +92,27 @@ class ChatService {
   async getRecentMessages(userId) {
     try {
       const url = API_ENDPOINTS.GET_RECENT_MESSAGES.replace("{userId}", userId);
-      const response = await mainHttpClient.get(url, {
-        baseURL: COMMUNICATION_SERVICE_URL,
-      });
+      const response = await mainHttpClient.get(url);
       return response.data;
     } catch (error) {
       console.error("Lỗi khi lấy tin nhắn gần đây:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách đối tác chat đã từng nhắn (2 chiều) của user
+   * @param {string|number} userId
+   * @returns {Promise<string[]>}
+   */
+  async getChatPartners(userId) {
+    try {
+      const url = API_ENDPOINTS.GET_CHAT_PARTNERS.replace("{userId}", userId);
+      const response = await mainHttpClient.get(url);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách đối tác chat:", error);
+      return [];
     }
   }
 

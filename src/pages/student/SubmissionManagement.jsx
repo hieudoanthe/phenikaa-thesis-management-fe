@@ -602,8 +602,7 @@ const SubmissionManagement = () => {
       {!loadingTopics && confirmedTopics.length === 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
-            </div>
+            <div className="flex-shrink-0"></div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-yellow-800">
                 Chưa có đề tài nào được xác nhận
@@ -848,16 +847,16 @@ const SubmissionManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t("submission.table.topic")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                   {t("submission.table.type")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t("submission.table.file")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                   {t("submission.table.status")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
                   {t("submission.table.submittedAt")}
                 </th>
 
@@ -915,7 +914,7 @@ const SubmissionManagement = () => {
                           {getTopicInfo(submission.topicId).code}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden xl:table-cell">
                         {getSubmissionTypeText(submission.submissionType)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -971,10 +970,10 @@ const SubmissionManagement = () => {
                           <span className="text-gray-400">Không có file</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap hidden xl:table-cell">
                         {getStatusBadge(submission.status)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden xl:table-cell">
                         {new Date(submission.submittedAt).toLocaleDateString(
                           "vi-VN"
                         )}

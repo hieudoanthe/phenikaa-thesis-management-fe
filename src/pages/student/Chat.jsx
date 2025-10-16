@@ -55,10 +55,69 @@ const StudentChat = () => {
   const [showTeacherSelector, setShowTeacherSelector] = useState(false);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [errorTeachers, setErrorTeachers] = useState("");
+  const [teacherSearch, setTeacherSearch] = useState("");
 
   // Load lịch sử chat
   const [loadingChatHistory, setLoadingChatHistory] = useState(false);
   const [chatHistoryLoaded, setChatHistoryLoaded] = useState(false);
+  const partnersLoadedRef = useRef(false);
+  const [partnerIds, setPartnerIds] = useState([]);
+  const [loadingPartners, setLoadingPartners] = useState(true);
+  useEffect(() => {
+    const userId = getUserIdFromToken();
+    if (!userId) return;
+    (async () => {
+      try {
+        const partnerIds = await chatService.getChatPartners(userId);
+        if (Array.isArray(partnerIds) && partnerIds.length > 0) {
+          partnersLoadedRef.current = true;
+          setPartnerIds(partnerIds.map((x) => String(x)));
+        } else {
+          setLoadingPartners(false);
+        }
+      } catch (e) {
+        // ignore
+        setLoadingPartners(false);
+      }
+    })();
+  }, []);
+
+  // Khi đã có cả danh sách partnerIds và danh sách giảng viên, tạo hội thoại với tên thật
+  useEffect(() => {
+    if (partnerIds.length === 0 || teachers.length === 0) return;
+    const mapped = partnerIds
+      .map((pid) => {
+        const t = teachers.find((x) => String(x.id) === String(pid));
+        if (!t) return null;
+        return {
+          id: `cv_${pid}`,
+          topic: t.name || `Giảng viên ${pid}`,
+          unread: 0,
+          members: 2,
+          // Mặc định chưa có thời điểm cuối để tránh hiển thị "Vừa xong"
+          lastMessageAt: 0,
+          messages: [],
+          partnerId: String(pid),
+        };
+      })
+      .filter(Boolean);
+    if (mapped.length > 0) {
+      setConversations(mapped);
+      setActiveConvId(null);
+      setLoadingPartners(false);
+    }
+  }, [partnerIds, teachers]);
+
+  // Danh sách giảng viên sau khi lọc theo từ khoá tìm kiếm trong modal
+  const filteredTeachersInModal = useMemo(() => {
+    if (!teacherSearch) return teachers;
+    const q = teacherSearch.toLowerCase().trim();
+    return teachers.filter((t) =>
+      [t.name, t.email, t.specialization, t.department]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q))
+    );
+  }, [teacherSearch, teachers]);
 
   // Load lịch sử chat khi chọn giảng viên
   const loadChatHistory = useCallback(async (currentUserId, teacherId) => {
@@ -74,16 +133,20 @@ const StudentChat = () => {
 
       console.log("Lịch sử chat đã load:", historyMessages);
 
-      // Cập nhật conversations với lịch sử chat
+      // Cập nhật ĐÚNG conversation của teacherId được chọn
       setConversations((prev) =>
-        prev.map((conv) => ({
-          ...conv,
-          messages: historyMessages,
-          lastMessageAt:
-            historyMessages.length > 0
-              ? historyMessages[historyMessages.length - 1].time
-              : Date.now(),
-        }))
+        prev.map((conv) => {
+          const isThisPartner = String(conv.partnerId) === String(teacherId);
+          if (!isThisPartner) return conv;
+          return {
+            ...conv,
+            messages: historyMessages,
+            lastMessageAt:
+              historyMessages.length > 0
+                ? historyMessages[historyMessages.length - 1].time
+                : Date.now(),
+          };
+        })
       );
 
       setChatHistoryLoaded(true);
@@ -124,6 +187,43 @@ const StudentChat = () => {
           setTeachers(formattedTeachers);
           console.log("Danh sách giảng viên:", formattedTeachers);
 
+          // Tải danh sách đối tác chat đã từng nhắn để hiển thị trong sidebar
+          try {
+            const currentUserId = getUserIdFromToken();
+            if (currentUserId) {
+              const partnerIds = await chatService.getChatPartners(
+                currentUserId
+              );
+              if (Array.isArray(partnerIds) && partnerIds.length > 0) {
+                const partnerConversations = partnerIds
+                  .map((pid) => {
+                    const t = formattedTeachers.find(
+                      (x) => String(x.id) === String(pid)
+                    );
+                    return {
+                      id: `cv_${pid}`,
+                      topic: t?.name || `Giảng viên ${pid}`,
+                      unread: 0,
+                      members: 2,
+                      // Tránh hiển thị "Vừa xong" trước khi có lịch sử thật sự
+                      lastMessageAt: 0,
+                      messages: [],
+                      partnerId: String(pid),
+                    };
+                  })
+                  .filter(Boolean);
+
+                if (partnerConversations.length > 0) {
+                  setConversations(partnerConversations);
+                  // Không auto chọn; chờ người dùng click
+                  setActiveConvId(null);
+                }
+              }
+            }
+          } catch (e) {
+            console.log("Không thể tải danh sách đối tác chat:", e);
+          }
+
           // Tự động chọn giảng viên từ URL parameters nếu có
           const urlParams = new URLSearchParams(location.search);
           const teacherId = urlParams.get("teacherId");
@@ -135,10 +235,7 @@ const StudentChat = () => {
             }
           }
 
-          // Nếu không có teacherId trên URL, tự động chọn giảng viên đầu tiên
-          if (!teacherId && formattedTeachers.length > 0) {
-            setSelectedTeacher((prev) => prev || formattedTeachers[0]);
-          }
+          // Không tự động chọn giảng viên nếu không có teacherId trên URL
         } else {
           console.error("API không trả về array:", response);
           setErrorTeachers("API không trả về dữ liệu hợp lệ");
@@ -156,7 +253,7 @@ const StudentChat = () => {
     loadTeachers();
   }, [location.search]); // Thêm location.search vào dependencies
 
-  // Khởi tạo WebSocket chat và conversations
+  // Khởi tạo WebSocket chat và (chỉ tạo placeholder nếu chưa có partners)
   useEffect(() => {
     const userId = getUserIdFromToken();
     if (!userId) {
@@ -164,19 +261,20 @@ const StudentChat = () => {
       return;
     }
 
-    // Khởi tạo conversations mẫu (sẽ được cập nhật từ WebSocket)
-    const initialConversations = [
-      {
-        id: "cv1",
-        topic: "Chọn giảng viên để chat", // Hướng dẫn chọn giảng viên
-        unread: 0,
-        members: 0, // Chưa có ai
-        lastMessageAt: Date.now() - 1000 * 60 * 10,
-        messages: [],
-      },
-    ];
-    setConversations(initialConversations);
-    setActiveConvId(initialConversations[0]?.id || null);
+    if (!partnersLoadedRef.current) {
+      const initialConversations = [
+        {
+          id: "cv1",
+          topic: "Chọn giảng viên để chat", // Hướng dẫn chọn giảng viên
+          unread: 0,
+          members: 0, // Chưa có ai
+          lastMessageAt: Date.now() - 1000 * 60 * 10,
+          messages: [],
+        },
+      ];
+      setConversations(initialConversations);
+      setActiveConvId(initialConversations[0]?.id || null);
+    }
 
     // Chỉ kết nối WebSocket khi đã chọn giảng viên
     // WebSocket sẽ được kết nối sau khi chọn giảng viên
@@ -209,13 +307,17 @@ const StudentChat = () => {
     // Đánh dấu đang kết nối ngay khi đã có giảng viên
     setConnectionStatus("connecting");
 
-    // Cập nhật conversation topic với tên giảng viên đã chọn
     setConversations((prev) =>
-      prev.map((conv) => ({
-        ...conv,
-        topic: selectedTeacher.name || "Giảng viên",
-        members: 2,
-      }))
+      prev.map((conv) => {
+        const isThisPartner =
+          String(conv.partnerId) === String(selectedTeacher.id);
+        if (!isThisPartner) return conv;
+        return {
+          ...conv,
+          topic: selectedTeacher.name || "Giảng viên",
+          members: 2,
+        };
+      })
     );
 
     // Load lịch sử chat khi chọn giảng viên
@@ -280,6 +382,13 @@ const StudentChat = () => {
       processedMessagesRef.current.clear();
     };
   }, [selectedTeacher, loadChatHistory]); // Dependency vào selectedTeacher và loadChatHistory
+
+  useEffect(() => {
+    if (!activeConvId) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === activeConvId ? { ...c, unread: 0 } : c))
+    );
+  }, [activeConvId]);
 
   // Xử lý message từ WebSocket
   const handleWebSocketMessage = useCallback((data) => {
@@ -390,14 +499,18 @@ const StudentChat = () => {
               ...conv,
               messages: newMessages,
               lastMessageAt: newMessage.time,
-              unread: conv.unread + (newMessage.mine ? 0 : 1),
+              // Chỉ tăng unread nếu KHÔNG phải hội thoại đang mở và tin nhắn không phải của mình
+              unread:
+                newMessage.mine || (activeConvId && activeConvId === conv.id)
+                  ? conv.unread
+                  : conv.unread + 1,
             };
           }
           return conv;
         })
       );
     },
-    [conversations]
+    [conversations, activeConvId]
   );
 
   // Xử lý user join topic
@@ -467,6 +580,7 @@ const StudentChat = () => {
   };
 
   const formatRelative = (ms) => {
+    if (!ms) return "";
     const diff = Math.max(0, Date.now() - ms);
     const s = Math.floor(diff / 1000);
     if (s < 60) return "Vừa xong";
@@ -655,42 +769,81 @@ const StudentChat = () => {
                   <p className="text-gray-600">Không có giảng viên nào</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {teachers.map((teacher) => (
-                    <button
-                      key={teacher.id || teacher.userId}
-                      onClick={() => {
-                        setSelectedTeacher(teacher);
-                        setShowTeacherSelector(false);
-                      }}
-                      className={`w-full p-4 text-left rounded-lg border transition-all duration-200 hover:shadow-md ${
-                        selectedTeacher?.id === teacher.id
-                          ? "bg-blue-50 border-blue-300"
-                          : "bg-white border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-white font-semibold">
-                          {(teacher.name || "GV").charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-900">
-                            {teacher.name || "Giảng viên"}
-                          </div>
-                          {teacher.email && (
-                            <div className="text-sm text-gray-500">
-                              {teacher.email}
-                            </div>
-                          )}
-                          {teacher.specialization && (
-                            <div className="text-xs text-gray-400">
-                              {teacher.specialization}
-                            </div>
-                          )}
-                        </div>
+                <div>
+                  {/* Ô tìm kiếm trong modal */}
+                  <div className="mb-4">
+                    <input
+                      value={teacherSearch}
+                      onChange={(e) => setTeacherSearch(e.target.value)}
+                      placeholder="Tìm tên, email hoặc chuyên ngành..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60"
+                    />
+                  </div>
+
+                  <div className="space-y-3 max-h-[60vh] overflow-y-auto thin-scrollbar pr-1">
+                    {filteredTeachersInModal.length === 0 ? (
+                      <div className="text-center text-sm text-gray-500 py-8">
+                        Không tìm thấy giảng viên phù hợp
                       </div>
-                    </button>
-                  ))}
+                    ) : (
+                      filteredTeachersInModal.map((teacher) => (
+                        <button
+                          key={teacher.id || teacher.userId}
+                          onClick={() => {
+                            // Chọn giảng viên và đồng bộ hội thoại đang active
+                            const convId = `cv_${teacher.id}`;
+                            setConversations((prev) => {
+                              const exists = prev.some((c) => c.id === convId);
+                              if (exists) return prev;
+                              // Nếu chưa có, thêm hội thoại rỗng để hiển thị ngay
+                              return [
+                                {
+                                  id: convId,
+                                  topic: teacher.name || "Giảng viên",
+                                  unread: 0,
+                                  members: 2,
+                                  lastMessageAt: 0,
+                                  messages: [],
+                                  partnerId: String(teacher.id),
+                                },
+                                ...prev,
+                              ];
+                            });
+                            setActiveConvId(convId);
+                            setSelectedTeacher(teacher);
+                            setShowTeacherSelector(false);
+                            setTeacherSearch("");
+                          }}
+                          className={`w-full p-4 text-left rounded-lg border transition-all duration-200 hover:shadow-md ${
+                            selectedTeacher?.id === teacher.id
+                              ? "bg-blue-50 border-blue-300"
+                              : "bg-white border-gray-200 hover:border-gray-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-white font-semibold">
+                              {(teacher.name || "GV").charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-900">
+                                {teacher.name || "Giảng viên"}
+                              </div>
+                              {teacher.email && (
+                                <div className="text-sm text-gray-500">
+                                  {teacher.email}
+                                </div>
+                              )}
+                              {teacher.specialization && (
+                                <div className="text-xs text-gray-400">
+                                  {teacher.specialization}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -786,36 +939,55 @@ const StudentChat = () => {
 
           {/* Scrollable conversations list */}
           <div className="flex-1 overflow-y-auto thin-scrollbar p-2">
-            {filteredConversations.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setActiveConvId(c.id)}
-                className={`w-full text-left p-3 rounded-lg border mb-2 transition hover:bg-gray-50 ${
-                  activeConvId === c.id
-                    ? "bg-blue-50 border-blue-200"
-                    : "bg-white border-gray-200"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-gray-900 line-clamp-1">
-                    {c.topic}
+            {loadingPartners ? (
+              <div className="px-4 py-6 text-gray-500 text-sm">
+                Đang tải danh sách hội thoại...
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="px-4 py-6 text-gray-400 text-sm">
+                Chưa có hội thoại nào
+              </div>
+            ) : (
+              filteredConversations.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    setActiveConvId(c.id);
+                    // Nếu conversation đến từ danh sách đối tác, đồng bộ selectedTeacher
+                    if (c.partnerId) {
+                      const t = teachers.find(
+                        (x) => String(x.id) === String(c.partnerId)
+                      );
+                      if (t) setSelectedTeacher(t);
+                    }
+                  }}
+                  className={`w-full text-left p-3 rounded-lg border mb-2 transition hover:bg-gray-50 ${
+                    activeConvId === c.id
+                      ? "bg-blue-50 border-blue-200"
+                      : "bg-white border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-gray-900 line-clamp-1">
+                      {c.topic}
+                    </div>
+                    <div className="text-[11px] text-gray-500 whitespace-nowrap">
+                      {formatRelative(c.lastMessageAt)}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-gray-500 whitespace-nowrap">
-                    {formatRelative(c.lastMessageAt)}
+                  <div className="mt-1 flex items-center justify-between">
+                    <div className="text-xs text-gray-500">
+                      {c.members} members
+                    </div>
+                    {c.unread > 0 && (
+                      <span className="text-[10px] bg-blue-600 text-white rounded-full px-2 py-0.5">
+                        {c.unread}
+                      </span>
+                    )}
                   </div>
-                </div>
-                <div className="mt-1 flex items-center justify-between">
-                  <div className="text-xs text-gray-500">
-                    {c.members} members
-                  </div>
-                  {c.unread > 0 && (
-                    <span className="text-[10px] bg-blue-600 text-white rounded-full px-2 py-0.5">
-                      {c.unread}
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
+                </button>
+              ))
+            )}
           </div>
         </aside>
 

@@ -43,6 +43,7 @@ const LecturerChat = () => {
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [errorStudents, setErrorStudents] = useState("");
+  const [loadingPartners, setLoadingPartners] = useState(true);
 
   // Load danh sách sinh viên để hiển thị conversations
   useEffect(() => {
@@ -82,8 +83,7 @@ const LecturerChat = () => {
 
           setStudents(formattedStudents);
 
-          // Không tạo conversations ban đầu - chỉ hiển thị khi có tin nhắn
-          setConversations([]);
+          // Không xoá danh sách hội thoại đã có
         } else {
           // API không trả về dữ liệu hợp lệ
           setErrorStudents("API không trả về dữ liệu hợp lệ");
@@ -134,6 +134,7 @@ const LecturerChat = () => {
                 historyMessages.length > 0
                   ? historyMessages[historyMessages.length - 1].time
                   : Date.now(),
+              unread: 0,
             };
           }
           return conv;
@@ -150,14 +151,22 @@ const LecturerChat = () => {
     }
   }, []);
 
-  // Load lịch sử chat khi chọn conversation
+  // Khi người dùng mở một hội thoại, đặt unread của hội thoại đó về 0 ngay lập tức
   useEffect(() => {
     if (!activeConvId) return;
+    setConversations((prev) =>
+      prev.map((c) => (c.id === activeConvId ? { ...c, unread: 0 } : c))
+    );
+  }, [activeConvId]);
+
+  // Load lịch sử chat khi chọn conversation (theo dõi cả danh sách để tránh race)
+  useEffect(() => {
+    if (!activeConvId) return;
+    if (loadingStudents || loadingPartners) return;
 
     const activeConv = conversations.find((conv) => conv.id === activeConvId);
     if (!activeConv || !activeConv.studentId) return;
 
-    // Chỉ load nếu chưa load lịch sử cho conversation này
     if (loadedConversationsRef.current.has(activeConv.studentId)) {
       return;
     }
@@ -166,12 +175,125 @@ const LecturerChat = () => {
     if (userId && activeConv.studentId) {
       loadChatHistory(userId, activeConv.studentId);
     }
-  }, [activeConvId, loadChatHistory]);
+  }, [
+    activeConvId,
+    conversations,
+    loadChatHistory,
+    loadingStudents,
+    loadingPartners,
+  ]);
 
   // Sync conversationsRef với conversations state
   useEffect(() => {
     conversationsRef.current = conversations;
   }, [conversations]);
+
+  // Tải danh sách đối tác chat (sinh viên) đã trò chuyện với giảng viên
+  const fetchPartners = React.useCallback(async () => {
+    setLoadingPartners(true);
+    const userId = getUserIdFromToken();
+    if (!userId) return;
+    try {
+      const partners = await chatService.getChatPartners(userId);
+      if (Array.isArray(partners) && partners.length > 0) {
+        const mapped = await Promise.all(
+          partners.map(async (pid) => {
+            try {
+              const profile = await userService.getStudentProfileById(pid);
+              return {
+                id: `student_${pid}`,
+                studentId: String(pid),
+                topic: profile.fullName || profile.name || `Sinh viên ${pid}`,
+                studentName:
+                  profile.fullName || profile.name || `Sinh viên ${pid}`,
+                studentAvatar:
+                  profile.avt ||
+                  profile.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    profile.fullName || profile.name || "SV"
+                  )}&background=random`,
+                unread: 0,
+                members: 2,
+                lastMessageAt: Date.now(),
+                messages: [],
+              };
+            } catch (_) {
+              return {
+                id: `student_${pid}`,
+                studentId: String(pid),
+                topic: `Sinh viên ${pid}`,
+                studentName: `Sinh viên ${pid}`,
+                studentAvatar: `https://ui-avatars.com/api/?name=SV&background=random`,
+                unread: 0,
+                members: 2,
+                lastMessageAt: Date.now(),
+                messages: [],
+              };
+            }
+          })
+        );
+        // Merge để không mất messages đã tải
+        setConversations((prev) => {
+          const prevByStudent = new Map(
+            prev.map((c) => [String(c.studentId), c])
+          );
+          const merged = mapped.map((c) => {
+            const exist = prevByStudent.get(String(c.studentId));
+            return exist
+              ? {
+                  ...c,
+                  messages: exist.messages || [],
+                  lastMessageAt: exist.lastMessageAt || c.lastMessageAt,
+                  unread: exist.unread ?? c.unread,
+                }
+              : c;
+          });
+          return merged;
+        });
+      }
+    } catch (_) {
+    } finally {
+      setLoadingPartners(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPartners();
+  }, [fetchPartners]);
+
+  // Sau khi cả students và partners đã load xong, tự chọn hội thoại đầu tiên và tải lịch sử
+  useEffect(() => {
+    if (loadingStudents || loadingPartners) return;
+    if (activeConvId) return;
+    if (!conversations || conversations.length === 0) return;
+    const first = conversations[0];
+    if (!first?.studentId) return;
+    setActiveConvId(first.id);
+    const userId = getUserIdFromToken();
+    if (!loadedConversationsRef.current.has(first.studentId) && userId) {
+      loadChatHistory(userId, first.studentId);
+    }
+  }, [
+    loadingStudents,
+    loadingPartners,
+    conversations,
+    activeConvId,
+    loadChatHistory,
+  ]);
+
+  // Tự refresh danh sách khi tab lấy lại focus hoặc quay lại từ trang khác
+  useEffect(() => {
+    const onFocus = () => fetchPartners();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchPartners();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [fetchPartners]);
 
   // Khởi tạo WebSocket chat và conversations
   useEffect(() => {
@@ -326,22 +448,24 @@ const LecturerChat = () => {
             );
 
             if (isDuplicate) {
-              return conv; // Không thay đổi nếu là duplicate
+              return conv;
             }
 
             const newMessages = [...conv.messages, newMessage];
 
             return {
               ...conv,
-              messages: newMessages, // GIỮ LẠI TIN NHẮN CŨ + THÊM MỚI
+              messages: newMessages,
               lastMessageAt: newMessage.time,
-              unread: conv.unread + 1,
+              unread:
+                activeConvId && activeConvId === conv.id
+                  ? conv.unread
+                  : conv.unread + 1,
             };
           }
           return conv;
         });
 
-        // Cập nhật conversationsRef để đồng bộ
         conversationsRef.current = updated;
         return updated;
       });
@@ -389,7 +513,10 @@ const LecturerChat = () => {
                 ...conv,
                 messages: [...conv.messages, newMessage],
                 lastMessageAt: newMessage.time,
-                unread: conv.unread + 1,
+                unread:
+                  activeConvId && activeConvId === conv.id
+                    ? conv.unread
+                    : conv.unread + 1,
               };
             }
             return conv;
@@ -916,7 +1043,7 @@ const LecturerChat = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm kiếm hội thoại..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60"
             />
           </div>
         </div>
@@ -1158,9 +1285,9 @@ const LecturerChat = () => {
               }}
               placeholder={isConnected ? "Nhập tin nhắn..." : "Đang kết nối..."}
               disabled={!isConnected}
-              className={`flex-1 px-3 py-2 border rounded-lg text-sm ${
+              className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60 ${
                 isConnected
-                  ? "border-gray-300 focus:ring-2 focus:ring-secondary focus:border-secondary"
+                  ? "border-gray-300"
                   : "border-gray-200 bg-gray-100 cursor-not-allowed"
               }`}
             />

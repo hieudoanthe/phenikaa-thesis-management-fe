@@ -146,7 +146,9 @@ export const NotificationProvider = ({ children }) => {
         response?.success === true ||
         response?.status === 200 ||
         response?.statusCode === 200 ||
-        response?.message?.toLowerCase().includes("thành công");
+        response?.data?.read === true ||
+        response?.data?.isRead === true ||
+        typeof response?.data?.id === "string";
 
       if (isSuccess) {
         setNotifications((prev) =>
@@ -154,24 +156,17 @@ export const NotificationProvider = ({ children }) => {
             n.id === notificationId ? { ...n, isRead: true } : n
           )
         );
+        try {
+          toast.success("Đã đánh dấu đã đọc");
+        } catch {}
         return true;
-      } else {
-        if (
-          response?.data ||
-          response?.status === 200 ||
-          response?.statusCode === 200
-        ) {
-          setNotifications((prev) =>
-            prev.map((n) =>
-              n.id === notificationId ? { ...n, isRead: true } : n
-            )
-          );
-          return true;
-        }
-
-        setError(response?.message || "Không thể đánh dấu thông báo đã đọc");
-        return false;
       }
+
+      setError(response?.message || "Không thể đánh dấu thông báo đã đọc");
+      try {
+        toast.error("Không thể đánh dấu đã đọc");
+      } catch {}
+      return false;
     } catch (error) {
       setError("Đã xảy ra lỗi khi đánh dấu thông báo đã đọc");
       return false;

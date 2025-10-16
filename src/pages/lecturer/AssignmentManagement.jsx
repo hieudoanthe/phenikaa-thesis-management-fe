@@ -554,9 +554,9 @@ const AssignmentManagement = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 font-sans">
+    <div className="flex flex-col md:flex-row min-h-screen max-w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 font-sans">
       {/* Left Sidebar - Thesis Topics List */}
-      <div className="w-full lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col overflow-y-auto shadow-xl">
+      <div className="w-full lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-b md:border-b-0 md:border-r border-slate-200/60 flex flex-col overflow-y-auto shadow-xl">
         <div className="p-6 border-b border-slate-200/60 bg-gradient-to-r from-white to-slate-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-gradient-to-br from-secondary/80 to-secondary-light/100 text-white">
@@ -580,7 +580,7 @@ const AssignmentManagement = () => {
           </div>
         </div>
 
-        <div className="flex-1 p-6 overflow-y-auto thin-scrollbar">
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto thin-scrollbar">
           {loading ? (
             // Loading state
             <div className="flex flex-col items-center justify-center py-12">
@@ -761,10 +761,10 @@ const AssignmentManagement = () => {
       </div>
 
       {/* Middle Panel - Assignments List */}
-      <div className="w-full lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-r border-slate-200/60 flex flex-col overflow-y-auto shadow-xl">
+      <div className="w-full lg:w-80 xl:w-96 bg-white/95 backdrop-blur-sm border-b md:border-b-0 md:border-r border-slate-200/60 flex flex-col overflow-y-auto shadow-xl">
         {currentThesis && (
           <>
-            <div className="p-6 border-b border-slate-200/60 bg-gradient-to-r from-white to-slate-50/50">
+            <div className="p-4 md:p-6 border-b border-slate-200/60 bg-gradient-to-r from-white to-slate-50/50">
               <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-2xl p-4 mb-6 border border-slate-200/50">
                 <h4 className="text-sm font-semibold text-slate-700 mb-2 line-clamp-2">
                   {currentThesis.title}
@@ -797,7 +797,7 @@ const AssignmentManagement = () => {
               </button>
             </div>
 
-            <div className="flex-1 p-6 overflow-y-auto thin-scrollbar">
+            <div className="flex-1 p-4 md:p-6 overflow-y-auto thin-scrollbar">
               {currentThesis.assignments.map((assignment, index) => (
                 <div
                   key={assignment.id}
@@ -952,7 +952,7 @@ const AssignmentManagement = () => {
       </div>
 
       {/* Right Panel - Assignment Details & Tasks */}
-      <div className="flex-1 bg-gradient-to-br from-white via-slate-50/30 to-blue-50/20 p-8 overflow-y-auto thin-scrollbar">
+      <div className="flex-1 bg-gradient-to-br from-white via-slate-50/30 to-blue-50/20 p-4 md:p-8 overflow-y-auto thin-scrollbar">
         {currentAssignment && (
           <>
             {/* Header Section removed per request */}

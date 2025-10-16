@@ -64,8 +64,21 @@ const notificationService = {
         `/notifications/${notificationId}/mark-read`
       );
 
-      // Trả về response.data thay vì response
-      return response.data || response;
+      // Chuẩn hóa kết quả như một object có success + data
+      const status = response?.status;
+      const isOk = typeof status === "number" && status >= 200 && status < 300;
+      const payload = response?.data;
+      return {
+        success:
+          isOk === true ||
+          payload?.success === true ||
+          !!payload?.id ||
+          payload?.read === true ||
+          payload?.isRead === true,
+        status,
+        data: payload,
+        message: payload?.message || (isOk ? "Thành công" : "Không thành công"),
+      };
     } catch (error) {
       throw error;
     }

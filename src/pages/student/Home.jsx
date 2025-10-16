@@ -40,7 +40,7 @@ const StudentHome = () => {
         try {
           const progressData = await calculateThesisProgress();
           setStats({
-            registeredTopics: progressData.registeredTopics || 1,
+            registeredTopics: progressData.registeredTopics || 0,
             submittedReports: progressData.submittedReports || 0,
             completionProgress: progressData.completionProgress || 0,
             unreadMessages: 0, // Will be updated by separate useEffect
@@ -49,7 +49,7 @@ const StudentHome = () => {
           console.error("Error calculating progress:", error);
           // Fallback to default values
           setStats({
-            registeredTopics: 1,
+            registeredTopics: 0,
             submittedReports: 0,
             completionProgress: 0,
             unreadMessages: 0,
@@ -134,8 +134,22 @@ const StudentHome = () => {
         completedMilestones = 0,
       } = submissionStatus;
 
+      // Lấy số đề tài đã được xác nhận của sinh viên
+      let registeredTopicsCount = 0;
+      try {
+        const confirmedTopics =
+          await submissionService.getStudentConfirmedTopics(parseInt(userId));
+        registeredTopicsCount = Array.isArray(confirmedTopics)
+          ? confirmedTopics.length
+          : Array.isArray(confirmedTopics?.data)
+          ? confirmedTopics.data.length
+          : Number(confirmedTopics?.total) || 0;
+      } catch (_) {
+        registeredTopicsCount = 0;
+      }
+
       return {
-        registeredTopics: 1, // Default cho sinh viên đã đăng ký đề tài
+        registeredTopics: registeredTopicsCount,
         submittedReports: completedMilestones,
         completionProgress: progressPercentage,
       };
@@ -149,7 +163,7 @@ const StudentHome = () => {
   // Helper function to return default progress data when API fails
   const getDefaultProgressData = () => {
     return {
-      registeredTopics: 1,
+      registeredTopics: 0,
       submittedReports: 0,
       completionProgress: 0,
     };
@@ -294,7 +308,7 @@ const StudentHome = () => {
             <div className="space-y-3">
               <button
                 onClick={() => handleQuickAction("submit-report")}
-                className="w-full p-3 text-left bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors duration-200 border border-primary-200"
+                className="w-full p-4 text-left bg-white rounded-xl border border-gray-200 hover:border-primary-400 hover:bg-primary-50/60 transition-all duration-200 shadow-sm hover:shadow"
               >
                 <div className="flex items-center">
                   <svg
@@ -316,11 +330,11 @@ const StudentHome = () => {
 
               <button
                 onClick={() => navigate("/student/feedback")}
-                className="w-full p-3 text-left bg-accent-50 hover:bg-accent-100 rounded-lg transition-colors duration-200 border border-accent-200"
+                className="w-full p-4 text-left bg-white rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50/60 transition-all duration-200 shadow-sm hover:shadow"
               >
                 <div className="flex items-center">
                   <svg
-                    className="w-5 h-5 text-accent-600 mr-3"
+                    className="w-5 h-5 text-amber-600 mr-3"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -338,11 +352,11 @@ const StudentHome = () => {
 
               <button
                 onClick={() => handleQuickAction("check-schedule")}
-                className="w-full p-3 text-left bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200 border border-green-200"
+                className="w-full p-4 text-left bg-white rounded-xl border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/60 transition-all duration-200 shadow-sm hover:shadow"
               >
                 <div className="flex items-center">
                   <svg
-                    className="w-5 h-5 text-green-600 mr-3"
+                    className="w-5 h-5 text-emerald-600 mr-3"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

@@ -453,25 +453,8 @@ const MyThesis = () => {
   return (
     <div className="h-full bg-gray-50 overflow-hidden">
       <div className="max-w-full mx-auto p-2 h-full flex flex-col">
-        {/* Header - Giảm margin và padding */}
-        <div className="mb-2">
-          <div className="flex items-center justify-end mb-2">
-            <button
-              onClick={handleRefresh}
-              className="px-2 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors duration-200 flex items-center gap-1 text-xs"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-              </svg>
-              Làm mới
-            </button>
-          </div>
-        </div>
+        {/* Header removed as requested */}
+        <div className="mb-2"></div>
 
         {/* Main Content - Grid Layout */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden">
@@ -664,53 +647,11 @@ const MyThesis = () => {
                 </div>
               </div>
             ) : (
-              // Hiển thị thông tin tổng quan
-              <div className="space-y-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600 mb-2">
-                    {totalElements}
-                  </div>
-                  <p className="text-sm text-gray-600">Đề tài đã đăng ký</p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Đã duyệt:</span>
-                    <span className="font-medium text-green-600">
-                      {
-                        thesisList.filter(
-                          (t) => t.suggestionStatus === "APPROVED"
-                        ).length
-                      }
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Chờ duyệt:</span>
-                    <span className="font-medium text-yellow-600">
-                      {
-                        thesisList.filter(
-                          (t) => t.suggestionStatus === "PENDING"
-                        ).length
-                      }
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Từ chối:</span>
-                    <span className="font-medium text-red-600">
-                      {
-                        thesisList.filter(
-                          (t) => t.suggestionStatus === "REJECTED"
-                        ).length
-                      }
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 text-center">
-                    Click vào đề tài để xem chi tiết
-                  </p>
-                </div>
+              <div className="flex items-center justify-center h-[240px]">
+                <p className="text-sm text-slate-600">
+                  Chọn một đề tài ở danh sách bên phải để xem nhiệm vụ liên
+                  quan.
+                </p>
               </div>
             )}
           </div>
