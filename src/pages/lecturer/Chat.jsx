@@ -43,6 +43,52 @@ const LecturerChat = () => {
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [errorStudents, setErrorStudents] = useState("");
+
+  // Tabs: direct | group
+  const [activeTab, setActiveTab] = useState("direct");
+
+  // Group chat states
+  const [groups, setGroups] = useState([]); // {id,name,members:[...],messages:[]}
+  const [activeGroupId, setActiveGroupId] = useState(null);
+  const activeGroup = groups.find((g) => g.id === activeGroupId);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState([]);
+
+  const toggleMember = (id) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const submitCreateGroup = async () => {
+    const ownerId = getUserIdFromToken();
+    if (!ownerId || !groupName.trim() || selectedMemberIds.length === 0) return;
+    try {
+      const created = await chatService.createGroup({
+        name: groupName.trim(),
+        ownerId,
+        memberIds: selectedMemberIds,
+      });
+      const newGroup = {
+        id: created.id,
+        name: created.name,
+        members: created.memberIds || [],
+        messages: [],
+        lastMessageAt: Date.now(),
+        unread: 0,
+      };
+      setGroups((prev) => [newGroup, ...prev]);
+      setShowCreateGroup(false);
+      setGroupName("");
+      setSelectedMemberIds([]);
+      setActiveTab("group");
+      setActiveGroupId(created.id);
+      // tải lịch sử nhóm (nếu cần)
+      const uid = getUserIdFromToken();
+      if (uid) await loadGroupHistory(uid, created.id);
+    } catch (_) {}
+  };
   const [loadingPartners, setLoadingPartners] = useState(true);
 
   // Load danh sách sinh viên để hiển thị conversations
@@ -151,6 +197,53 @@ const LecturerChat = () => {
     }
   }, []);
 
+  // Load lịch sử chat nhóm
+  const loadGroupHistory = useCallback(
+    async (currentUserId, groupId) => {
+      if (!currentUserId || !groupId) return;
+      setLoadingChatHistory(true);
+      try {
+        const history = await chatService.getGroupHistory(groupId);
+        setGroups((prev) =>
+          prev.map((g) =>
+            g.id === groupId
+              ? {
+                  ...g,
+                  messages: history.map((m) => {
+                    // Tìm tên thật của người gửi từ danh sách sinh viên
+                    const senderStudent = students.find(
+                      (s) => String(s.id) === String(m.senderId)
+                    );
+                    const senderName = senderStudent
+                      ? senderStudent.name
+                      : `User ${m.senderId}`;
+
+                    return {
+                      id: m.id,
+                      sender: m.senderId === currentUserId ? "You" : senderName,
+                      time: new Date(m.timestamp).getTime(),
+                      text: m.content,
+                      mine: m.senderId === currentUserId,
+                      read: true,
+                    };
+                  }),
+                  lastMessageAt:
+                    history.length > 0
+                      ? new Date(
+                          history[history.length - 1].timestamp
+                        ).getTime()
+                      : Date.now(),
+                }
+              : g
+          )
+        );
+      } finally {
+        setLoadingChatHistory(false);
+      }
+    },
+    [students]
+  );
+
   // Khi người dùng mở một hội thoại, đặt unread của hội thoại đó về 0 ngay lập tức
   useEffect(() => {
     if (!activeConvId) return;
@@ -158,6 +251,14 @@ const LecturerChat = () => {
       prev.map((c) => (c.id === activeConvId ? { ...c, unread: 0 } : c))
     );
   }, [activeConvId]);
+
+  // Auto-load group history when switching to group tab if a group is already selected
+  useEffect(() => {
+    if (activeTab === "group" && activeGroupId) {
+      const userId = getUserIdFromToken();
+      if (userId) loadGroupHistory(userId, activeGroupId);
+    }
+  }, [activeTab, activeGroupId, loadGroupHistory]);
 
   // Load lịch sử chat khi chọn conversation (theo dõi cả danh sách để tránh race)
   useEffect(() => {
@@ -257,8 +358,30 @@ const LecturerChat = () => {
     }
   }, []);
 
+  // Fetch groups user tham gia
+  const fetchGroups = React.useCallback(async () => {
+    const userId = getUserIdFromToken();
+    if (!userId) return;
+    try {
+      const data = await chatService.getMyGroups(userId);
+      const mapped = (data || []).map((g) => ({
+        id: g.id,
+        name: g.name,
+        members: g.memberIds || [],
+        messages: [],
+        lastMessageAt: Date.now(),
+        unread: 0,
+      }));
+      setGroups(mapped);
+      if (!activeGroupId && mapped.length > 0 && activeTab === "group") {
+        setActiveGroupId(mapped[0].id);
+      }
+    } catch (_) {}
+  }, [activeGroupId, activeTab]);
+
   useEffect(() => {
     fetchPartners();
+    fetchGroups();
   }, [fetchPartners]);
 
   // Sau khi cả students và partners đã load xong, tự chọn hội thoại đầu tiên và tải lịch sử
@@ -285,7 +408,10 @@ const LecturerChat = () => {
   useEffect(() => {
     const onFocus = () => fetchPartners();
     const onVisibility = () => {
-      if (document.visibilityState === "visible") fetchPartners();
+      if (document.visibilityState === "visible") {
+        fetchPartners();
+        fetchGroups();
+      }
     };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
@@ -368,6 +494,74 @@ const LecturerChat = () => {
 
   // Xử lý message từ WebSocket
   const handleWebSocketMessage = (data) => {
+    // Xử lý tin nhắn group trước
+    if (data.groupId && data.content && data.senderId) {
+      const messageKey = `${data.id || data.senderId}_${data.groupId}_${
+        data.content
+      }_${data.timestamp}`;
+      if (processedMessagesRef.current.has(messageKey)) return;
+      processedMessagesRef.current.add(messageKey);
+
+      // Tìm tên thật của người gửi
+      const senderStudent = students.find(
+        (s) => String(s.id) === String(data.senderId)
+      );
+      const senderName = senderStudent
+        ? senderStudent.name
+        : `User ${data.senderId}`;
+      const userId = getUserIdFromToken();
+
+      const newMessage = {
+        id: data.id || `gmsg_${Date.now()}_${Math.random()}`,
+        sender: data.senderId === userId ? "You" : senderName,
+        time: data.timestamp
+          ? Number(new Date(data.timestamp).getTime()) || Date.now()
+          : Date.now(),
+        text: data.content,
+        mine: data.senderId === userId,
+        read: false,
+      };
+
+      setGroups((prev) =>
+        prev.map((g) => {
+          if (String(g.id) !== String(data.groupId)) return g;
+
+          // Replace local if exists
+          const localIdx = g.messages.findIndex(
+            (m) => m.isLocal && m.text === newMessage.text
+          );
+          let updatedMessages;
+          if (localIdx !== -1) {
+            updatedMessages = [...g.messages];
+            updatedMessages[localIdx] = { ...newMessage, isLocal: false };
+          } else {
+            const dup = g.messages.some(
+              (m) =>
+                m.id === newMessage.id ||
+                (m.text === newMessage.text &&
+                  Math.abs(m.time - newMessage.time) < 5000)
+            );
+            updatedMessages = dup ? g.messages : [...g.messages, newMessage];
+          }
+
+          return {
+            ...g,
+            messages: updatedMessages,
+            lastMessageAt: newMessage.time,
+            unread:
+              newMessage.mine || (activeGroupId && activeGroupId === g.id)
+                ? g.unread
+                : g.unread + 1,
+          };
+        })
+      );
+
+      setTimeout(() => {
+        processedMessagesRef.current.delete(messageKey);
+      }, 10000);
+      return;
+    }
+
     // API response format: { id, senderId, receiverId, content, timestamp }
     if (data.content && data.senderId) {
       // Tạo unique key cho message để tránh duplicate
@@ -398,46 +592,50 @@ const LecturerChat = () => {
     const { id, senderId, receiverId, content, timestamp } = data;
     const userId = getUserIdFromToken();
 
-    // Tìm conversation của sinh viên gửi tin nhắn - sử dụng conversationsRef để tránh bị reset
-    const studentConversation = conversationsRef.current.find(
-      (conv) => conv.studentId === senderId
-    );
+    // Tìm conversation của sinh viên gửi tin nhắn - sử dụng state trực tiếp để đảm bảo realtime
+    setConversations((currentConversations) => {
+      const studentConversation = currentConversations.find(
+        (conv) => conv.studentId === senderId
+      );
 
-    // Nếu đã có conversation, thêm tin nhắn mới vào conversation hiện có
-    if (studentConversation) {
-      // Kiểm tra xem tin nhắn này đã tồn tại chưa (tránh duplicate) - GIỐNG StudentChat
-      const existingMessage = studentConversation.messages.find((msg) => {
-        // Kiểm tra theo ID
-        if (msg.id === id) return true;
+      // Nếu đã có conversation, thêm tin nhắn mới vào conversation hiện có
+      if (studentConversation) {
+        // Kiểm tra xem tin nhắn này đã tồn tại chưa (tránh duplicate)
+        const existingMessage = studentConversation.messages.find((msg) => {
+          // Kiểm tra theo ID
+          if (msg.id === id) return true;
 
-        // Kiểm tra theo nội dung và thời gian (tránh duplicate từ server)
-        if (
-          msg.text === content &&
-          Math.abs(msg.time - new Date(timestamp).getTime()) < 2000
-        )
-          return true;
+          // Kiểm tra theo nội dung và thời gian (tránh duplicate từ server)
+          if (
+            msg.text === content &&
+            Math.abs(msg.time - (Number(new Date(timestamp).getTime()) || 0)) <
+              2000
+          )
+            return true;
 
-        return false;
-      });
+          return false;
+        });
 
-      if (existingMessage) {
-        return;
-      }
+        if (existingMessage) {
+          return currentConversations; // Không thay đổi gì
+        }
 
-      // Tạo tin nhắn mới
-      const newMessage = {
-        id: id || `msg_${Date.now()}_${Math.random()}`,
-        sender: studentConversation.studentName || `Sinh viên ${senderId}`,
-        time: timestamp ? new Date(timestamp).getTime() : Date.now(),
-        text: content,
-        mine: false,
-        read: false,
-        studentId: senderId,
-      };
+        // Tạo tin nhắn mới
+        const newMessage = {
+          id: id || `msg_${Date.now()}_${Math.random()}`,
+          sender: studentConversation.studentName || `Sinh viên ${senderId}`,
+          time:
+            timestamp && !Number.isNaN(Number(new Date(timestamp).getTime()))
+              ? Number(new Date(timestamp).getTime())
+              : Date.now(),
+          text: content,
+          mine: false,
+          read: false,
+          studentId: senderId,
+        };
 
-      // Thêm tin nhắn vào conversation hiện có - GIỐNG StudentChat
-      setConversations((prev) => {
-        const updated = prev.map((conv) => {
+        // Cập nhật conversation với tin nhắn mới
+        const updated = currentConversations.map((conv) => {
           if (conv.studentId === senderId) {
             // Kiểm tra duplicate message trước khi thêm
             const isDuplicate = conv.messages.some(
@@ -451,11 +649,9 @@ const LecturerChat = () => {
               return conv;
             }
 
-            const newMessages = [...conv.messages, newMessage];
-
             return {
               ...conv,
-              messages: newMessages,
+              messages: [...conv.messages, newMessage],
               lastMessageAt: newMessage.time,
               unread:
                 activeConvId && activeConvId === conv.id
@@ -466,252 +662,92 @@ const LecturerChat = () => {
           return conv;
         });
 
+        // Cập nhật conversationsRef để đồng bộ
         conversationsRef.current = updated;
         return updated;
-      });
-
-      return;
-    }
-
-    // Nếu chưa có conversation cho sinh viên này, lấy profile từ API
-    try {
-      const profile = await userService.getStudentProfileById(senderId);
-
-      // Kiểm tra lại xem conversation đã được tạo chưa trong thời gian async
-      const existingConv = conversationsRef.current.find(
-        (conv) => conv.studentId === senderId
-      );
-
-      if (existingConv) {
-        // Nếu đã có conversation (có thể được tạo trong thời gian async), thêm tin nhắn
-        const newMessage = {
-          id: id || `msg_${Date.now()}_${Math.random()}`,
-          sender: profile.fullName || profile.name || `Sinh viên ${senderId}`,
-          time: timestamp ? new Date(timestamp).getTime() : Date.now(),
-          text: content,
-          mine: false,
-          read: false,
-          studentId: senderId,
-        };
-
-        setConversations((prev) => {
-          const updated = prev.map((conv) => {
-            if (conv.studentId === senderId) {
-              // Kiểm tra duplicate message trước khi thêm
-              const isDuplicate = conv.messages.some(
-                (msg) =>
-                  msg.id === newMessage.id ||
-                  (msg.text === newMessage.text &&
-                    Math.abs(msg.time - newMessage.time) < 5000)
-              );
-
-              if (isDuplicate) {
-                return conv; // Không thay đổi nếu là duplicate
-              }
-
-              return {
-                ...conv,
-                messages: [...conv.messages, newMessage],
-                lastMessageAt: newMessage.time,
-                unread:
-                  activeConvId && activeConvId === conv.id
-                    ? conv.unread
-                    : conv.unread + 1,
-              };
-            }
-            return conv;
-          });
-          return updated;
-        });
-        return;
       }
 
-      const newConversation = {
-        id: `student_${senderId}_${Date.now()}`, // Thêm timestamp để đảm bảo unique
-        studentId: senderId,
-        topic: `Đang trong đoạn chat với ${
-          profile.name || profile.fullName || "Sinh viên"
-        }`,
-        studentName: profile.name || profile.fullName || "Sinh viên",
-        studentAvatar:
-          profile.avt ||
-          profile.avatar ||
-          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            profile.fullName || profile.name || "SV"
-          )}&background=random`,
-        unread: 1,
-        members: 2,
-        lastMessageAt: Date.now(),
-        messages: [],
-      };
+      // Nếu chưa có conversation cho sinh viên này, lấy profile từ API
+      // Sử dụng async/await trong một function riêng để tránh lỗi
+      userService
+        .getStudentProfileById(senderId)
+        .then((profile) => {
+          // Tạo tin nhắn mới
+          const newMessage = {
+            id: id || `msg_${Date.now()}_${Math.random()}`,
+            sender: profile.fullName || profile.name || `Sinh viên ${senderId}`,
+            time:
+              timestamp && !Number.isNaN(Number(new Date(timestamp).getTime()))
+                ? Number(new Date(timestamp).getTime())
+                : Date.now(),
+            text: content,
+            mine: false,
+            read: false,
+            studentId: senderId,
+          };
 
-      // Tạo tin nhắn đầu tiên
-      const newMessage = {
-        id: id || `msg_${Date.now()}_${Math.random()}`,
-        sender: profile.fullName || profile.name || `Sinh viên ${senderId}`,
-        time: timestamp ? new Date(timestamp).getTime() : Date.now(),
-        text: content,
-        mine: false,
-        read: false,
-        studentId: senderId,
-      };
-
-      // Thêm conversation mới hoặc merge với conversation hiện có
-      setConversations((prev) => {
-        // Kiểm tra xem đã có conversation cho studentId này chưa
-        const existingConvIndex = prev.findIndex(
-          (conv) => conv.studentId === senderId
-        );
-
-        if (existingConvIndex !== -1) {
-          // Nếu đã tồn tại, merge tin nhắn vào conversation hiện có
-          const existingConv = prev[existingConvIndex];
-
-          // Kiểm tra duplicate message trước khi thêm
-          const isDuplicate = existingConv.messages.some(
-            (msg) =>
-              msg.id === newMessage.id ||
-              (msg.text === newMessage.text &&
-                Math.abs(msg.time - newMessage.time) < 5000)
-          );
-
-          if (isDuplicate) {
-            return prev; // Không thay đổi nếu là duplicate
-          }
-
-          // Merge conversation mới với conversation hiện có
-          const mergedConv = {
-            ...existingConv,
-            // Cập nhật thông tin từ conversation mới nếu có
-            topic: newConversation.topic,
-            studentName: newConversation.studentName,
-            studentAvatar: newConversation.studentAvatar,
-            // Merge messages và thêm tin nhắn mới
-            messages: [...existingConv.messages, newMessage],
+          // Tạo conversation mới với tin nhắn đầu tiên
+          const newConversation = {
+            id: `student_${senderId}_${Date.now()}`,
+            studentId: senderId,
+            topic: `Đang trong đoạn chat với ${
+              profile.name || profile.fullName || "Sinh viên"
+            }`,
+            studentName: profile.name || profile.fullName || "Sinh viên",
+            studentAvatar:
+              profile.avt ||
+              profile.avatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                profile.fullName || profile.name || "SV"
+              )}&background=random`,
+            unread: 1,
+            members: 2,
             lastMessageAt: newMessage.time,
-            unread: existingConv.unread + 1,
+            messages: [newMessage],
           };
 
-          const updated = [...prev];
-          updated[existingConvIndex] = mergedConv;
-
-          // Cập nhật conversationsRef để đồng bộ
-          conversationsRef.current = updated;
-          return updated;
-        }
-
-        // Nếu chưa có conversation, tạo mới với tin nhắn đầu tiên
-        const conversationWithMessage = {
-          ...newConversation,
-          messages: [newMessage],
-          lastMessageAt: newMessage.time,
-        };
-
-        // Cập nhật conversationsRef để đồng bộ
-        conversationsRef.current = [conversationWithMessage, ...prev];
-        return [conversationWithMessage, ...prev];
-      });
-
-      setActiveConvId(newConversation.id);
-
-      // Cập nhật students state để cache thông tin
-      setStudents((prev) => [
-        ...prev,
-        {
-          id: senderId,
-          name: profile.fullName || profile.name || "Sinh viên",
-          studentId:
-            profile.userId || profile.studentId || profile.id || senderId,
-          major: profile.major || "",
-          avatar:
-            profile.avt ||
-            profile.avatar ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-              profile.fullName || profile.name || "SV"
-            )}&background=random`,
-        },
-      ]);
-
-      return;
-    } catch (error) {
-      // Không thể lấy profile sinh viên
-
-      // Tạo conversation với thông tin cơ bản nếu API thất bại
-      const fallbackConversation = {
-        id: `student_${senderId}`,
-        studentId: senderId,
-        topic: `Chat với sinh viên (ID: ${senderId})`,
-        studentName: `Sinh viên (ID: ${senderId})`,
-        studentAvatar: `https://ui-avatars.com/api/?name=SV&background=random`,
-        unread: 1,
-        members: 2,
-        lastMessageAt: Date.now(),
-        messages: [],
-      };
-
-      setConversations((prev) => {
-        // Kiểm tra xem đã có conversation cho studentId này chưa
-        const existingConvIndex = prev.findIndex(
-          (conv) => conv.studentId === senderId
-        );
-
-        if (existingConvIndex !== -1) {
-          // Nếu đã tồn tại, merge thông tin vào conversation hiện có
-          const existingConv = prev[existingConvIndex];
-
-          const mergedConv = {
-            ...existingConv,
-            // Cập nhật thông tin từ fallback nếu cần
-            topic: fallbackConversation.topic,
-            studentName: fallbackConversation.studentName,
-            studentAvatar: fallbackConversation.studentAvatar,
+          // Thêm conversation mới vào đầu danh sách
+          setConversations((prev) => {
+            const updated = [newConversation, ...prev];
+            conversationsRef.current = updated;
+            return updated;
+          });
+        })
+        .catch((error) => {
+          // Không thể lấy profile sinh viên - tạo fallback conversation
+          const fallbackMessage = {
+            id: id || `msg_${Date.now()}_${Math.random()}`,
+            sender: `Sinh viên ${senderId}`,
+            time:
+              timestamp && !Number.isNaN(Number(new Date(timestamp).getTime()))
+                ? Number(new Date(timestamp).getTime())
+                : Date.now(),
+            text: content,
+            mine: false,
+            read: false,
+            studentId: senderId,
           };
 
-          const updated = [...prev];
-          updated[existingConvIndex] = mergedConv;
+          const fallbackConversation = {
+            id: `student_${senderId}`,
+            studentId: senderId,
+            topic: `Chat với sinh viên (ID: ${senderId})`,
+            studentName: `Sinh viên (ID: ${senderId})`,
+            studentAvatar: `https://ui-avatars.com/api/?name=SV&background=random`,
+            unread: 1,
+            members: 2,
+            lastMessageAt: fallbackMessage.time,
+            messages: [fallbackMessage],
+          };
 
-          // Cập nhật conversationsRef để đồng bộ
-          conversationsRef.current = updated;
-          return updated;
-        }
-
-        // Nếu chưa có conversation, tạo mới
-        const updated = [fallbackConversation, ...prev];
-        // Cập nhật conversationsRef để đồng bộ
-        conversationsRef.current = updated;
-        return updated;
-      });
-      setActiveConvId(fallbackConversation.id);
-
-      const fallbackMessage = {
-        id: id || `msg_${Date.now()}_${Math.random()}`,
-        sender: `Sinh viên ${senderId}`,
-        time: timestamp ? new Date(timestamp).getTime() : Date.now(),
-        text: content,
-        mine: false,
-        read: false,
-        studentId: senderId,
-      };
-
-      // Cập nhật conversation với tin nhắn đầu tiên
-      setConversations((prev) => {
-        const updated = prev.map((conv) => {
-          if (conv.id === fallbackConversation.id) {
-            return {
-              ...conv,
-              messages: [fallbackMessage],
-              lastMessageAt: fallbackMessage.time,
-            };
-          }
-          return conv;
+          // Thêm fallback conversation vào đầu danh sách
+          setConversations((prev) => {
+            const updated = [fallbackConversation, ...prev];
+            conversationsRef.current = updated;
+            return updated;
+          });
         });
-
-        // Cập nhật conversationsRef để đồng bộ
-        conversationsRef.current = updated;
-        return updated;
-      });
-      return;
-    }
+    });
   };
 
   // Hàm reconnect WebSocket
@@ -827,7 +863,10 @@ const LecturerChat = () => {
   }, [conversations, activeConvId]);
 
   const formatRelative = (ms) => {
-    const diff = Math.max(0, Date.now() - ms);
+    const ts = Number(ms);
+    if (!ts || Number.isNaN(ts)) return "Vừa xong";
+    if (ts < 946684800000) return "Vừa xong";
+    const diff = Math.max(0, Date.now() - ts);
     const s = Math.floor(diff / 1000);
     if (s < 60) return "Vừa xong";
     const m = Math.floor(s / 60);
@@ -867,7 +906,7 @@ const LecturerChat = () => {
 
   const handleSend = () => {
     const text = messageInput.trim();
-    if (!text || !activeConv || !isConnected) return;
+    if (!text || !isConnected) return;
 
     const userId = getUserIdFromToken();
     if (!userId) {
@@ -890,7 +929,47 @@ const LecturerChat = () => {
       isLocal: true,
     };
 
-    // Cập nhật UI ngay lập tức
+    if (activeTab === "group") {
+      if (!activeGroup) return;
+      // Cập nhật UI nhóm ngay
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === activeGroup.id
+            ? {
+                ...g,
+                messages: [...g.messages, localMsg],
+                lastMessageAt: localMsg.time,
+              }
+            : g
+        )
+      );
+      // Gửi REST cho nhóm (hiện tại WS publish group sẽ được backend bổ sung)
+      chatService
+        .sendGroupMessage({
+          groupId: activeGroup.id,
+          senderId: userId,
+          content: text,
+          timestamp: new Date().toISOString(),
+        })
+        .catch(() => {
+          // hồi phục nếu lỗi
+          setGroups((prev) =>
+            prev.map((g) =>
+              g.id === activeGroup.id
+                ? {
+                    ...g,
+                    messages: g.messages.filter((m) => m.id !== localMsgId),
+                  }
+                : g
+            )
+          );
+          setMessageInput(text);
+        });
+      return;
+    }
+
+    if (!activeConv) return;
+    // Cập nhật UI ngay lập tức cho cá nhân
     setConversations((prev) =>
       prev.map((c) =>
         c.id === activeConv.id
@@ -903,23 +982,18 @@ const LecturerChat = () => {
       )
     );
 
-    // Gửi tin nhắn qua WebSocket
     try {
       const chatMessage = {
         senderId: userId,
-        receiverId: activeConv.studentId, // Gửi cho sinh viên cụ thể
+        receiverId: activeConv.studentId,
         content: text,
         timestamp: new Date().toISOString(),
       };
 
       if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
         wsConnection.send(JSON.stringify(chatMessage));
-        // Giảng viên đã gửi tin nhắn
       } else {
-        // WebSocket không kết nối
-        // Khôi phục input nếu gửi thất bại
         setMessageInput(text);
-        // Xóa tin nhắn local nếu gửi thất bại
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConv.id
@@ -932,7 +1006,6 @@ const LecturerChat = () => {
         );
       }
     } catch (error) {
-      // Lỗi khi gửi tin nhắn
       setMessageInput(text);
       setConversations((prev) =>
         prev.map((c) =>
@@ -955,6 +1028,90 @@ const LecturerChat = () => {
         maxHeight: "calc(100vh - 138px)",
       }}
     >
+      {/* Modal tạo nhóm */}
+      {showCreateGroup && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="px-5 py-3 border-b flex items-center justify-between">
+              <div className="font-semibold">Tạo nhóm chat</div>
+              <button
+                onClick={() => setShowCreateGroup(false)}
+                className="text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-5 flex-1 overflow-y-auto thin-scrollbar">
+              <div className="mb-4">
+                <label className="block text-sm text-gray-600 mb-1">
+                  Tên nhóm
+                </label>
+                <input
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  placeholder="Nhập tên nhóm"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60"
+                />
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-2">
+                  Chọn thành viên
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[45vh] overflow-y-auto thin-scrollbar pr-1">
+                  {students.map((s) => (
+                    <label
+                      key={s.id}
+                      className={`flex items-center gap-2 p-2 border rounded-lg cursor-pointer ${
+                        selectedMemberIds.includes(String(s.id))
+                          ? "bg-blue-50 border-blue-300"
+                          : "bg-white border-gray-200"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMemberIds.includes(String(s.id))}
+                        onChange={() => toggleMember(String(s.id))}
+                      />
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={
+                            s.avatar ||
+                            "https://ui-avatars.com/api/?name=SV&background=random"
+                          }
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {s.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            ID: {s.id}
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t flex justify-end gap-2">
+              <button
+                onClick={() => setShowCreateGroup(false)}
+                className="px-3 py-1.5 border rounded"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={submitCreateGroup}
+                disabled={!groupName.trim() || selectedMemberIds.length === 0}
+                className="px-3 py-1.5 bg-secondary text-white rounded disabled:opacity-50"
+              >
+                Tạo nhóm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Sidebar hội thoại */}
       <aside className="hidden md:flex md:w-72 lg:w-80 xl:w-96 flex-col border-r border-gray-200 bg-white">
         {/* Header */}
@@ -1038,6 +1195,37 @@ const LecturerChat = () => {
               </button>
             </div>
           </div>
+          {/* Tabs */}
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => setActiveTab("direct")}
+              className={`px-3 py-1.5 text-xs rounded ${
+                activeTab === "direct"
+                  ? "bg-secondary text-white"
+                  : "text-gray-600 border border-gray-300"
+              }`}
+            >
+              Cá nhân
+            </button>
+            <button
+              onClick={() => setActiveTab("group")}
+              className={`px-3 py-1.5 text-xs rounded ${
+                activeTab === "group"
+                  ? "bg-secondary text-white"
+                  : "text-gray-600 border border-gray-300"
+              }`}
+            >
+              Nhóm
+            </button>
+            {activeTab === "group" && (
+              <button
+                onClick={() => setShowCreateGroup(true)}
+                className="ml-auto text-xs px-2 py-1 bg-blue-600 text-white rounded"
+              >
+                + Tạo nhóm
+              </button>
+            )}
+          </div>
           <div className="mt-3">
             <input
               value={search}
@@ -1093,7 +1281,7 @@ const LecturerChat = () => {
                 Danh sách sinh viên sẽ hiển thị ở đây
               </p>
             </div>
-          ) : (
+          ) : activeTab === "direct" ? (
             filteredConversations.map((c) => (
               <button
                 key={c.id}
@@ -1139,6 +1327,36 @@ const LecturerChat = () => {
                 </div>
               </button>
             ))
+          ) : (
+            groups.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => {
+                  setActiveGroupId(g.id);
+                  const userId = getUserIdFromToken();
+                  if (userId) loadGroupHistory(userId, g.id);
+                }}
+                className={`w-full text-left p-3 rounded-lg border mb-2 transition hover:bg-gray-50 ${
+                  activeGroupId === g.id
+                    ? "bg-blue-50 border-blue-200"
+                    : "bg-white border-gray-200"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-gray-900 line-clamp-1">
+                    {g.name}
+                  </div>
+                  <div className="text-[11px] text-gray-500 whitespace-nowrap">
+                    {formatRelative(g.lastMessageAt || Date.now())}
+                  </div>
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <div className="text-xs text-gray-500">
+                    {g.members?.length || 0} thành viên
+                  </div>
+                </div>
+              </button>
+            ))
           )}
         </div>
       </aside>
@@ -1146,10 +1364,10 @@ const LecturerChat = () => {
       {/* Khung chat trung tâm */}
       <section className="flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <div className="flex-shrink-0 h-14 flex items-center justify-between px-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 flex items-start justify-between px-4 py-2 border-b border-gray-200 bg-white">
+          <div className="flex items-start gap-3">
             {/* Avatar sinh viên */}
-            {activeConv?.studentAvatar && (
+            {activeTab === "direct" && activeConv?.studentAvatar && (
               <img
                 src={activeConv.studentAvatar}
                 alt={activeConv.studentName}
@@ -1158,10 +1376,36 @@ const LecturerChat = () => {
             )}
             <div>
               <div className="text-sm font-semibold text-gray-900">
-                {activeConv?.studentName || "Chọn hội thoại"}
+                {activeTab === "group"
+                  ? activeGroup?.name || "Chọn nhóm"
+                  : activeConv?.studentName || "Chọn hội thoại"}
               </div>
-              <div className="text-xs text-gray-500">
-                {activeConv ? `Đang trong đoạn chat` : "Chọn hội thoại"}
+              <div className="text-xs text-gray-500 leading-normal">
+                {activeTab === "group"
+                  ? activeGroup
+                    ? `${activeGroup.members?.length || 0} thành viên`
+                    : "Chọn nhóm"
+                  : activeConv
+                  ? `Đang trong đoạn chat`
+                  : "Chọn hội thoại"}
+                {activeTab === "group" && activeGroup && (
+                  <div className="mt-2 flex flex-wrap gap-2 max-w-[60vw]">
+                    {(activeGroup.members || []).map((mid) => {
+                      const s = students.find(
+                        (x) => String(x.id) === String(mid)
+                      );
+                      const name = s?.name || `ID ${mid}`;
+                      return (
+                        <span
+                          key={mid}
+                          className="inline-flex items-center h-6 px-2 rounded-full bg-gray-100 text-[11px] text-gray-700 border border-gray-200"
+                        >
+                          {name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1188,7 +1432,50 @@ const LecturerChat = () => {
 
         {/* Khu vực tin nhắn */}
         <div className="flex-1 overflow-y-auto thin-scrollbar p-4 bg-gray-50 min-h-0">
-          {!activeConv ? (
+          {activeTab === "group" ? (
+            !activeGroup ? (
+              <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+                Chọn một nhóm để bắt đầu trò chuyện
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activeGroup.messages.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-500 text-sm">
+                    Chưa có tin nhắn nào trong nhóm
+                  </div>
+                ) : (
+                  activeGroup.messages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`flex ${
+                        m.mine ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[80%] md:max-w-[70%] rounded-lg px-3 py-2 text-sm shadow ${
+                          m.mine
+                            ? "bg-blue-600 text-white"
+                            : "bg-white border border-gray-200 text-gray-900"
+                        }`}
+                      >
+                        <div className="text-xs mb-1 opacity-70">
+                          {m.mine ? "Bạn" : m.sender}
+                        </div>
+                        <div className="text-sm leading-relaxed">{m.text}</div>
+                        <div
+                          className={`mt-2 text-[10px] ${
+                            m.mine ? "text-blue-100" : "text-gray-400"
+                          }`}
+                        >
+                          {formatRelative(m.time)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )
+          ) : !activeConv ? (
             <div className="h-full flex items-center justify-center text-gray-500 text-sm">
               Chọn một hội thoại để bắt đầu trò chuyện
             </div>
@@ -1283,7 +1570,13 @@ const LecturerChat = () => {
                   handleSend();
                 }
               }}
-              placeholder={isConnected ? "Nhập tin nhắn..." : "Đang kết nối..."}
+              placeholder={
+                isConnected
+                  ? activeTab === "group"
+                    ? "Nhập tin nhắn nhóm..."
+                    : "Nhập tin nhắn..."
+                  : "Đang kết nối..."
+              }
               disabled={!isConnected}
               className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/60 focus:border-primary-500/60 ${
                 isConnected

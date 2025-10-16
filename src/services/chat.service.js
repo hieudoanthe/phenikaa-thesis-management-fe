@@ -116,6 +116,39 @@ class ChatService {
     }
   }
 
+  // ===== Group Chat =====
+  async createGroup({ name, ownerId, memberIds }) {
+    const response = await mainHttpClient.post(API_ENDPOINTS.CREATE_GROUP, {
+      name,
+      ownerId,
+      memberIds,
+    });
+    return response.data;
+  }
+
+  async getMyGroups(userId) {
+    const url = API_ENDPOINTS.GET_MY_GROUPS.replace("{userId}", userId);
+    const response = await mainHttpClient.get(url);
+    return response.data;
+  }
+
+  async sendGroupMessage({ groupId, senderId, content, timestamp }) {
+    const response = await mainHttpClient.post(
+      API_ENDPOINTS.SEND_GROUP_MESSAGE,
+      { groupId, senderId, content, timestamp }
+    );
+    return response.data;
+  }
+
+  async getGroupHistory(groupId) {
+    const response = await mainHttpClient.get(
+      `${API_ENDPOINTS.GET_GROUP_HISTORY}?groupId=${encodeURIComponent(
+        groupId
+      )}`
+    );
+    return response.data;
+  }
+
   /**
    * Lấy lịch sử chat cho conversation hiện tại
    * @param {string} currentUserId - ID user hiện tại

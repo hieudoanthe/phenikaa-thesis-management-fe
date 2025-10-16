@@ -223,6 +223,11 @@ export const API_ENDPOINTS = {
   GET_CONVERSATION_HISTORY: "/chat/conversation/{userId1}/{userId2}",
   GET_USER_CONVERSATIONS: "/chat/conversations/{userId}",
   GET_RECENT_MESSAGES: "/chat/recent-messages/{userId}",
+  // Group Chat
+  CREATE_GROUP: "/chat/groups",
+  GET_MY_GROUPS: "/chat/groups/{userId}",
+  SEND_GROUP_MESSAGE: "/chat/group/send",
+  GET_GROUP_HISTORY: "/chat/group/history",
   GET_CHAT_PARTNERS: "/chat/partners/{userId}",
 
   /**
