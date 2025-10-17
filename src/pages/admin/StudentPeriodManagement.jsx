@@ -1043,12 +1043,21 @@ const StudentPeriodManagement = () => {
           location: ses.location,
           defenseDate: ses.defenseDate,
           students: (ses.students || [])
-            .map((st) => ({
-              studentId: st.studentId,
-              topicId: studentIdToTopicId.get(st.studentId) || null,
-              topicTitle: st.topicTitle || "",
-              reviewerId: null,
-            }))
+            .map((st) => {
+              // Tìm thông tin sinh viên từ danh sách để lấy supervisorId
+              const studentInfo = students.find(
+                (s) => s.studentId === st.studentId
+              );
+              return {
+                studentId: st.studentId,
+                topicId: studentIdToTopicId.get(st.studentId) || null,
+                topicTitle: st.topicTitle || "",
+                supervisorId: studentInfo?.supervisorId || null, // ← Thêm supervisorId
+                studentName: studentInfo?.fullName || st.name || "", // ← Thêm studentName
+                studentMajor: studentInfo?.major || "CNTT", // ← Thêm studentMajor
+                reviewerId: null,
+              };
+            })
             .filter((st) => st.topicId != null),
         }))
         .filter((ses) => (ses.students || []).length > 0);
@@ -1061,7 +1070,7 @@ const StudentPeriodManagement = () => {
 
       const res = await evalService.confirmAutoAssign(payload);
       if (res && res.success) {
-        showToast(res.message || "Đã xác nhận phân chia", "success");
+        showToast("Xác nhận phân chia sinh viên thành công!", "success");
         setPreviewOpen(false);
 
         // Cập nhật assignedStudents state với các sinh viên vừa được gán

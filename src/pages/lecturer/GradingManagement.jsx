@@ -317,7 +317,26 @@ const GradingManagement = () => {
         evaluatorId: evaluatorId,
         evaluationType: selectedEvaluation.evaluationType,
         comments: gradingForm.comments,
-        ...gradingForm, // Include all role-specific score fields
+        // Send role-specific fields directly (backend now supports them)
+        presentationClarityScore: gradingForm.presentationClarityScore,
+        reviewerQaScore: gradingForm.reviewerQaScore,
+        committeeQaScore: gradingForm.committeeQaScore,
+        attitudeScore: gradingForm.attitudeScore,
+        contentImplementationScore: gradingForm.contentImplementationScore,
+        relatedIssuesScore: gradingForm.relatedIssuesScore,
+        formatScore: gradingForm.formatScore,
+        contentQualityScore: gradingForm.contentQualityScore,
+        relatedIssuesReviewerScore: gradingForm.relatedIssuesReviewerScore,
+        practicalApplicationScore: gradingForm.practicalApplicationScore,
+        bonusScore: gradingForm.bonusScore,
+        studentAttitudeScore: gradingForm.studentAttitudeScore,
+        problemSolvingScore: gradingForm.problemSolvingScore,
+        formatSupervisorScore: gradingForm.formatSupervisorScore,
+        contentImplementationSupervisorScore:
+          gradingForm.contentImplementationSupervisorScore,
+        relatedIssuesSupervisorScore: gradingForm.relatedIssuesSupervisorScore,
+        practicalApplicationSupervisorScore:
+          gradingForm.practicalApplicationSupervisorScore,
       };
 
       await submitEvaluation(evaluationData);

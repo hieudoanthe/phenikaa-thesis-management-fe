@@ -5,6 +5,7 @@ import {
 } from "../../services/grading.service";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserIdFromToken } from "../../auth/authUtils";
+import { toast } from "react-toastify";
 
 const ReviewerSummaryTab = ({ topicId, isReviewer }) => {
   const { user } = useAuth?.() || { user: null };
@@ -89,25 +90,31 @@ const ReviewerSummaryTab = ({ topicId, isReviewer }) => {
   }, [topicId]);
 
   const handleSave = async () => {
-    const reviewerId = Number(user?.userId || getUserIdFromToken());
-    const payload = JSON.stringify({
-      presentation,
-      necessity,
-      general,
-      goals,
-      scope,
-      audience,
-      techFrontend,
-      techBackend,
-      techDatabase,
-      reportStructure,
-      implementationLevel,
-      results,
-      prosCons,
-      conclusionApprove,
-      conclusionNote,
-    });
-    await upsertReviewerSummary(topicId, reviewerId, payload);
+    try {
+      const reviewerId = Number(user?.userId || getUserIdFromToken());
+      const payload = JSON.stringify({
+        presentation,
+        necessity,
+        general,
+        goals,
+        scope,
+        audience,
+        techFrontend,
+        techBackend,
+        techDatabase,
+        reportStructure,
+        implementationLevel,
+        results,
+        prosCons,
+        conclusionApprove,
+        conclusionNote,
+      });
+      await upsertReviewerSummary(topicId, reviewerId, payload);
+      toast.success("Đã lưu nhận xét phản biện thành công!");
+    } catch (error) {
+      toast.error("Lưu nhận xét phản biện thất bại!");
+      console.error("Error saving reviewer summary:", error);
+    }
   };
 
   // Lightweight rich text input

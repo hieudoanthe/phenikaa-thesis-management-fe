@@ -398,14 +398,8 @@ const LecturerLayout = () => {
         connectTimeRef.current > 0 &&
         now - connectTimeRef.current < bufferInitialMsRef.current;
       if (!isBuffering) {
-        // Chỉ hiển thị toast cho thông báo quan trọng
-        const isImportant =
-          /đề tài|phê duyệt|chấp nhận|từ chối|approve|reject|topic/i.test(
-            message
-          );
-        if (isImportant) {
-          showToast(message, "info");
-        }
+        // Không hiển thị toast trực tiếp ở đây nữa
+        // NotificationContext sẽ xử lý việc hiển thị toast
       } else {
         bufferedCountRef.current += 1;
       }

@@ -5,6 +5,7 @@ import {
 } from "../../services/grading.service";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserIdFromToken } from "../../auth/authUtils";
+import { toast } from "react-toastify";
 
 const SupervisorSummaryTab = ({ topicId, isSupervisor }) => {
   const { user } = useAuth?.() || { user: null };
@@ -184,15 +185,21 @@ const SupervisorSummaryTab = ({ topicId, isSupervisor }) => {
   }, [topicId]);
 
   const handleSave = async () => {
-    const supervisorId = Number(user?.userId || getUserIdFromToken());
-    const payload = JSON.stringify({
-      part1,
-      part2,
-      part3,
-      conclusionApprove,
-      conclusionNote,
-    });
-    await upsertSupervisorSummary(topicId, supervisorId, payload);
+    try {
+      const supervisorId = Number(user?.userId || getUserIdFromToken());
+      const payload = JSON.stringify({
+        part1,
+        part2,
+        part3,
+        conclusionApprove,
+        conclusionNote,
+      });
+      await upsertSupervisorSummary(topicId, supervisorId, payload);
+      toast.success("Đã lưu nhận xét hướng dẫn thành công!");
+    } catch (error) {
+      toast.error("Lưu nhận xét hướng dẫn thất bại!");
+      console.error("Error saving supervisor summary:", error);
+    }
   };
 
   if (loading)

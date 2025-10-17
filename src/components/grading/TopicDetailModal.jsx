@@ -49,34 +49,35 @@ const TopicDetailModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
-        <div className="mt-3">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium text-gray-900">
-              Chi tiết đề tài - {studentName}
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col relative">
+        {/* Header - Fixed */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <h3 className="text-lg font-medium text-gray-900">
+            Chi tiết đề tài - {studentName}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
 
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           {loading && (
             <div className="flex justify-center items-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -125,12 +126,6 @@ const TopicDetailModal = ({
                         {topicDetails.topic.title || topicTitle}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-gray-600">Mã đề tài:</span>
-                      <span className="ml-2 font-medium">
-                        {topicDetails.topic.topicId || topicId}
-                      </span>
-                    </div>
                     {topicDetails.topic.description && (
                       <div className="md:col-span-2">
                         <span className="text-gray-600">Mô tả:</span>
@@ -165,12 +160,6 @@ const TopicDetailModal = ({
                       </span>
                     </div>
                     <div>
-                      <span className="text-gray-600">Mã sinh viên:</span>
-                      <span className="ml-2 font-medium">
-                        {topicDetails.student.studentId}
-                      </span>
-                    </div>
-                    <div>
                       <span className="text-gray-600">Chuyên ngành:</span>
                       <span className="ml-2 font-medium">
                         {topicDetails.student.studentMajor || "Chưa xác định"}
@@ -179,7 +168,15 @@ const TopicDetailModal = ({
                     <div>
                       <span className="text-gray-600">Trạng thái bảo vệ:</span>
                       <span className="ml-2 font-medium">
-                        {topicDetails.student.status || "Chưa xác định"}
+                        {topicDetails.student.status === "SCHEDULED"
+                          ? "Đã lên lịch"
+                          : topicDetails.student.status === "COMPLETED"
+                          ? "Đã hoàn thành"
+                          : topicDetails.student.status === "IN_PROGRESS"
+                          ? "Đang thực hiện"
+                          : topicDetails.student.status === "PENDING"
+                          ? "Chờ xử lý"
+                          : topicDetails.student.status || "Chưa xác định"}
                       </span>
                     </div>
                     {topicDetails.student.defenseOrder && (
@@ -337,16 +334,16 @@ const TopicDetailModal = ({
               )}
             </div>
           )}
+        </div>
 
-          {/* Actions */}
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            >
-              Đóng
-            </button>
-          </div>
+        {/* Footer - Fixed */}
+        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 flex-shrink-0 bg-gray-50">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>
