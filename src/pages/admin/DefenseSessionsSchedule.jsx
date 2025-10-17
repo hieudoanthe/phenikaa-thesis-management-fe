@@ -27,7 +27,7 @@ const DefenseSessionsSchedule = () => {
     topic: "",
     room: "",
     date: "",
-    time: "09:00",
+    time: "",
     committeeMembers: [],
     reviewerMembers: [],
     status: "PLANNING",
@@ -608,7 +608,23 @@ const DefenseSessionsSchedule = () => {
 
       // Hiển thị thông báo lỗi validation từ backend
       if (error.response && error.response.data && error.response.data.error) {
-        showToast(error.response.data.error, "error");
+        let msg = String(error.response.data.error || "");
+        // Thay ID -> tên nếu bắt được ID
+        try {
+          const teachers = await userService.getAllTeachers();
+          const idToName = new Map(
+            (Array.isArray(teachers) ? teachers : []).map((t) => [
+              String(t.userId),
+              t.fullName || `Giảng viên ${t.userId}`,
+            ])
+          );
+          const m = msg.match(/Giảng viên ID\s+(\d+)/i);
+          if (m && m[1] && idToName.has(m[1])) {
+            const name = idToName.get(m[1]);
+            msg = msg.replace(m[0], `Giảng viên ${name}`);
+          }
+        } catch (_) {}
+        showToast(msg, "error");
       } else if (error.response && error.response.status === 400) {
         showToast(
           "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.",
@@ -1552,6 +1568,7 @@ const DefenseSessionsSchedule = () => {
         onClose={handleModalClose}
         onSubmit={handleModalSubmit}
         selectedSchedule={selectedSchedule}
+        sessions={sessions}
       />
 
       {/* Session Detail Modal */}
@@ -1577,10 +1594,11 @@ const CreateScheduleModal = ({
   onClose,
   onSubmit,
   selectedSchedule,
+  sessions,
 }) => {
   const [formData, setFormData] = useState({
     date: "",
-    time: "09:00", // Giờ mặc định 9:00 AM
+    time: "", // Bắt buộc chọn
     room: "",
     topic: "",
     committeeMembers: [],
@@ -1699,6 +1717,42 @@ const CreateScheduleModal = ({
     { value: "18:00", label: "06:00 PM" },
   ];
 
+  // Helpers to disable occupied room/time options live in modal
+  const hhmmFromIso = (isoLike) => {
+    try {
+      const d = new Date(isoLike);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${hh}:${mm}`;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const occupiedTimesForSelectedRoom = React.useMemo(() => {
+    if (!formData?.room || !formData?.date) return new Set();
+    const list = (sessions || []).filter(
+      (s) =>
+        s && s.location === formData.room && s.defenseDate === formData.date
+    );
+    return new Set(
+      list
+        .map((s) => hhmmFromIso(s.startTime))
+        .filter((v) => typeof v === "string" && v.length === 5)
+    );
+  }, [formData?.room, formData?.date, sessions]);
+
+  const occupiedRoomsForSelectedTime = React.useMemo(() => {
+    if (!formData?.time || !formData?.date) return new Set();
+    const list = (sessions || []).filter(
+      (s) =>
+        s &&
+        s.defenseDate === formData.date &&
+        hhmmFromIso(s.startTime) === formData.time
+    );
+    return new Set(list.map((s) => s.location).filter(Boolean));
+  }, [formData?.time, formData?.date, sessions]);
+
   const statusOptions = [
     { value: "PLANNING", label: "Lập kế hoạch" },
     { value: "SCHEDULED", label: "Sắp diễn ra" },
@@ -1785,7 +1839,7 @@ const CreateScheduleModal = ({
   const handleClose = () => {
     setFormData({
       date: "",
-      time: "09:00", // Reset về giờ mặc định
+      time: "", // Reset: bắt buộc chọn lại
       room: "",
       topic: "",
       committeeMembers: [],
@@ -1878,10 +1932,16 @@ const CreateScheduleModal = ({
                   if (fieldErrors.time)
                     setFieldErrors({ ...fieldErrors, time: "" });
                 }}
-                options={timeOptions}
+                options={timeOptions.map((opt) => ({
+                  ...opt,
+                  isDisabled:
+                    !!formData.room &&
+                    occupiedTimesForSelectedRoom.has(opt.value),
+                }))}
                 className="react-select-container"
                 classNamePrefix="react-select"
                 placeholder="Chọn thời gian"
+                isDisabled={!formData.date || !formData.room}
                 isSearchable={false}
                 styles={{
                   control: (base, state) => ({
@@ -1908,6 +1968,12 @@ const CreateScheduleModal = ({
               {fieldErrors.time && (
                 <p className="mt-2 text-sm text-red-600">{fieldErrors.time}</p>
               )}
+              {(!formData.date || !formData.room) && (
+                <p className="mt-2 text-xs text-gray-500">
+                  Vui lòng chọn ngày và phòng trước để xem các khung giờ khả
+                  dụng.
+                </p>
+              )}
             </div>
           </div>
 
@@ -1929,10 +1995,16 @@ const CreateScheduleModal = ({
                   if (fieldErrors.room)
                     setFieldErrors({ ...fieldErrors, room: "" });
                 }}
-                options={roomOptions}
+                options={roomOptions.map((opt) => ({
+                  ...opt,
+                  isDisabled:
+                    !!formData.time &&
+                    occupiedRoomsForSelectedTime.has(opt.value),
+                }))}
                 className="react-select-container"
                 classNamePrefix="react-select"
                 placeholder="Chọn phòng"
+                isDisabled={!formData.date}
                 isSearchable={false}
                 styles={{
                   control: (base, state) => ({

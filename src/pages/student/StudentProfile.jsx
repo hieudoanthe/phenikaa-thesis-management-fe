@@ -16,12 +16,16 @@ import userService from "../../services/user.service";
 import useAuth from "../../hooks/useAuth";
 import { getUserIdFromToken, getToken } from "../../auth/authUtils";
 import { useProfileStudent } from "../../hooks/useProfile";
+import mainHttpClient from "../../services/mainHttpClient";
 
 const StudentProfile = () => {
   // Hook authentication
   const { user } = useAuth();
   // Hook profile context
   const { profileData, updateProfileData } = useProfileStudent();
+  const [finalScore, setFinalScore] = useState(null);
+  const [finalScoreStatus, setFinalScoreStatus] = useState(null);
+  const [finalScoreLoading, setFinalScoreLoading] = useState(false);
 
   // State cho active tab
   const [activeTab, setActiveTab] = useState("personal");
@@ -103,6 +107,39 @@ const StudentProfile = () => {
     setFormData(profileData);
     setTempFormData(profileData);
   }, [profileData]);
+
+  // Lấy điểm tổng kết từ eval-service nếu có topicId trên profile
+  useEffect(() => {
+    const topicId =
+      profileData?.topicId ||
+      profileData?.currentTopicId ||
+      profileData?.thesisTopicId;
+    if (!topicId) {
+      setFinalScore(null);
+      setFinalScoreStatus(null);
+      return;
+    }
+    (async () => {
+      try {
+        setFinalScoreLoading(true);
+        const res = await mainHttpClient.get(
+          `/api/eval-service/student/evaluations/topic/${topicId}/final-score`
+        );
+        const data = res?.data;
+        setFinalScore(data?.finalScore ?? null);
+        setFinalScoreStatus(data?.status ?? null);
+      } catch (_) {
+        setFinalScore(null);
+        setFinalScoreStatus(null);
+      } finally {
+        setFinalScoreLoading(false);
+      }
+    })();
+  }, [
+    profileData?.topicId,
+    profileData?.currentTopicId,
+    profileData?.thesisTopicId,
+  ]);
 
   // Xử lý thay đổi input
   const handleInputChange = (field, value) => {
@@ -702,14 +739,26 @@ const StudentProfile = () => {
                               <p className="text-sm font-medium text-gray-900">
                                 Điểm tổng kết ĐATN
                               </p>
-                              <p className="text-lg font-bold text-primary-600">
-                                {(
-                                  formData.finalThesisScore ??
-                                  formData.thesisScore ??
-                                  formData.finalScore ??
-                                  0
-                                ).toFixed(2)}
-                              </p>
+                              {finalScoreLoading ? (
+                                <p className="text-xs text-gray-500">
+                                  Đang tải…
+                                </p>
+                              ) : finalScore != null ? (
+                                <>
+                                  <p className="text-lg font-bold text-primary-600">
+                                    {finalScore.toFixed(2)}
+                                  </p>
+                                  {finalScoreStatus && (
+                                    <p className="text-xs text-gray-500">
+                                      Trạng thái: {finalScoreStatus}
+                                    </p>
+                                  )}
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-500">
+                                  Chưa có điểm tổng kết
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
