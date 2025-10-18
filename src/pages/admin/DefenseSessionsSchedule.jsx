@@ -1661,7 +1661,7 @@ const CreateScheduleModal = ({
         try {
           // Lấy lịch của giảng viên
           const response = await fetch(
-            `/api/eval-service/teacher/evaluator/${teacherId}/sessions`
+            `/api/eval-service/teacher/schedule/evaluator/${teacherId}/sessions`
           );
           if (response.ok) {
             const sessions = await response.json();
