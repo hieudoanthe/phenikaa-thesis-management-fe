@@ -2426,7 +2426,7 @@ const CreateScheduleModal = ({
                 ...option,
                 isDisabled: busyTeachers.has(option.value),
                 label: busyTeachers.has(option.value)
-                  ? `${option.label} (Bị vướng lịch)`
+                  ? `${option.label} (Trùng lịch)`
                   : option.label,
               }))}
               className="react-select-container"
