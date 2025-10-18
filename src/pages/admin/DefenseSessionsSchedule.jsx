@@ -1634,6 +1634,7 @@ const CreateScheduleModal = ({
   const [submitting, setSubmitting] = useState(false);
   const [busyTeachers, setBusyTeachers] = useState(new Set()); // Giảng viên bị vướng lịch
   const [checkingSchedule, setCheckingSchedule] = useState(false); // Đang kiểm tra lịch
+  const [checkTimeout, setCheckTimeout] = useState(null); // Timeout cho debounce
 
   // Function để kiểm tra lịch trống của giảng viên
   const checkTeacherAvailability = async (teacherIds, date, time) => {
@@ -1655,32 +1656,39 @@ const CreateScheduleModal = ({
       const startIso = localStart.toISOString().slice(0, 16);
       const endIso = localEnd.toISOString().slice(0, 16);
 
-      // Kiểm tra từng giảng viên
+      // Kiểm tra từng giảng viên bằng cách lấy lịch của họ
       for (const teacherId of teacherIds) {
         try {
-          // Tạo session data tạm để kiểm tra
-          const testSessionData = {
-            scheduleId: selectedSchedule?.value || 1,
-            sessionName: "Test Session",
-            defenseDate: date,
-            startTime: startIso,
-            endTime: endIso,
-            location: "TEST_ROOM",
-            maxStudents: 5,
-            status: "PLANNING",
-            committeeMembers: [teacherId],
-            reviewerMembers: [],
-          };
+          // Lấy lịch của giảng viên
+          const response = await fetch(
+            `/api/eval-service/teacher/evaluator/${teacherId}/sessions`
+          );
+          if (response.ok) {
+            const sessions = await response.json();
 
-          // Gọi API để kiểm tra (sẽ trả về lỗi nếu có xung đột)
-          await evalService.createDefenseSession(testSessionData);
-        } catch (error) {
-          // Nếu có lỗi validation về lecturer conflict, đánh dấu là busy
-          if (
-            error.response?.data?.error?.includes(`Giảng viên ID ${teacherId}`)
-          ) {
-            busySet.add(teacherId);
+            // Kiểm tra xem có session nào trùng thời gian không
+            const hasConflict = sessions.some((session) => {
+              if (!session.startTime || !session.endTime) return false;
+
+              const sessionStart = new Date(session.startTime);
+              const sessionEnd = new Date(session.endTime);
+              const checkStart = new Date(startIso);
+              const checkEnd = new Date(endIso);
+
+              // Kiểm tra xung đột thời gian
+              return checkStart < sessionEnd && checkEnd > sessionStart;
+            });
+
+            if (hasConflict) {
+              busySet.add(teacherId);
+            }
           }
+        } catch (error) {
+          console.error(
+            `Lỗi khi kiểm tra lịch giảng viên ${teacherId}:`,
+            error
+          );
+          // Nếu không thể kiểm tra, coi như không bị vướng lịch để không block user
         }
       }
 
@@ -1716,13 +1724,23 @@ const CreateScheduleModal = ({
     if (isOpen) loadTeachers();
   }, [isOpen]);
 
-  // Effect để kiểm tra lịch trống khi thay đổi ngày/giờ
+  // Effect để kiểm tra lịch trống khi thay đổi ngày/giờ (với debounce)
   useEffect(() => {
-    const checkAvailability = async () => {
-      if (!formData.date || !formData.time || !teacherOptions.length) {
-        setBusyTeachers(new Set());
-        return;
-      }
+    // Clear timeout cũ nếu có
+    if (checkTimeout) {
+      clearTimeout(checkTimeout);
+    }
+
+    // Nếu không có ngày/giờ hoặc chưa có danh sách giảng viên, reset
+    if (!formData.date || !formData.time || !teacherOptions.length) {
+      setBusyTeachers(new Set());
+      setCheckingSchedule(false);
+      return;
+    }
+
+    // Debounce: đợi 500ms sau khi người dùng ngừng thay đổi
+    const timeout = setTimeout(async () => {
+      console.log("🔍 Kiểm tra lịch trống cho:", formData.date, formData.time);
 
       // Lấy tất cả teacher IDs
       const allTeacherIds = teacherOptions.map((t) => t.value);
@@ -1732,9 +1750,22 @@ const CreateScheduleModal = ({
         formData.time
       );
       setBusyTeachers(busySet);
-    };
 
-    checkAvailability();
+      console.log("📊 Kết quả kiểm tra:", {
+        totalTeachers: allTeacherIds.length,
+        busyTeachers: busySet.size,
+        busyIds: Array.from(busySet),
+      });
+    }, 500);
+
+    setCheckTimeout(timeout);
+
+    // Cleanup function
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
   }, [formData.date, formData.time, teacherOptions]);
 
   // Function kiểm tra ngày có phải là thứ 2-6 không
@@ -1938,6 +1969,11 @@ const CreateScheduleModal = ({
   };
 
   const handleClose = () => {
+    // Clear timeout nếu có
+    if (checkTimeout) {
+      clearTimeout(checkTimeout);
+    }
+
     setFormData({
       date: "",
       time: "", // Reset: bắt buộc chọn lại
@@ -2298,9 +2334,13 @@ const CreateScheduleModal = ({
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600 mr-2"></div>
                   <p className="text-xs text-yellow-700 font-medium">
-                    Đang kiểm tra lịch trống của giảng viên...
+                    🔍 Đang kiểm tra lịch trống của {teacherOptions.length}{" "}
+                    giảng viên...
                   </p>
                 </div>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Kiểm tra cho ngày {formData.date} lúc {formData.time}
+                </p>
               </div>
             )}
 
@@ -2316,6 +2356,23 @@ const CreateScheduleModal = ({
                 </p>
               </div>
             )}
+
+            {/* Thông báo khi tất cả giảng viên đều khả dụng */}
+            {busyTeachers.size === 0 &&
+              !checkingSchedule &&
+              formData.date &&
+              formData.time &&
+              teacherOptions.length > 0 && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-xs text-green-700 font-medium">
+                    ✅ Tất cả {teacherOptions.length} giảng viên đều khả dụng
+                    trong khung giờ này
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    Bạn có thể chọn bất kỳ giảng viên nào
+                  </p>
+                </div>
+              )}
 
             {selectedTeachers.length > 0 && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
