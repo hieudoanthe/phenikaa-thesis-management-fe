@@ -606,25 +606,45 @@ const DefenseSessionsSchedule = () => {
     } catch (error) {
       console.error("Lỗi khi tạo buổi bảo vệ:", error);
 
-      // Hiển thị thông báo lỗi validation từ backend
-      if (error.response && error.response.data && error.response.data.error) {
-        let msg = String(error.response.data.error || "");
-        // Thay ID -> tên nếu bắt được ID
-        try {
-          const teachers = await userService.getAllTeachers();
-          const idToName = new Map(
-            (Array.isArray(teachers) ? teachers : []).map((t) => [
-              String(t.userId),
-              t.fullName || `Giảng viên ${t.userId}`,
-            ])
+      // Hiển thị thông báo lỗi validation từ backend với cải thiện
+      if (error.response && error.response.data) {
+        let msg = "";
+
+        // Xử lý các format lỗi khác nhau từ backend
+        if (error.response.data.error) {
+          msg = String(error.response.data.error);
+        } else if (error.response.data.message) {
+          msg = String(error.response.data.message);
+        } else if (typeof error.response.data === "string") {
+          msg = error.response.data;
+        }
+
+        if (msg) {
+          // Thay ID -> tên giảng viên nếu bắt được ID
+          try {
+            const teachers = await userService.getAllTeachers();
+            const idToName = new Map(
+              (Array.isArray(teachers) ? teachers : []).map((t) => [
+                String(t.userId),
+                t.fullName || `Giảng viên ${t.userId}`,
+              ])
+            );
+
+            // Tìm và thay thế tất cả các pattern "Giảng viên ID X" thành tên thực
+            msg = msg.replace(/Giảng viên ID\s+(\d+)/gi, (match, id) => {
+              const name = idToName.get(id);
+              return name ? `Giảng viên ${name}` : match;
+            });
+          } catch (_) {}
+
+          // Hiển thị thông báo lỗi với màu đỏ
+          showToast(msg, "error");
+        } else {
+          showToast(
+            "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.",
+            "error"
           );
-          const m = msg.match(/Giảng viên ID\s+(\d+)/i);
-          if (m && m[1] && idToName.has(m[1])) {
-            const name = idToName.get(m[1]);
-            msg = msg.replace(m[0], `Giảng viên ${name}`);
-          }
-        } catch (_) {}
-        showToast(msg, "error");
+        }
       } else if (error.response && error.response.status === 400) {
         showToast(
           "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.",
@@ -2111,6 +2131,9 @@ const CreateScheduleModal = ({
               <span className="block text-xs text-gray-500 mt-1">
                 (Thứ tự 1: Chủ tịch, Thứ tự 2: Thư ký, Thứ tự 3: Thành viên)
               </span>
+              <span className="block text-xs text-amber-600 mt-1">
+                ⚠️ Hệ thống sẽ kiểm tra lịch trống của các giảng viên được chọn
+              </span>
             </label>
             <Select
               inputId="committee-select"
@@ -2162,6 +2185,20 @@ const CreateScheduleModal = ({
                 {fieldErrors.committeeMembers}
               </p>
             )}
+            {selectedTeachers.length > 0 && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700 font-medium">
+                  📋 Đã chọn {selectedTeachers.length} thành viên hội đồng:
+                </p>
+                <ul className="text-xs text-blue-600 mt-1">
+                  {selectedTeachers.map((teacher, index) => (
+                    <li key={teacher.value}>
+                      {index + 1}. {teacher.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div>
@@ -2172,6 +2209,9 @@ const CreateScheduleModal = ({
               Giảng viên phản biện <span className="text-red-500">*</span>
               <span className="block text-xs text-gray-500 mt-1">
                 (Tối đa 1 người)
+              </span>
+              <span className="block text-xs text-amber-600 mt-1">
+                ⚠️ Hệ thống sẽ kiểm tra lịch trống của giảng viên phản biện
               </span>
             </label>
             <Select
@@ -2224,6 +2264,62 @@ const CreateScheduleModal = ({
                 {fieldErrors.reviewerMembers}
               </p>
             )}
+            {selectedReviewers.length > 0 && (
+              <div className="mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <p className="text-xs text-indigo-700 font-medium">
+                  📝 Đã chọn giảng viên phản biện:
+                </p>
+                <ul className="text-xs text-indigo-600 mt-1">
+                  {selectedReviewers.map((reviewer) => (
+                    <li key={reviewer.value}>• {reviewer.label}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Thông báo validation tổng quan */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-amber-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-amber-800">
+                  Thông tin quan trọng về validation
+                </h3>
+                <div className="mt-2 text-sm text-amber-700">
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>
+                      Hệ thống sẽ tự động kiểm tra lịch trống của tất cả giảng
+                      viên được chọn
+                    </li>
+                    <li>
+                      Nếu có giảng viên bị vướng lịch, hệ thống sẽ hiển thị
+                      thông báo lỗi chi tiết
+                    </li>
+                    <li>
+                      Vui lòng chọn thời gian khác hoặc thay đổi thành viên hội
+                      đồng/phản biện
+                    </li>
+                    <li>
+                      Phòng học cũng sẽ được kiểm tra để tránh xung đột thời
+                      gian
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
