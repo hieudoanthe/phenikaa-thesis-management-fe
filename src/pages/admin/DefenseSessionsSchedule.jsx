@@ -1632,6 +1632,66 @@ const CreateScheduleModal = ({
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [busyTeachers, setBusyTeachers] = useState(new Set()); // Giảng viên bị vướng lịch
+  const [checkingSchedule, setCheckingSchedule] = useState(false); // Đang kiểm tra lịch
+
+  // Function để kiểm tra lịch trống của giảng viên
+  const checkTeacherAvailability = async (teacherIds, date, time) => {
+    if (!date || !time || !teacherIds.length) return new Set();
+
+    try {
+      setCheckingSchedule(true);
+      const busySet = new Set();
+
+      // Tạo thời gian để kiểm tra
+      const dateString = date + "T" + time + ":00";
+      const defenseDateTime = new Date(dateString);
+      const timezoneOffset = defenseDateTime.getTimezoneOffset() * 60000;
+      const localStart = new Date(defenseDateTime.getTime() - timezoneOffset);
+      const localEnd = new Date(
+        defenseDateTime.getTime() + 60 * 60 * 1000 - timezoneOffset
+      );
+
+      const startIso = localStart.toISOString().slice(0, 16);
+      const endIso = localEnd.toISOString().slice(0, 16);
+
+      // Kiểm tra từng giảng viên
+      for (const teacherId of teacherIds) {
+        try {
+          // Tạo session data tạm để kiểm tra
+          const testSessionData = {
+            scheduleId: selectedSchedule?.value || 1,
+            sessionName: "Test Session",
+            defenseDate: date,
+            startTime: startIso,
+            endTime: endIso,
+            location: "TEST_ROOM",
+            maxStudents: 5,
+            status: "PLANNING",
+            committeeMembers: [teacherId],
+            reviewerMembers: [],
+          };
+
+          // Gọi API để kiểm tra (sẽ trả về lỗi nếu có xung đột)
+          await evalService.createDefenseSession(testSessionData);
+        } catch (error) {
+          // Nếu có lỗi validation về lecturer conflict, đánh dấu là busy
+          if (
+            error.response?.data?.error?.includes(`Giảng viên ID ${teacherId}`)
+          ) {
+            busySet.add(teacherId);
+          }
+        }
+      }
+
+      return busySet;
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra lịch giảng viên:", error);
+      return new Set();
+    } finally {
+      setCheckingSchedule(false);
+    }
+  };
 
   useEffect(() => {
     const loadTeachers = async () => {
@@ -1655,6 +1715,27 @@ const CreateScheduleModal = ({
     };
     if (isOpen) loadTeachers();
   }, [isOpen]);
+
+  // Effect để kiểm tra lịch trống khi thay đổi ngày/giờ
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!formData.date || !formData.time || !teacherOptions.length) {
+        setBusyTeachers(new Set());
+        return;
+      }
+
+      // Lấy tất cả teacher IDs
+      const allTeacherIds = teacherOptions.map((t) => t.value);
+      const busySet = await checkTeacherAvailability(
+        allTeacherIds,
+        formData.date,
+        formData.time
+      );
+      setBusyTeachers(busySet);
+    };
+
+    checkAvailability();
+  }, [formData.date, formData.time, teacherOptions]);
 
   // Function kiểm tra ngày có phải là thứ 2-6 không
   const isWeekday = (dateString) => {
@@ -1868,6 +1949,8 @@ const CreateScheduleModal = ({
     });
     setSelectedTeachers([]);
     setSelectedReviewers([]);
+    setBusyTeachers(new Set());
+    setCheckingSchedule(false);
     onClose();
   };
 
@@ -2150,17 +2233,25 @@ const CreateScheduleModal = ({
                 if (fieldErrors.committeeMembers)
                   setFieldErrors({ ...fieldErrors, committeeMembers: "" });
               }}
-              options={teacherOptions}
+              options={teacherOptions.map((option) => ({
+                ...option,
+                isDisabled: busyTeachers.has(option.value),
+                label: busyTeachers.has(option.value)
+                  ? `${option.label} (Bị vướng lịch)`
+                  : option.label,
+              }))}
               className="react-select-container"
               classNamePrefix="react-select"
               placeholder={
-                loadingTeachers
+                checkingSchedule
+                  ? "Đang kiểm tra lịch giảng viên..."
+                  : loadingTeachers
                   ? "Đang tải giảng viên..."
                   : "Chọn thành viên hội đồng (tối đa 3 người)"
               }
               isMulti
               isSearchable={true}
-              isLoading={loadingTeachers}
+              isLoading={loadingTeachers || checkingSchedule}
               menuPlacement="auto"
               maxMenuHeight={200}
               styles={{
@@ -2178,6 +2269,22 @@ const CreateScheduleModal = ({
                   maxHeight: 200,
                   overflowY: "auto",
                 }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isDisabled
+                    ? "#fef2f2"
+                    : state.isSelected
+                    ? "#ea580c"
+                    : state.isFocused
+                    ? "#fff7ed"
+                    : base.backgroundColor,
+                  color: state.isDisabled
+                    ? "#dc2626"
+                    : state.isSelected
+                    ? "#ffffff"
+                    : base.color,
+                  cursor: state.isDisabled ? "not-allowed" : "pointer",
+                }),
               }}
             />
             {fieldErrors.committeeMembers && (
@@ -2185,6 +2292,31 @@ const CreateScheduleModal = ({
                 {fieldErrors.committeeMembers}
               </p>
             )}
+            {/* Thông báo trạng thái kiểm tra lịch */}
+            {checkingSchedule && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600 mr-2"></div>
+                  <p className="text-xs text-yellow-700 font-medium">
+                    Đang kiểm tra lịch trống của giảng viên...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Thông báo giảng viên bị vướng lịch */}
+            {busyTeachers.size > 0 && !checkingSchedule && (
+              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-700 font-medium">
+                  ⚠️ Có {busyTeachers.size} giảng viên bị vướng lịch trong khung
+                  giờ này
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  Các giảng viên này sẽ không thể chọn được
+                </p>
+              </div>
+            )}
+
             {selectedTeachers.length > 0 && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-xs text-blue-700 font-medium">
@@ -2192,8 +2324,14 @@ const CreateScheduleModal = ({
                 </p>
                 <ul className="text-xs text-blue-600 mt-1">
                   {selectedTeachers.map((teacher, index) => (
-                    <li key={teacher.value}>
-                      {index + 1}. {teacher.label}
+                    <li key={teacher.value} className="flex items-center">
+                      <span className="mr-2">{index + 1}.</span>
+                      <span>{teacher.label}</span>
+                      {busyTeachers.has(teacher.value) && (
+                        <span className="ml-2 text-red-600 text-xs">
+                          ⚠️ Bị vướng lịch
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -2229,17 +2367,25 @@ const CreateScheduleModal = ({
                 if (fieldErrors.reviewerMembers)
                   setFieldErrors({ ...fieldErrors, reviewerMembers: "" });
               }}
-              options={teacherOptions}
+              options={teacherOptions.map((option) => ({
+                ...option,
+                isDisabled: busyTeachers.has(option.value),
+                label: busyTeachers.has(option.value)
+                  ? `${option.label} (Bị vướng lịch)`
+                  : option.label,
+              }))}
               className="react-select-container"
               classNamePrefix="react-select"
               placeholder={
-                loadingTeachers
+                checkingSchedule
+                  ? "Đang kiểm tra lịch giảng viên..."
+                  : loadingTeachers
                   ? "Đang tải giảng viên..."
                   : "Chọn giảng viên phản biện (tối đa 1 người)"
               }
               isMulti
               isSearchable={true}
-              isLoading={loadingTeachers}
+              isLoading={loadingTeachers || checkingSchedule}
               menuPlacement="auto"
               maxMenuHeight={80}
               styles={{
@@ -2257,6 +2403,22 @@ const CreateScheduleModal = ({
                   maxHeight: 80,
                   overflowY: "auto",
                 }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isDisabled
+                    ? "#fef2f2"
+                    : state.isSelected
+                    ? "#ea580c"
+                    : state.isFocused
+                    ? "#fff7ed"
+                    : base.backgroundColor,
+                  color: state.isDisabled
+                    ? "#dc2626"
+                    : state.isSelected
+                    ? "#ffffff"
+                    : base.color,
+                  cursor: state.isDisabled ? "not-allowed" : "pointer",
+                }),
               }}
             />
             {fieldErrors.reviewerMembers && (
@@ -2271,7 +2433,15 @@ const CreateScheduleModal = ({
                 </p>
                 <ul className="text-xs text-indigo-600 mt-1">
                   {selectedReviewers.map((reviewer) => (
-                    <li key={reviewer.value}>• {reviewer.label}</li>
+                    <li key={reviewer.value} className="flex items-center">
+                      <span className="mr-2">•</span>
+                      <span>{reviewer.label}</span>
+                      {busyTeachers.has(reviewer.value) && (
+                        <span className="ml-2 text-red-600 text-xs">
+                          ⚠️ Bị vướng lịch
+                        </span>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -2301,20 +2471,24 @@ const CreateScheduleModal = ({
                 <div className="mt-2 text-sm text-amber-700">
                   <ul className="list-disc list-inside space-y-1">
                     <li>
-                      Hệ thống sẽ tự động kiểm tra lịch trống của tất cả giảng
-                      viên được chọn
+                      <strong>Real-time validation:</strong> Hệ thống sẽ kiểm
+                      tra lịch trống ngay khi bạn chọn ngày/giờ
                     </li>
                     <li>
-                      Nếu có giảng viên bị vướng lịch, hệ thống sẽ hiển thị
-                      thông báo lỗi chi tiết
+                      <strong>Preventive blocking:</strong> Giảng viên bị vướng
+                      lịch sẽ bị disable và không thể chọn
                     </li>
                     <li>
-                      Vui lòng chọn thời gian khác hoặc thay đổi thành viên hội
-                      đồng/phản biện
+                      <strong>Visual feedback:</strong> Giảng viên bị vướng lịch
+                      sẽ hiển thị "(Bị vướng lịch)" và có màu đỏ
                     </li>
                     <li>
-                      Phòng học cũng sẽ được kiểm tra để tránh xung đột thời
-                      gian
+                      <strong>Smart suggestions:</strong> Vui lòng chọn thời
+                      gian khác nếu có quá nhiều giảng viên bị vướng lịch
+                    </li>
+                    <li>
+                      <strong>Room validation:</strong> Phòng học cũng sẽ được
+                      kiểm tra để tránh xung đột thời gian
                     </li>
                   </ul>
                 </div>
