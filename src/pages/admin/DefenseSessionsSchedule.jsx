@@ -3,6 +3,7 @@ import LoadingButton from "../../components/common/LoadingButton";
 import Select from "react-select";
 import { evalService } from "../../services/evalService";
 import studentAssignmentService from "../../services/studentAssignment.service";
+import evaluationService from "../../services/evaluation.service";
 import { showToast } from "../../utils/toastHelper";
 import { useLocation } from "react-router-dom";
 import userService from "../../services/user.service";
@@ -1659,29 +1660,26 @@ const CreateScheduleModal = ({
       // Kiểm tra từng giảng viên bằng cách lấy lịch của họ
       for (const teacherId of teacherIds) {
         try {
-          // Lấy lịch của giảng viên
-          const response = await fetch(
-            `/api/eval-service/teacher/schedule/evaluator/${teacherId}/sessions`
+          // Lấy lịch của giảng viên sử dụng evaluationService
+          const sessions = await evaluationService.getLecturerSessions(
+            teacherId
           );
-          if (response.ok) {
-            const sessions = await response.json();
 
-            // Kiểm tra xem có session nào trùng thời gian không
-            const hasConflict = sessions.some((session) => {
-              if (!session.startTime || !session.endTime) return false;
+          // Kiểm tra xem có session nào trùng thời gian không
+          const hasConflict = sessions.some((session) => {
+            if (!session.startTime || !session.endTime) return false;
 
-              const sessionStart = new Date(session.startTime);
-              const sessionEnd = new Date(session.endTime);
-              const checkStart = new Date(startIso);
-              const checkEnd = new Date(endIso);
+            const sessionStart = new Date(session.startTime);
+            const sessionEnd = new Date(session.endTime);
+            const checkStart = new Date(startIso);
+            const checkEnd = new Date(endIso);
 
-              // Kiểm tra xung đột thời gian
-              return checkStart < sessionEnd && checkEnd > sessionStart;
-            });
+            // Kiểm tra xung đột thời gian
+            return checkStart < sessionEnd && checkEnd > sessionStart;
+          });
 
-            if (hasConflict) {
-              busySet.add(teacherId);
-            }
+          if (hasConflict) {
+            busySet.add(teacherId);
           }
         } catch (error) {
           console.error(
